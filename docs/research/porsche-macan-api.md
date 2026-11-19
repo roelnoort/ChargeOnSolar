@@ -102,7 +102,7 @@ Remote commands such as starting and stopping direct charging exist too (scope `
 ### TypeScript
 
 - No maintained TypeScript or Node client was found. npm `porsche-connect` (repo `martijndierckx/node-porsche-connect`) was last published 2024-02-18, before the June 2024 API retirement. **(inferred)** It is defunct. `npm view porsche-connect`, [pyp #46][pyp-46]
-- **(inferred)** A TypeScript port is small. It takes an Auth0 login with PKCE, a captcha hand-off, refresh-token persistence, and one GET. evcc's `vehicle/porsche` (about 600 lines of Go) is the cleanest reference. The alternative is to run evcc or HA as a sidecar and read their values.
+- **(inferred)** A TypeScript port is small. It takes an Auth0 login with PKCE, a captcha hand-off, refresh-token persistence, and one GET. evcc's `vehicle/porsche` (about 1,100 lines of Go, most of it the captcha login flow) is the cleanest reference. The alternative is to run evcc or HA as a sidecar and read their values.
 
 ## Open questions
 
