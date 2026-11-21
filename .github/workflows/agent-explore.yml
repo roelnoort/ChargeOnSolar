@@ -234,9 +234,9 @@ jobs:
         run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
 
       # Restore only, never save. The cache is shared with implement and
-      # review, whose jobs hold FACTORY_PAT, and this job runs an agent that
-      # has just read untrusted issues. Nothing from here goes into it. On a
-      # miss the tools are installed for this run alone.
+      # review, whose runs push code and open PRs, and this job runs an
+      # agent that has just read untrusted issues. Nothing from here goes into
+      # it. On a miss the tools are installed for this run alone.
       - name: Restore Claude Code and agent-browser
         id: tools-cache
         uses: actions/cache/restore@v4

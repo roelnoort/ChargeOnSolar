@@ -121,28 +121,35 @@ prompt.
 easy ticket. Any other label does nothing. One run per issue at a time: a
 second label event waits for the first run to finish.
 
-**What happens.**
+**What happens.** Four jobs. Only the build job runs the agent, and it is the
+one job that never references the factory token, so the token is never on the
+machine the agent runs on. The jobs that hold the token check nothing out and
+run nothing the agent wrote.
 
-1. `agent:implement` and `agent:blocked` come off the issue and
-   `agent:in-progress` goes on.
-2. The repo is installed with pnpm on Node 24, with Claude Code and
-   agent-browser restored from a weekly cache. The run fails here if
-   `pnpm install` did not install the pre-commit hook.
-3. The ticket is written to a file for the agent: the issue and the comments
-   from people with write access, explore's findings included. The factory's
-   status comments are left out.
-4. The agent reads the glossary, the ADRs and the coding standards, builds the
+1. **Prepare.** `agent:implement` and `agent:blocked` come off the issue and
+   `agent:in-progress` goes on. The ticket is written to a file for the agent:
+   the issue and the comments from people with write access, explore's
+   findings included. The factory's status comments are left out.
+2. **Build.** The repo is installed with pnpm on Node 24, with Claude Code and
+   agent-browser restored from a weekly cache, which is saved before the agent
+   runs, never after. The run fails here if `pnpm install` did not install the
+   pre-commit hook.
+3. The agent reads the glossary, the ADRs and the coding standards, builds the
    ticket test-first against the fakes in the test harness, and commits
    through the pre-commit hook. It never talks to real devices and holds no
    GitHub token.
-5. A run with no commits, or with uncommitted changes left over, fails here.
-6. The commits are pushed to a new branch, `agent/issue-<n>-<run id>`, and a
-   **draft** PR opens with the agent's summary, any screenshots, and
-   `Closes #<n>`.
-7. The PR gets `agent:review`, which starts the reviewer. If that fails, the
+4. A run with no commits, or with uncommitted changes left over, fails here.
+   The commits are handed on as a `git bundle`, with the agent's PR body and
+   screenshots.
+5. **Publish.** The bundle is fetched into an empty bare repository, with no
+   working tree and hooks off, and checked again: it must build on the commit
+   the run started from and add at least one commit. It is pushed, never
+   forced, to a new branch, `agent/issue-<n>-<run id>`, and a **draft** PR
+   opens with the agent's summary, any screenshots, and `Closes #<n>`.
+6. The PR gets `agent:review`, which starts the reviewer. If that fails, the
    run fails: there is no silent fallback.
-8. The issue gets a status comment linking the run's logs, and
-   `agent:in-progress` comes off.
+7. **Finish.** On failure the issue gets `agent:blocked`. Either way it gets a
+   status comment linking the run's logs, and `agent:in-progress` comes off.
 
 **Labels.**
 
@@ -177,19 +184,25 @@ and the issue the PR body says it closes (`Closes #n`), with comments from
 people with write access. With no `Closes #n`, the Spec axis reports "no spec
 available" and is never guessed. It never sees the implementer's session.
 
-**What happens.**
+**What happens.** Four jobs, shaped as in implement: only the review job runs
+the agent and checks the PR out, and it never references the factory token.
 
-1. `agent:review` and `agent:blocked` come off the PR and `agent:in-progress`
-   goes on.
-2. The PR's head is checked out and installed as in implement. The run fails
-   here if `pnpm install` did not install the pre-commit hook.
+1. **Prepare.** `agent:review` and `agent:blocked` come off the PR and
+   `agent:in-progress` goes on. The spec is collected into a file for the
+   agent.
+2. **Review.** The PR's head is checked out and installed as in implement. The
+   run fails here if `pnpm install` did not install the pre-commit hook.
 3. The agent reviews on two separate axes, standards and spec. It fixes what
    it can as commits through the pre-commit hook, and writes a verdict. It
-   holds no GitHub token and never talks to real devices.
-4. The fixes are pushed onto the PR's branch, never forced. If someone pushed
-   to the branch during the run, the push is rejected and the fixes go to a
-   new branch, `<pr branch>-<run id>`, opened as a draft PR against the same
-   base. The original PR gets `agent:blocked`: keep one of the two.
+   holds no GitHub token and never talks to real devices. Uncommitted changes
+   left over get a warning and are not pushed. The commits are handed on as a
+   `git bundle`, with the verdict, the inline comments and any screenshots.
+4. **Publish.** The bundle is fetched into an empty bare repository, with no
+   working tree and hooks off, checked to build on the PR's head, and its
+   fixes pushed onto the PR's branch, never forced. If someone pushed to the
+   branch during the run, the push is rejected and the fixes go to a new
+   branch, `<pr branch>-<run id>`, opened as a draft PR against the same base.
+   The original PR gets `agent:blocked`: keep one of the two.
 5. The verdict is posted as a comment. Findings it left unfixed are posted as
    one review with inline comments, on the PR the fixes went to. Comments on
    lines outside the diff are dropped, because GitHub rejects the whole
@@ -197,7 +210,8 @@ available" and is never guessed. It never sees the implementer's session.
 6. The PR is marked **ready for review**, on a fail as well as a pass, but
    only when a real verdict was posted. If the agent broke, the PR stays a
    draft. Ready is not approved: the merge stays yours.
-7. `agent:in-progress` comes off.
+7. **Finish.** `agent:blocked` on a failure or a rejected push, and
+   `agent:in-progress` comes off.
 
 **The verdict.**
 

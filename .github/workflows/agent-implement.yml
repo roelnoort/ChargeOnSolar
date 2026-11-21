@@ -27,42 +27,56 @@ name: Agent — Implement A Ticket
 #   No real devices. The agent verifies against the fakes in the test harness,
 #   and no device or vendor credentials exist in Actions.
 #
+# THE JOBS
+#     prepare   runs no agent and checks nothing out. It moves the labels,
+#               reads the ticket, and hands it on as a file.
+#     build     checks out, installs, and runs the agent. It holds no
+#               FACTORY_PAT. It hands on the agent's commits as a git bundle,
+#               with the PR body and the screenshots.
+#     publish   runs no agent and checks nothing out. It pushes the commits
+#               in the bundle, opens the draft PR, and adds `agent:review`.
+#     finish    marks the ticket `agent:blocked` on failure, reports back on
+#               it, and always takes `agent:in-progress` off.
+#
 # WHAT IT NEEDS
 #   secrets.CLAUDE_CODE_OAUTH_TOKEN: the agent's auth token. To change the
 #     agent or how it is billed, see
 #     .sandcastle/agent-workflows/shared/common.ts.
 #   secrets.FACTORY_PAT: a fine-grained PAT on this repository with Issues,
 #     Pull requests, Contents, Workflows and Actions, all read/write. Every
-#     step that talks to GitHub uses it: reading the ticket, pushing, opening
-#     the pull request, commenting. One token for the whole factory, because
-#     some hops need it anyway: by default the built-in GITHUB_TOKEN cannot
-#     open a pull request at all, and a label it applies starts no workflow.
-#     That second hop is `agent:review`, the label that starts the reviewer.
+#     call to GitHub uses it, from prepare, publish and finish only: reading
+#     the ticket, pushing, opening the pull request, commenting. One token for
+#     the whole factory, because some hops need it anyway: by default the
+#     built-in GITHUB_TOKEN cannot open a pull request at all, and a label it
+#     applies starts no workflow. That second hop is `agent:review`, the label
+#     that starts the reviewer.
 #   secrets.GITHUB_TOKEN: supplied by Actions, and used for one thing: the
-#     checkout. The `permissions:` block below shrinks it to match.
+#     build job's checkout. Scoped per job below.
 #   The `agent:implement` label. No workflow can create the label that starts
 #     it; scripts/setup-factory.sh creates it once.
 #
 # WHERE THE TOKENS GO
-#   GH_TOKEN is set on the steps that call GitHub, never on the job. The
-#   agent's step, and every step that runs code the agent wrote, has no
-#   GitHub token in its environment. The checkout does not keep one either
-#   (`persist-credentials: false`), so the only step that can push is the one
-#   that hands git the token for that one command.
+#   The job split is what keeps the PAT from the agent. The build job never
+#   mentions FACTORY_PAT, not even in a step
+#   that runs before the agent. A job is handed only the secrets it uses, so
+#   the machine the agent runs on never holds the PAT, and an agent that took
+#   that machine over (it can use `sudo`, and read the runner's memory) would
+#   find no key to steal. #43 checked this on a throwaway workflow: the PAT
+#   was in the memory of the job that used it, and nowhere in the job that
+#   did not.
 #
-#   That keeps the token out of the agent's way. It is not a wall. The agent
-#   runs on the same machine as the steps that hold the PAT, with no sandbox,
-#   and a determined one could leave something behind for them to run. The
-#   real defence is who can reach the agent at all: only a collaborator can
-#   label an issue, and only a collaborator's comments get in.
+#   The jobs that hold the PAT run nothing the agent wrote. They check
+#   nothing out: the commits arrive as a git bundle, which publish fetches
+#   into an empty bare repository, with no hooks, and pushes from there. The
+#   PR body and the screenshots are read as text and files, never run.
 #
 # WHO COMMITS
 #   The agent does, and the repo's own pre-commit hook runs on every commit it
 #   makes: `pnpm install` installs it, through husky's `prepare` script,
 #   exactly as it does on your machine. When the hook rejects a commit, the
 #   agent reads the failure, fixes its work and commits again. The hook is
-#   code from the repo, so it runs only where there is no token: every git
-#   command that holds one switches hooks off with `core.hooksPath=/dev/null`.
+#   code from the repo, so it runs only in the build job, where there is no
+#   token.
 #
 # A CAUTION THAT COMES WITH IT
 #   `issues: labeled` fires on issues, which cannot come from a fork. Do not
@@ -74,44 +88,46 @@ on:
   issues:
     types: [labeled]
 
-# A ceiling on the GITHUB_TOKEN, which only checks the code out. Everything
-# that writes goes through FACTORY_PAT, whose reach is set where you created
-# it, not here.
-permissions:
-  contents: read # the checkout
+# One run per ticket, never cancelled. A second `agent:implement` on the same
+# issue waits for the first run to finish rather than building the ticket
+# twice at once. Every other label, including the ones this run applies
+# itself (`agent:in-progress`, `agent:blocked`), gets a throwaway group of its
+# own, so it can never replace a waiting retry.
+concurrency:
+  group: ${{ github.event.label.name == 'agent:implement' && format('agent-implement-{0}', github.event.issue.number) || format('ignore-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+# Nothing by default. Only the build job asks for something: the read its
+# checkout needs. Everything that writes goes through FACTORY_PAT, whose
+# reach is set where you created it, not here.
+permissions: {}
+
+env:
+  GH_REPO: ${{ github.repository }}
+  ISSUE_NUMBER: ${{ github.event.issue.number }}
+  # The run id makes the branch new on every run. See WHAT IT DOES.
+  BRANCH: agent/issue-${{ github.event.issue.number }}-${{ github.run_id }}
+  RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  implement:
+  prepare:
     # Every other label on every other issue stops here, for free.
     if: github.event.label.name == 'agent:implement'
     runs-on: ubuntu-latest
-    # One run per ticket. A second `agent:implement` on the same issue waits
-    # for the first to finish rather than building the ticket twice at once.
-    # On the job, not the workflow: a group holds one pending run, and the
-    # label events this run makes itself (`agent:in-progress`,
-    # `agent:blocked`) would otherwise replace a waiting retry.
-    concurrency:
-      group: agent-implement-${{ github.event.issue.number }}
-      cancel-in-progress: false
-    timeout-minutes: 45
+    timeout-minutes: 5
+
+    # No checkout and no agent. It reads the issue and moves labels with
+    # FACTORY_PAT, which is why it is a job of its own: see WHERE THE TOKENS
+    # GO.
+    permissions: {}
 
     env:
-      GH_REPO: ${{ github.repository }}
-      ISSUE_NUMBER: ${{ github.event.issue.number }}
-      # The run id makes the branch new on every run. See WHAT IT DOES.
-      BRANCH: agent/issue-${{ github.event.issue.number }}-${{ github.run_id }}
-      RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      # Claude Code and agent-browser. Only the agent's step puts this on its
-      # PATH, so the steps holding FACTORY_PAT never run a `gh` or `git` from
-      # a directory the agent can write to.
-      TOOLS_PREFIX: /home/runner/.factory-tools
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
 
     steps:
       - name: Transition labels
         # The trigger comes off, so putting it back on is how you retry.
         # `agent:in-progress` goes on until the run ends, however it ends.
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: |
           # The state labels may not exist yet. Existing ones are left as they are.
           gh label create "agent:in-progress" --color FBCA04 \
@@ -122,9 +138,63 @@ jobs:
           gh issue edit "$ISSUE_NUMBER" --remove-label "agent:blocked" || true
           gh issue edit "$ISSUE_NUMBER" --add-label "agent:in-progress"
 
+      - name: Read the ticket
+        run: |
+          set -euo pipefail
+          # A comment reaches the agent only when the person who wrote it has
+          # write access to this repo. The factory posts with FACTORY_PAT, so
+          # its comments are yours, and they pass. Explore's findings should:
+          # they are what the implementer most needs to see. The factory's
+          # status lines should not ("Building", "run failed"), so every one
+          # of them carries a hidden `<!-- factory:status -->` and is dropped
+          # here.
+          mkdir -p /tmp/ticket
+          gh issue view "$ISSUE_NUMBER" --json number,title,body,labels,comments \
+            | jq '.comments |= map(select(
+                (.authorAssociation | IN("OWNER", "MEMBER", "COLLABORATOR"))
+                and (.body | contains("<!-- factory:status -->") | not)))' \
+            > /tmp/ticket.json
+          jq -r '
+            "# " + .title + "\n\n" + .body
+            + (if (.comments | length) > 0
+               then "\n\n## Comments\n"
+                 + ([.comments[] | "\n### " + .author.login + " (" + .createdAt + ")\n\n" + .body + "\n"] | join(""))
+               else "" end)
+          ' /tmp/ticket.json > /tmp/ticket/ticket.md
+          cat /tmp/ticket/ticket.md
+
+      - name: Hand the ticket to the build job
+        uses: actions/upload-artifact@v4
+        with:
+          name: implement-ticket
+          path: /tmp/ticket/ticket.md
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    # No FACTORY_PAT anywhere in this job. Keep it that way.
+    permissions:
+      contents: read # the checkout
+
+    env:
+      # Claude Code and agent-browser. Only the agent's step puts this on its
+      # PATH.
+      TOOLS_PREFIX: /home/runner/.factory-tools
+
+    steps:
+      - name: Take the ticket from the prepare job
+        # The agent reads /tmp/ticket.md.
+        uses: actions/download-artifact@v4
+        with:
+          name: implement-ticket
+          path: /tmp
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Full history, so the bundle needs nothing the publish job lacks.
           fetch-depth: 0
           persist-credentials: false
 
@@ -183,14 +253,11 @@ jobs:
           "$TOOLS_PREFIX/bin/agent-browser" --version
 
       - name: Open the branch
-        id: branch
         run: |
           set -euo pipefail
           git config user.name "agent-factory[bot]"
           git config user.email "agent-factory[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          # Where the agent starts. Anything after this is a commit it made.
-          echo "base=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           # `pnpm install` ran husky, which points git at .husky/_. If it did
           # not, the agent's commits would skip the hook without anyone
           # noticing.
@@ -198,32 +265,6 @@ jobs:
             echo "::error::The pre-commit hook is not installed (core.hooksPath is '$(git config core.hooksPath)')."
             exit 1
           fi
-
-      - name: Read the ticket
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
-        run: |
-          set -euo pipefail
-          # A comment reaches the agent only when the person who wrote it has
-          # write access to this repo. The factory posts with FACTORY_PAT, so
-          # its comments are yours, and they pass. Explore's findings should:
-          # they are what the implementer most needs to see. The factory's
-          # status lines should not ("Building", "run failed"), so every one
-          # of them carries a hidden `<!-- factory:status -->` and is dropped
-          # here.
-          gh issue view "$ISSUE_NUMBER" --json number,title,body,labels,comments \
-            | jq '.comments |= map(select(
-                (.authorAssociation | IN("OWNER", "MEMBER", "COLLABORATOR"))
-                and (.body | contains("<!-- factory:status -->") | not)))' \
-            > /tmp/ticket.json
-          jq -r '
-            "# " + .title + "\n\n" + .body
-            + (if (.comments | length) > 0
-               then "\n\n## Comments\n"
-                 + ([.comments[] | "\n### " + .author.login + " (" + .createdAt + ")\n\n" + .body + "\n"] | join(""))
-               else "" end)
-          ' /tmp/ticket.json > /tmp/ticket.md
-          cat /tmp/ticket.md
 
       - name: Build the ticket
         # No GitHub token here, and no device or vendor credentials anywhere.
@@ -235,12 +276,11 @@ jobs:
 
       - name: Check the agent committed
         # No commit means no pull request, and the run goes red rather than
-        # green-and-empty.
-        env:
-          BASE: ${{ steps.branch.outputs.base }}
+        # green-and-empty. Where the agent started is the commit this run is
+        # for. Publish checks the commits again, from the bundle.
         run: |
           set -euo pipefail
-          commits=$(git rev-list --count "$BASE..HEAD")
+          commits=$(git rev-list --count "$GITHUB_SHA..HEAD")
           if [ "$commits" -eq 0 ]; then
             echo "::error::The agent finished without committing anything. Nothing to open a PR for."
             git status --short
@@ -251,36 +291,97 @@ jobs:
             git status --short
             exit 1
           fi
-          git log --oneline "$BASE..HEAD"
+          git log --oneline "$GITHUB_SHA..HEAD"
 
-      - name: Push
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      - name: Bundle the commits
+        # The whole history up to HEAD, so the bundle stands alone: publish
+        # fetches it into an empty repository.
         run: |
           set -euo pipefail
-          # The token exists for this one command. Hooks are off, so nothing
-          # the agent wrote runs while it does.
+          mkdir -p /tmp/handoff
+          git bundle create /tmp/handoff/agent.bundle HEAD
+          [ -s /tmp/pr-body.md ] && cp /tmp/pr-body.md /tmp/handoff/pr-body.md
+          shopt -s nullglob
+          pngs=(/tmp/evidence/*.png)
+          if [ "${#pngs[@]}" -gt 0 ]; then
+            mkdir -p /tmp/handoff/evidence
+            cp "${pngs[@]}" /tmp/handoff/evidence/
+          fi
+          ls -R /tmp/handoff
+
+      - name: Hand the commits to the publish job
+        uses: actions/upload-artifact@v4
+        with:
+          name: implement-handoff
+          path: /tmp/handoff
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # No checkout and no agent, so the GITHUB_TOKEN gets nothing. This job
+    # writes with FACTORY_PAT.
+    permissions: {}
+
+    outputs:
+      url: ${{ steps.pr.outputs.url }}
+
+    env:
+      # On the job, which is fine here: nothing in it runs code from an agent
+      # or from a checkout. It reads git objects, a Markdown file and PNGs.
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+
+    steps:
+      - name: Take the commits from the build job
+        uses: actions/download-artifact@v4
+        with:
+          name: implement-handoff
+          path: /tmp/handoff
+
+      - name: Push
+        run: |
+          set -euo pipefail
+          # An empty bare repository: no working tree, and with no template,
+          # no hooks directory. Hooks are switched off on top of that, so
+          # nothing the agent wrote runs while the token is here.
+          git init -q --bare --template= /tmp/repo
+          git() { command git -C /tmp/repo -c core.hooksPath=/dev/null "$@"; }
+          git fetch -q /tmp/handoff/agent.bundle "HEAD:refs/heads/agent"
+          # The bundle came from the machine the agent ran on, so it is
+          # checked again here: the agent's work has to sit on top of the
+          # commit this run is for, and add at least one commit to it.
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/heads/agent; then
+            echo "::error::The bundle does not build on $GITHUB_SHA. Refusing to push it."
+            exit 1
+          fi
+          if [ "$(git rev-list --count "$GITHUB_SHA..refs/heads/agent")" -eq 0 ]; then
+            echo "::error::The bundle holds no new commits. Nothing to open a PR for."
+            exit 1
+          fi
+          git log --oneline "$GITHUB_SHA..refs/heads/agent"
+          # Never forced. The branch is new, so nothing is there to reject it.
           auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git -c core.hooksPath=/dev/null \
-            -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
-            push "https://github.com/${GH_REPO}.git" "HEAD:refs/heads/${BRANCH}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+            push "https://github.com/${GH_REPO}.git" "refs/heads/agent:refs/heads/${BRANCH}"
 
       - name: Open the draft pull request
         id: pr
         env:
           # By default the built-in GITHUB_TOKEN is not allowed to open a pull
-          # request. This step runs nothing the agent wrote: it reads the
-          # agent's summary as text and hands it to `gh`. `--attach` uploads
-          # the agent's screenshots and swaps each matching /tmp/evidence path
-          # in the body for its URL. It needs a PAT too: GITHUB_TOKEN is
-          # rejected.
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+          # request. `--attach` uploads the agent's screenshots and swaps each
+          # matching /tmp/evidence path in the body for its URL. It needs a
+          # PAT too: GITHUB_TOKEN is rejected.
           BASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           title="$(gh issue view "$ISSUE_NUMBER" --json title --jq .title)"
           body_file=/tmp/pr-body.md
-          [ -s "$body_file" ] || echo "Built by the implementer workflow." > "$body_file"
+          if [ -s /tmp/handoff/pr-body.md ]; then
+            cp /tmp/handoff/pr-body.md "$body_file"
+          else
+            echo "Built by the implementer workflow." > "$body_file"
+          fi
           {
             echo ""
             echo "---"
@@ -289,10 +390,15 @@ jobs:
             echo "The reviewer has been asked to read it. It stays a draft until the verdict is posted."
           } >> "$body_file"
 
-          # nullglob: no screenshots means no --attach, and the PR still opens.
+          # The body names each screenshot by the path the agent saved it to,
+          # and --attach matches on that path, so they go back there.
           shopt -s nullglob
+          mkdir -p /tmp/evidence
           attach=()
-          for png in /tmp/evidence/*.png; do attach+=(--attach "$png"); done
+          for png in /tmp/handoff/evidence/*.png; do
+            cp "$png" /tmp/evidence/
+            attach+=(--attach "/tmp/evidence/$(basename "$png")")
+          done
 
           url="$(gh pr create \
             --draft \
@@ -304,12 +410,11 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Hand the pull request to the reviewer
+        # agent-review.yml triggers on `pull_request: [labeled]`, and a label
+        # applied with the built-in token starts no workflow. With
+        # GITHUB_TOKEN the label lands, the run goes green, and the reviewer
+        # never wakes.
         env:
-          # agent-review.yml triggers on `pull_request: [labeled]`, and a
-          # label applied with the built-in token starts no workflow. With
-          # GITHUB_TOKEN the label lands, the run goes green, and the reviewer
-          # never wakes.
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
           PR_URL: ${{ steps.pr.outputs.url }}
         run: |
           set -euo pipefail
@@ -318,24 +423,35 @@ jobs:
           # a chain that stopped says nothing.
           gh pr edit "$PR_URL" --add-label "agent:review"
 
+  # However the jobs above ended, this one closes the run out.
+  finish:
+    needs: [prepare, build, publish]
+    if: always() && needs.prepare.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent. It writes labels and comments with FACTORY_PAT.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      # success, failure or cancelled: what the run as a whole came to.
+      RUN_STATUS: ${{ contains(needs.*.result, 'cancelled') && 'cancelled' || (contains(needs.*.result, 'failure') && 'failure' || 'success') }}
+      PR_URL: ${{ needs.publish.outputs.url }}
+
+    steps:
       - name: Mark blocked on failure
         # A timeout or a cancelled run counts too: neither built the ticket.
-        if: ${{ !success() }}
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+        if: env.RUN_STATUS != 'success'
         run: gh issue edit "$ISSUE_NUMBER" --add-label "agent:blocked" || true
 
       - name: Report back on the ticket
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
-          JOB_STATUS: ${{ job.status }}
-          PR_URL: ${{ steps.pr.outputs.url }}
         run: |
           where=""
           [ -n "$PR_URL" ] && where=" Pull request: ${PR_URL}, from \`${BRANCH}\`."
           retry=""
-          if [ "$JOB_STATUS" != "success" ]; then
+          if [ "$RUN_STATUS" != "success" ]; then
             if [ -n "$PR_URL" ]; then
               # The pull request exists. Only the hand-off failed, so a new
               # implement run would build a second pull request.
@@ -346,10 +462,8 @@ jobs:
           fi
           # Tagged, so the next run on this ticket leaves it out of the ticket.
           gh issue comment "$ISSUE_NUMBER" --body \
-            "Implementer run **${JOB_STATUS}** — [logs](${RUN_URL}).${where}${retry} <!-- factory:status -->"
+            "Implementer run **${RUN_STATUS}** — [logs](${RUN_URL}).${where}${retry} <!-- factory:status -->"
 
       - name: Always remove in-progress
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: gh issue edit "$ISSUE_NUMBER" --remove-label "agent:in-progress" || true

@@ -43,39 +43,55 @@ name: Agent — Review A Pull Request
 #
 # HOW IT ENDS: THE PR GOES READY
 #   The implementer opens every PR as a draft, and the draft means "nobody
-#   has read this yet". Once the verdict is posted, somebody has. So the last
-#   step marks the PR ready for review, on a fail as well as a pass. Ready is
-#   not approved. A failing verdict is for a human to read, and the merge is
-#   still a human's.
+#   has read this yet". Once the verdict is posted, somebody has. So publish
+#   ends by marking the PR ready for review, on a fail as well as a pass.
+#   Ready is not approved. A failing verdict is for a human to read, and the
+#   merge is still a human's.
+#
+# THE JOBS
+#     prepare   runs no agent and checks nothing out. It moves the labels,
+#               collects the spec, and hands it on as a file.
+#     review    checks out the PR's head, installs, and runs the agent. It
+#               holds no FACTORY_PAT. It hands on the agent's commits as a
+#               git bundle, with the verdict, the inline comments and the
+#               screenshots.
+#     publish   runs no agent and checks nothing out. It pushes the fixes
+#               from the bundle (or to the fallback branch and PR), posts
+#               the verdict and the inline comments, and marks the PR ready.
+#     finish    marks the PR `agent:blocked` on failure or a rejected push,
+#               reports a failure that came after the verdict, and always
+#               takes `agent:in-progress` off.
 #
 # WHAT IT NEEDS
 #   secrets.CLAUDE_CODE_OAUTH_TOKEN: the agent's auth token. To change the
 #     agent or how it is billed, see
 #     .sandcastle/agent-workflows/shared/common.ts.
-#   secrets.FACTORY_PAT: the factory's one token. It reads the PR and the
-#     ticket, pushes the review's commits, opens a fallback PR, posts the
-#     verdict and the inline comments, and marks the PR ready. The built-in
-#     GITHUB_TOKEN could not open the fallback PR, and the labels it applies
-#     would start no workflow.
-#   secrets.GITHUB_TOKEN: supplied by Actions, used only for the checkout.
+#   secrets.FACTORY_PAT: the factory's one token, used from prepare, publish
+#     and finish only. It reads the PR and the ticket, pushes the review's
+#     commits, opens a fallback PR, posts the verdict and the inline
+#     comments, and marks the PR ready. The built-in GITHUB_TOKEN could not
+#     open the fallback PR, and the labels it applies would start no
+#     workflow.
+#   secrets.GITHUB_TOKEN: supplied by Actions, used only for the review job's
+#     checkout. Scoped per job below.
 #   The `agent:review` label. No workflow can create the label that starts
 #     it; scripts/setup-factory.sh creates it once.
 #
 # WHERE THE TOKENS GO
-#   As in agent-implement.yml: GH_TOKEN is set on the steps that call GitHub,
-#   never on the job. The agent's step, and every step that runs code the PR
-#   or the agent wrote, has no GitHub token in its environment. The checkout
-#   keeps no credentials, and the push hands git the token for that one
-#   command, with hooks off.
+#   As in agent-implement.yml, the job split does the work: the review
+#   job never mentions FACTORY_PAT, so the machine the agent runs on, with
+#   the PR's code checked out, never holds it. A job is handed only the
+#   secrets it uses (#43 checked this). The jobs that hold the PAT run
+#   nothing the PR or the agent wrote: they check nothing out, push from the
+#   bundle through an empty bare repository with hooks off, and read the
+#   verdict and the comments as text.
 #
-#   That keeps the token out of the agent's way. It is not a wall: the agent
-#   shares the machine with the steps that push and post. The real defence is
-#   who can reach the agent: same-repo PRs only, and a label only a
-#   collaborator can apply.
+#   The other defence is who can reach the agent: same-repo PRs only, and a
+#   label only a collaborator can apply.
 #
 # A CAUTION THAT COMES WITH IT
 #   `pull_request` (not `pull_request_target`), so a PR from a fork would run
-#   with a read-only token and no secrets. The job skips fork PRs outright
+#   with a read-only token and no secrets. The run skips fork PRs outright
 #   rather than failing at its first `gh` call. Reviewing a stranger's code
 #   with a writable token is how a factory gets robbed. Do not switch this to
 #   `pull_request_target`.
@@ -84,48 +100,48 @@ on:
   pull_request:
     types: [labeled]
 
-# A ceiling on the GITHUB_TOKEN, which only checks the code out. Everything
-# that writes goes through FACTORY_PAT.
-permissions:
-  contents: read # the checkout
+# One review per PR, never cancelled: a cancelled review would lose the
+# commits it made. A fresh `agent:review` waits for the one running. Every
+# other label, including the ones this run applies itself, gets a throwaway
+# group of its own, so it can never replace a waiting retry.
+concurrency:
+  group: ${{ github.event.label.name == 'agent:review' && format('agent-review-{0}', github.event.pull_request.number) || format('ignore-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+# Nothing by default. Only the review job asks for something: the read its
+# checkout needs. Everything that writes goes through FACTORY_PAT.
+permissions: {}
+
+env:
+  GH_REPO: ${{ github.repository }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  BRANCH: ${{ github.event.pull_request.head.ref }}
+  # Where the fixes go if the push to BRANCH is rejected. New every run.
+  FALLBACK_BRANCH: ${{ github.event.pull_request.head.ref }}-${{ github.run_id }}
+  BASE_REF: ${{ github.event.pull_request.base.ref }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  review:
+  prepare:
     # Every other label stops here, for free. So does a PR from a fork.
     if: >-
       github.event.label.name == 'agent:review'
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    # One review per PR, never cancelled: a cancelled review would lose the
-    # commits it made. A fresh `agent:review` waits for the one running. On
-    # the job, not the workflow, as in agent-implement.yml: a group holds one
-    # pending run, and the label events this run makes itself would otherwise
-    # replace a waiting retry.
-    concurrency:
-      group: agent-review-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
-    timeout-minutes: 30
+    timeout-minutes: 5
+
+    # No checkout and no agent. It reads the PR and the ticket and moves
+    # labels with FACTORY_PAT, which is why it is a job of its own.
+    permissions: {}
 
     env:
-      GH_REPO: ${{ github.repository }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      BRANCH: ${{ github.event.pull_request.head.ref }}
-      # Where the fixes go if the push to BRANCH is rejected. New every run.
-      FALLBACK_BRANCH: ${{ github.event.pull_request.head.ref }}-${{ github.run_id }}
-      BASE_REF: ${{ github.event.pull_request.base.ref }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      # Claude Code and agent-browser. Only the agent's step puts this on its
-      # PATH, so the steps holding FACTORY_PAT never run a `gh` or `git` from
-      # a directory the agent can write to.
-      TOOLS_PREFIX: /home/runner/.factory-tools
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
 
     steps:
       - name: Transition labels
         # The trigger comes off, so putting it back on is how you retry.
         # `agent:in-progress` goes on until the run ends, however it ends.
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: |
           # The state labels may not exist yet. Existing ones are left as they are.
           gh label create "agent:in-progress" --color FBCA04 \
@@ -136,18 +152,7 @@ jobs:
           gh pr edit "$PR_NUMBER" --remove-label "agent:blocked" || true
           gh pr edit "$PR_NUMBER" --add-label "agent:in-progress"
 
-      - name: Checkout the pull request
-        uses: actions/checkout@v4
-        with:
-          # The PR's head, so the review's fixes are commits on top of it.
-          # Full history: the review diffs it against the base.
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
       - name: Collect the spec
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: |
           set -euo pipefail
           # The other two sources need no step. The diff the agent takes
@@ -160,6 +165,7 @@ jobs:
           # axis reports "no spec available" rather than inventing one. As
           # with the implementer's ticket, only comments from people with
           # write access get in, and the factory's status comments do not.
+          mkdir -p /tmp/spec
           gh pr view "$PR_NUMBER" --json body --jq .body > /tmp/pr-body.md
           issue=$(grep -oiE '(close[sd]?|fix(es|ed)?|resolve[sd]?) #[0-9]+' /tmp/pr-body.md \
             | head -n1 | grep -oE '[0-9]+' || true)
@@ -174,12 +180,50 @@ jobs:
                        then "\n\n## Comments\n"
                          + ([.comments[] | "\n### " + .author.login + " (" + .createdAt + ")\n\n" + .body + "\n"] | join(""))
                        else "" end)
-                ' > /tmp/review-spec.md
+                ' > /tmp/spec/review-spec.md
           else
             echo "No spec available: this PR does not say which ticket it closes." \
-              > /tmp/review-spec.md
+              > /tmp/spec/review-spec.md
           fi
-          cat /tmp/review-spec.md
+          cat /tmp/spec/review-spec.md
+
+      - name: Hand the spec to the review job
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-spec
+          path: /tmp/spec/review-spec.md
+
+  review:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # No FACTORY_PAT anywhere in this job. Keep it that way.
+    permissions:
+      contents: read # the checkout
+
+    env:
+      # Claude Code and agent-browser. Only the agent's step puts this on its
+      # PATH.
+      TOOLS_PREFIX: /home/runner/.factory-tools
+
+    steps:
+      - name: Take the spec from the prepare job
+        # The agent reads /tmp/review-spec.md.
+        uses: actions/download-artifact@v4
+        with:
+          name: review-spec
+          path: /tmp
+
+      - name: Checkout the pull request
+        uses: actions/checkout@v4
+        with:
+          # The PR's head, so the review's fixes are commits on top of it.
+          # Full history: the review diffs it against the base, and the
+          # bundle needs nothing the publish job lacks.
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
       # Reads the pnpm version from `packageManager` in package.json.
       - name: Setup pnpm
@@ -255,28 +299,110 @@ jobs:
           PATH="$TOOLS_PREFIX/bin:$PATH" \
             pnpm exec tsx .sandcastle/agent-workflows/review/review.ts
 
-      - name: Push the review's fixes
-        id: push
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      - name: Bundle the review's fixes
+        # Always: a verdict the agent wrote before it broke still gets
+        # posted. Publish pushes the commits only when this job succeeded.
+        if: always()
         run: |
           set -euo pipefail
+          mkdir -p /tmp/handoff
           if [ -n "$(git status --porcelain)" ]; then
             echo "::warning::The review left uncommitted changes. Only its commits are pushed."
             git status --short
           fi
           if [ "$(git rev-parse HEAD)" = "$HEAD_SHA" ]; then
             echo "The review made no commits. Nothing to push."
+          else
+            git log --oneline "$HEAD_SHA..HEAD"
+            # The whole history up to HEAD, so the bundle stands alone:
+            # publish fetches it into an empty repository.
+            git bundle create /tmp/handoff/agent.bundle HEAD
+          fi
+          [ -s /tmp/review-verdict.md ] && cp /tmp/review-verdict.md /tmp/handoff/
+          [ -s "$RUNNER_TEMP/review-comments.json" ] && cp "$RUNNER_TEMP/review-comments.json" /tmp/handoff/
+          shopt -s nullglob
+          pngs=(/tmp/evidence/*.png)
+          if [ "${#pngs[@]}" -gt 0 ]; then
+            mkdir -p /tmp/handoff/evidence
+            cp "${pngs[@]}" /tmp/handoff/evidence/
+          fi
+          ls -R /tmp/handoff
+
+      - name: Hand the fixes and the verdict to the publish job
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-handoff
+          path: /tmp/handoff
+          if-no-files-found: ignore
+
+  publish:
+    needs: [prepare, review]
+    # Always, once the run is for this label: a run that broke anywhere,
+    # prepare included, still gets its no-verdict note on the PR. Each step
+    # below says what else it needs.
+    if: always() && needs.prepare.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # No checkout and no agent, so the GITHUB_TOKEN gets nothing. This job
+    # writes with FACTORY_PAT.
+    permissions: {}
+
+    outputs:
+      fallback: ${{ steps.push.outputs.fallback }}
+      verdict: ${{ steps.verdict.outputs.posted }}
+
+    env:
+      # On the job, which is fine here: nothing in it runs code from an
+      # agent, the PR or a checkout. It reads git objects, Markdown, JSON and
+      # PNGs.
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      REVIEWED: ${{ needs.review.result == 'success' }}
+
+    steps:
+      - name: Take the fixes and the verdict from the review job
+        # A pattern, not a name, so a review that broke before uploading
+        # anything finds nothing. And never fatal: the no-verdict note below
+        # has to go out even then.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: review-handoff
+          path: /tmp/handoff
+          merge-multiple: true
+
+      - name: Push the review's fixes
+        id: push
+        if: env.REVIEWED == 'true'
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/handoff/agent.bundle ]; then
+            echo "The review made no commits. Nothing to push."
             exit 0
           fi
-          git log --oneline "$HEAD_SHA..HEAD"
-          # The token exists for these commands. Hooks are off, so nothing
-          # the PR or the agent wrote runs while it does.
+          # An empty bare repository: no working tree, and with no template,
+          # no hooks directory. Hooks are switched off on top of that, so
+          # nothing the PR or the agent wrote runs while the token is here.
+          git init -q --bare --template= /tmp/repo
+          git() { command git -C /tmp/repo -c core.hooksPath=/dev/null "$@"; }
+          git fetch -q /tmp/handoff/agent.bundle "HEAD:refs/heads/review"
+          # The bundle came from the machine the agent ran on, so it is
+          # checked again here: the fixes have to sit on top of the head this
+          # run reviewed.
+          if ! git merge-base --is-ancestor "$HEAD_SHA" refs/heads/review; then
+            echo "::error::The bundle does not build on $HEAD_SHA. Refusing to push it."
+            exit 1
+          fi
+          if [ "$(git rev-parse refs/heads/review)" = "$HEAD_SHA" ]; then
+            echo "The review made no commits. Nothing to push."
+            exit 0
+          fi
+          git log --oneline "$HEAD_SHA..refs/heads/review"
           auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           push_to() {
-            git -c core.hooksPath=/dev/null \
-              -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
-              push "https://github.com/${GH_REPO}.git" "HEAD:refs/heads/$1"
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+              push "https://github.com/${GH_REPO}.git" "refs/heads/review:refs/heads/$1"
           }
           # Not a force push: if someone pushed to the branch during the run,
           # this is rejected.
@@ -292,8 +418,6 @@ jobs:
       - name: Open a pull request for the rejected push
         id: fallback
         if: steps.push.outputs.fallback == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: |
           set -euo pipefail
           {
@@ -313,24 +437,28 @@ jobs:
           echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
 
       - name: Post the verdict on the pull request
+        id: verdict
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
           FALLBACK: ${{ steps.push.outputs.fallback }}
           FALLBACK_URL: ${{ steps.fallback.outputs.url }}
         run: |
           set -euo pipefail
-          # No verdict means the run broke. That comment is a status line, not
-          # a review, so it carries the factory's status marker.
-          [ -s /tmp/review-verdict.md ] || \
+          verdict=/tmp/review-verdict.md
+          if [ -s /tmp/handoff/review-verdict.md ]; then
+            cp /tmp/handoff/review-verdict.md "$verdict"
+          else
+            # No verdict means the run broke. That comment is a status line,
+            # not a review, so it carries the factory's status marker.
             echo "The review run produced no verdict. See the logs. Re-add \`agent:review\` to retry. <!-- factory:status -->" \
-              > /tmp/review-verdict.md
+              > "$verdict"
+          fi
           if [ "$FALLBACK" = "true" ]; then
             {
               echo ""
               echo "The push of this review's fixes to \`$BRANCH\` was **rejected**: the branch moved during this run. Nothing was force-pushed."
               echo "The fixes are on \`$FALLBACK_BRANCH\`${FALLBACK_URL:+, opened as ${FALLBACK_URL}}. Labelled \`agent:blocked\`: keep one of the two PRs."
-            } >> /tmp/review-verdict.md
+            } >> "$verdict"
           fi
           {
             echo ""
@@ -338,26 +466,36 @@ jobs:
             echo ""
             echo "Reviewed by the review workflow — [logs](${RUN_URL}). This run"
             echo "saw the diff, the standards and the ticket, and nothing else."
-          } >> /tmp/review-verdict.md
-          # Uploads the agent's screenshots and swaps each /tmp/evidence path
-          # in the body for its URL. nullglob: none means no --attach.
+          } >> "$verdict"
+          # The verdict names each screenshot by the path the agent saved it
+          # to, and --attach matches on that path, so they go back there.
+          # nullglob: none means no --attach.
           shopt -s nullglob
+          mkdir -p /tmp/evidence
           attach=()
-          for png in /tmp/evidence/*.png; do attach+=(--attach "$png"); done
-          gh pr comment "$PR_NUMBER" --body-file /tmp/review-verdict.md "${attach[@]}"
+          for png in /tmp/handoff/evidence/*.png; do
+            cp "$png" /tmp/evidence/
+            attach+=(--attach "/tmp/evidence/$(basename "$png")")
+          done
+          gh pr comment "$PR_NUMBER" --body-file "$verdict" "${attach[@]}"
+          # A real verdict carries its own `## Standards:` heading. The
+          # no-verdict note above does not, and is not a review.
+          if grep -q '^## Standards:' "$verdict"; then
+            echo "posted=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Post the inline comments
         # One review, event COMMENT, with a comment on each line the agent
         # left a finding on. They go where the fixes went: the fallback PR if
         # the push was rejected. review.ts already dropped every comment
         # outside the diff, because GitHub rejects the whole review for one.
+        if: env.REVIEWED == 'true'
         env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
           TARGET: ${{ steps.fallback.outputs.number || github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          review="$RUNNER_TEMP/review-comments.json"
-          if [ "$(jq '.comments | length' "$review")" -eq 0 ]; then
+          review=/tmp/handoff/review-comments.json
+          if [ ! -s "$review" ] || [ "$(jq '.comments | length' "$review")" -eq 0 ]; then
             echo "No inline comments: the review fixed or passed everything."
             exit 0
           fi
@@ -365,46 +503,44 @@ jobs:
             --input "$review" --silent
 
       - name: Mark the pull request ready
-        # No `always()` here. If the agent broke, nobody has read the PR, so
-        # it stays a draft. And it goes ready only when a real verdict was
-        # posted: the no-verdict note above is not a review. The verdict's own
-        # `## Standards:` heading is how we tell. Pass or fail does not
-        # matter. This step runs nothing the agent or the PR wrote: it reads
-        # the verdict as text and calls `gh`.
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
-        run: |
-          set -euo pipefail
-          if grep -q '^## Standards:' /tmp/review-verdict.md; then
-            gh pr ready "$PR_NUMBER"
-          else
-            echo "No verdict, so the PR stays a draft."
-          fi
+        # Not when the review broke: then nobody has read the PR, so it stays
+        # a draft. And only when a real verdict was posted. Pass or fail does
+        # not matter.
+        if: env.REVIEWED == 'true' && steps.verdict.outputs.posted == 'true'
+        run: gh pr ready "$PR_NUMBER"
 
+  # However the jobs above ended, this one closes the run out.
+  finish:
+    needs: [prepare, review, publish]
+    if: always() && needs.prepare.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent. It writes labels and comments with FACTORY_PAT.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+
+    steps:
       - name: Mark blocked on failure or a rejected push
         # A timeout or a cancelled run counts too: neither finished the
         # review. A rejected push is blocked as well: the fixes are on another
         # branch, and a person has to choose between the two PRs.
-        if: ${{ !success() || steps.push.outputs.fallback == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+        if: env.FAILED == 'true' || needs.publish.outputs.fallback == 'true'
         run: gh pr edit "$PR_NUMBER" --add-label "agent:blocked" || true
 
       - name: Report a failure after the verdict
         # A run that broke before its verdict already said so in the
         # no-verdict note. One that broke after it (the fallback push, the
         # inline comments) has only a verdict that reads as a success.
-        if: ${{ !success() }}
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+        if: env.FAILED == 'true' && needs.publish.outputs.verdict == 'true'
         run: |
-          grep -q '^## Standards:' /tmp/review-verdict.md 2>/dev/null || exit 0
           gh pr comment "$PR_NUMBER" --body \
             "Review run **failed** after posting its verdict — [logs](${RUN_URL}). The PR stays a draft. Re-add \`agent:review\` to retry. <!-- factory:status -->" \
             || true
 
       - name: Always remove in-progress
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: gh pr edit "$PR_NUMBER" --remove-label "agent:in-progress" || true
