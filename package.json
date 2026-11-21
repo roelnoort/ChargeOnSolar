@@ -1,0 +1,29 @@
+{
+  "name": "charge-on-solar",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "tsc -p .sandcastle/agent-workflows",
+    "typecheck:all": "pnpm -r --include-workspace-root --if-present run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "check": "biome check . && pnpm typecheck:all && vitest run"
+  },
+  "devDependencies": {
+    "@ai-hero/sandcastle": "^0.14.0",
+    "@biomejs/biome": "^2.6.8",
+    "@types/node": "^24.19.2",
+    "husky": "^9.1.7",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1",
+    "zod": "^4.6.7"
+  }
+}
