@@ -57,7 +57,51 @@ _To be written in #40._
 
 ### Implement
 
-_To be written in #38._
+Ticket in, draft PR out. Workflow: `.github/workflows/agent-implement.yml`.
+Agent: `.sandcastle/agent-workflows/implement/`, a Sandcastle script and its
+prompt.
+
+**Trigger.** Put `agent:implement` on an issue, or let explore do it for an
+easy ticket. Any other label does nothing. One run per issue at a time: a
+second label event waits for the first run to finish.
+
+**What happens.**
+
+1. `agent:implement` and `agent:blocked` come off the issue and
+   `agent:in-progress` goes on.
+2. The repo is installed with pnpm on Node 24, with Claude Code and
+   agent-browser restored from a weekly cache. The run fails here if
+   `pnpm install` did not install the pre-commit hook.
+3. The ticket is written to a file for the agent: the issue and the comments
+   from people with write access, explore's findings included. The factory's
+   status comments are left out.
+4. The agent reads the glossary, the ADRs and the coding standards, builds the
+   ticket test-first against the fakes in the test harness, and commits
+   through the pre-commit hook. It never talks to real devices and holds no
+   GitHub token.
+5. A run with no commits, or with uncommitted changes left over, fails here.
+6. The commits are pushed to a new branch, `agent/issue-<n>-<run id>`, and a
+   **draft** PR opens with the agent's summary, any screenshots, and
+   `Closes #<n>`.
+7. The PR gets `agent:review`, which starts the reviewer. If that fails, the
+   run fails: there is no silent fallback.
+8. The issue gets a status comment linking the run's logs, and
+   `agent:in-progress` comes off.
+
+**Labels.**
+
+| Label               | When                                    |
+| ------------------- | --------------------------------------- |
+| `agent:implement`   | You add it; removed when the run starts |
+| `agent:in-progress` | On the issue while the run is going     |
+| `agent:blocked`     | On the issue if the run failed          |
+| `agent:review`      | On the PR once it is open               |
+
+**Retry.** A failed run leaves `agent:blocked` and a comment linking the logs.
+Re-add `agent:implement` to retry; each retry pushes to a branch of its own,
+so it never collides with an earlier run. If the PR was opened but the
+hand-off failed, the comment says so: add `agent:review` to the PR instead, or
+a retry opens a second PR.
 
 ### Review
 
