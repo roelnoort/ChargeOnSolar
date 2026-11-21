@@ -66,17 +66,20 @@ picks up only the issues labelled since.
 
 **What happens.**
 
-1. The batch is listed with the factory token, before the agent exists. Each
-   issue and the comments from people with write access go to a file for the
-   agent, without the factory's status comments. Each issue swaps
-   `agent:explore` (and any `agent:blocked`) for `agent:in-progress`.
-2. The repo is installed as in implement. The agent reads the glossary, the
-   ADRs and the coding standards, groups related tickets, explores each group
-   with a subagent, and hands back a plan: one entry per issue with a findings
+1. A list job, with no agent, lists the batch with the factory token. Each
+   issue and the comments from people with write access go into a file that
+   is handed to the explore job, without the factory's status comments. Each
+   issue swaps `agent:explore` (and any `agent:blocked`) for
+   `agent:in-progress`.
+2. The explore job installs the repo as in implement. It reads the shared
+   tools cache but never saves to it, so nothing it does can reach a later
+   implement or review run. The agent reads the glossary, the ADRs and the
+   coding standards, groups related tickets, explores each group with a
+   subagent, and hands back a plan: one entry per issue with a findings
    comment, a tag (`easy-call`, `needs-a-human` or `blocked`) and, for a
-   duplicate, the surviving issue it duplicates. It holds no GitHub token, the
-   job's built-in token can only read the code, and it writes nothing outside
-   `/tmp`. It never talks to real devices.
+   duplicate, the surviving issue it duplicates. The factory token never
+   enters this job, the job's built-in token can only read the code, and the
+   agent writes nothing outside `/tmp`. It never talks to real devices.
 3. A separate apply job, with no agent and no checkout, checks the plan with
    `plan-check.ts`: every batch issue exactly once, known tags, no empty
    comment, every duplicate pointing at a surviving issue in the batch. Any

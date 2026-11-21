@@ -19,19 +19,23 @@ name: Agent — Explore The Tickets
 #   It reads. It reads the tickets and the code they would touch, and hands
 #   back a plan: one entry per ticket, with the comment to post on it. It does
 #   not edit a file, open a branch or open a pull request. It does not even
-#   post its own comments. There are three jobs:
+#   post its own comments. There are four jobs:
 #
-#     explore   runs the agent. The agent holds no GitHub token at all.
+#     list      runs no agent. It lists the batch, hands it on as a file, and
+#               moves the labels.
+#     explore   runs the agent. The job holds no GitHub token that can write.
 #     apply     runs no agent and checks nothing out. It checks the plan, and
 #               only then writes.
 #     finish    marks what is left `agent:blocked` on failure, and always
 #               takes `agent:in-progress` off.
 #
 #   Read where FACTORY_PAT goes before anything else: it is the enforcement,
-#   not the description. In the explore job it goes to one step, the one that
-#   lists the batch, which runs before the agent exists and runs nothing but
-#   `gh` and `jq`. The job's GITHUB_TOKEN can read the code and nothing else.
-#   So the agent has nothing to write with.
+#   not the description. The explore job never mentions it, not even in a
+#   step that runs before the agent. A job is handed only the secrets it
+#   uses, so the machine the agent runs on never holds the PAT, and an agent
+#   that took that machine over would find no key to steal. The job's
+#   GITHUB_TOKEN can read the code and nothing else. So the agent has nothing
+#   to write with.
 #
 #   No real devices. The agent explores against the fakes in the test
 #   harness, and no device or vendor credentials exist in Actions.
@@ -59,7 +63,7 @@ name: Agent — Explore The Tickets
 #   prompt asking it to be careful.
 #
 # THE LABELS WHILE IT RUNS
-#   When the batch is listed, each issue swaps `agent:explore` for
+#   When list runs, each issue swaps `agent:explore` for
 #   `agent:in-progress`. Apply swaps `agent:in-progress` for the issue's next
 #   label. If the run fails, finish marks every issue still in progress
 #   `agent:blocked` with a comment linking the logs. Re-add `agent:explore` to
@@ -74,7 +78,8 @@ name: Agent — Explore The Tickets
 #     agent or how it is billed, see
 #     .sandcastle/agent-workflows/shared/common.ts.
 #   secrets.FACTORY_PAT: the fine-grained PAT the whole factory uses. Every
-#     call this workflow makes to GitHub uses it: listing the batch, fetching
+#     call this workflow makes to GitHub uses it, from list, apply and finish
+#     only, never from explore: listing the batch, fetching
 #     the plan check, posting the findings, moving the labels, closing the
 #     duplicates. One hop is why it exists at all: a label applied with the
 #     built-in GITHUB_TOKEN starts no workflow, and `agent:implement` has to
@@ -102,36 +107,33 @@ concurrency:
   group: ${{ github.event.label.name == 'agent:explore' && 'agent-explore' || format('ignore-{0}', github.run_id) }}
   cancel-in-progress: false
 
-# Nothing by default. The explore job asks for the read it needs.
+# Nothing by default. Only the explore job asks for something: the read its
+# checkout needs.
 permissions: {}
 
 jobs:
-  explore:
+  list:
     # Every other label on every other issue stops here, for free.
     if: github.event.label.name == 'agent:explore'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
 
-    permissions:
-      contents: read # the checkout. The tickets are read with FACTORY_PAT.
+    # No checkout and no agent. It reads issues and moves labels with
+    # FACTORY_PAT, which is why it is a job of its own: see WHAT IT DOES.
+    permissions: {}
 
-    # The batch it took, and the plan it came back with. Apply reads both.
+    # The batch, for every job after this one. Written before any label
+    # moves, so finish knows the batch even if this job fails halfway.
     outputs:
       batch: ${{ steps.batch.outputs.numbers }}
-      plan: ${{ steps.plan.outputs.json }}
 
     env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
       GH_REPO: ${{ github.repository }}
-      # Claude Code and agent-browser. Only the agent's step puts this on its
-      # PATH, as in agent-implement.yml.
-      TOOLS_PREFIX: /home/runner/.factory-tools
 
     steps:
       - name: List the batch
         id: batch
-        env:
-          # The PAT, before the agent exists. Nothing after this step gets it.
-          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
         run: |
           set -euo pipefail
           # Labels often go on several at once. Let them all land.
@@ -151,60 +153,91 @@ jobs:
                 and (.body | contains("<!-- factory:status -->") | not))))' \
             > /tmp/explore/issues.json
 
-          # Written before any label moves, so finish knows the batch even if
-          # this step fails halfway through the loop below.
           numbers="$(jq -c '[.[].number] | sort' /tmp/explore/issues.json)"
           echo "Batch: $numbers"
           echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
 
-          # The trigger comes off, so putting it back on is how you retry.
-          # `agent:in-progress` stays on until apply moves the issue on.
-          if [ "$numbers" != "[]" ]; then
-            # The state labels may not exist yet. Existing ones are left as they are.
-            gh label create "agent:in-progress" --color FBCA04 \
-              --description "An agent is working on this right now" || true
-            gh label create "agent:blocked" --color B60205 \
-              --description "An agent run failed here. Its comment says how to retry" || true
-          fi
-          for n in $(jq -r '.[]' <<< "$numbers"); do
+      - name: Hand the batch to the explore job
+        if: steps.batch.outputs.numbers != '[]'
+        uses: actions/upload-artifact@v4
+        with:
+          name: explore-batch
+          path: /tmp/explore/issues.json
+
+      - name: Transition labels
+        # The trigger comes off, so putting it back on is how you retry.
+        # `agent:in-progress` stays on until apply moves the issue on.
+        if: steps.batch.outputs.numbers != '[]'
+        env:
+          BATCH: ${{ steps.batch.outputs.numbers }}
+        run: |
+          set -euo pipefail
+          # The state labels may not exist yet. Existing ones are left as they are.
+          gh label create "agent:in-progress" --color FBCA04 \
+            --description "An agent is working on this right now" || true
+          gh label create "agent:blocked" --color B60205 \
+            --description "An agent run failed here. Its comment says how to retry" || true
+          for n in $(jq -r '.[]' <<< "$BATCH"); do
             gh issue edit "$n" --remove-label "agent:explore" || true
             gh issue edit "$n" --remove-label "agent:blocked" || true
             gh issue edit "$n" --add-label "agent:in-progress"
           done
 
+  explore:
+    needs: list
+    if: needs.list.outputs.batch != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    # No FACTORY_PAT anywhere in this job. Keep it that way.
+    permissions:
+      contents: read # the checkout
+
+    # The plan the agent came back with. Apply reads it.
+    outputs:
+      plan: ${{ steps.plan.outputs.json }}
+
+    env:
+      # Claude Code and agent-browser. Only the agent's step puts this on its
+      # PATH, as in agent-implement.yml.
+      TOOLS_PREFIX: /home/runner/.factory-tools
+
+    steps:
+      - name: Take the batch from the list job
+        uses: actions/download-artifact@v4
+        with:
+          name: explore-batch
+          path: /tmp/explore
+
       - name: Checkout
-        if: steps.batch.outputs.numbers != '[]'
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       # Reads the pnpm version from `packageManager` in package.json.
       - name: Setup pnpm
-        if: steps.batch.outputs.numbers != '[]'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js (version from .node-version)
-        if: steps.batch.outputs.numbers != '[]'
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: pnpm
 
       - name: Install dependencies
-        if: steps.batch.outputs.numbers != '[]'
         run: pnpm install --frozen-lockfile
 
       - name: Week of the year
-        # Refreshes the tools cache weekly, so Claude Code does not go stale.
-        if: steps.batch.outputs.numbers != '[]'
+        # Same weekly key as agent-implement.yml, so this job reads the cache
+        # the other factory workflows fill.
         id: week
         run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
 
-      # Restore and save are split so the cache is saved right after the
-      # install, before the agent runs. Same key as agent-implement.yml, so
-      # every factory workflow shares one cache.
+      # Restore only, never save. The cache is shared with implement and
+      # review, whose jobs hold FACTORY_PAT, and this job runs an agent that
+      # has just read untrusted issues. Nothing from here goes into it. On a
+      # miss the tools are installed for this run alone.
       - name: Restore Claude Code and agent-browser
-        if: steps.batch.outputs.numbers != '[]'
         id: tools-cache
         uses: actions/cache/restore@v4
         with:
@@ -214,23 +247,13 @@ jobs:
           key: factory-tools-${{ runner.os }}-${{ steps.week.outputs.week }}
 
       - name: Install Claude Code and agent-browser
-        if: steps.batch.outputs.numbers != '[]' && steps.tools-cache.outputs.cache-hit != 'true'
+        if: steps.tools-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           npm install -g --prefix "$TOOLS_PREFIX" @anthropic-ai/claude-code agent-browser
           "$TOOLS_PREFIX/bin/agent-browser" install
 
-      - name: Save Claude Code and agent-browser
-        if: steps.batch.outputs.numbers != '[]' && steps.tools-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ env.TOOLS_PREFIX }}
-            ~/.agent-browser
-          key: factory-tools-${{ runner.os }}-${{ steps.week.outputs.week }}
-
       - name: Check the tools run
-        if: steps.batch.outputs.numbers != '[]'
         run: |
           "$TOOLS_PREFIX/bin/claude" --version
           "$TOOLS_PREFIX/bin/agent-browser" --version
@@ -238,7 +261,6 @@ jobs:
       - name: Explore
         # No GitHub token here, and no device or vendor credentials anywhere.
         # The plan comes back as plan.json, shaped by plan-schema.ts.
-        if: steps.batch.outputs.numbers != '[]'
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           OUTPUT_DIR: ${{ runner.temp }}
@@ -248,14 +270,12 @@ jobs:
 
       - name: Hand the plan to the apply job
         id: plan
-        if: steps.batch.outputs.numbers != '[]'
         run: |
           set -euo pipefail
           # One line of JSON: newlines inside comments stay escaped.
           echo "json=$(jq -c . "$RUNNER_TEMP/plan.json")" >> "$GITHUB_OUTPUT"
 
       - name: Hand the screenshots to the apply job
-        if: steps.batch.outputs.numbers != '[]'
         uses: actions/upload-artifact@v4
         with:
           name: explore-evidence
@@ -263,8 +283,7 @@ jobs:
           if-no-files-found: ignore
 
   apply:
-    needs: explore
-    if: needs.explore.outputs.batch != '[]'
+    needs: [list, explore]
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -312,7 +331,7 @@ jobs:
           # Through env, never pasted into the script. A `${{ }}` inside
           # `run:` is text bash runs, and the plan was written by an agent
           # that has just read a pile of untrusted issues.
-          BATCH: ${{ needs.explore.outputs.batch }}
+          BATCH: ${{ needs.list.outputs.batch }}
           PLAN: ${{ needs.explore.outputs.plan }}
         run: |
           set -euo pipefail
@@ -393,8 +412,8 @@ jobs:
   # The jobs above are one run, so the run's end is here: the same two label
   # steps that close every other agent workflow, over the whole batch.
   finish:
-    needs: [explore, apply]
-    if: always() && needs.explore.outputs.batch != '' && needs.explore.outputs.batch != '[]'
+    needs: [list, explore, apply]
+    if: always() && needs.list.outputs.batch != '' && needs.list.outputs.batch != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -404,7 +423,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.FACTORY_PAT }}
       GH_REPO: ${{ github.repository }}
-      BATCH: ${{ needs.explore.outputs.batch }}
+      BATCH: ${{ needs.list.outputs.batch }}
       RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
