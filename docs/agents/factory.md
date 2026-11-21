@@ -44,6 +44,11 @@ after which an agent can still build it.
 Two repository secrets, `CLAUDE_CODE_OAUTH_TOKEN` and `FACTORY_PAT`, and the
 four trigger labels. Without them nothing fires.
 
+Run `scripts/setup-factory.sh` to set them up. It walks you through creating
+the fine-grained token, saves both secrets, creates the trigger labels
+(existing labels are left untouched) and optionally protects `main`. It is
+safe to re-run, e.g. when a token expires.
+
 ## Workflows
 
 ### Explore
