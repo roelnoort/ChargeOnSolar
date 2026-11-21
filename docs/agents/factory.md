@@ -105,7 +105,69 @@ a retry opens a second PR.
 
 ### Review
 
-_To be written in #39._
+A review with no memory of the build. Workflow:
+`.github/workflows/agent-review.yml`. Agent:
+`.sandcastle/agent-workflows/review/`, a Sandcastle script and its prompt,
+which loads the `code-review` skill.
+
+**Trigger.** Put `agent:review` on a pull request, or let implement do it for
+the PR it opened. Any other label does nothing. One review per PR at a time,
+never cancelled: a second label event waits for the first run to finish. PRs
+from forks are never reviewed.
+
+**What it reads.** Only three things, each fetched by the run itself: the
+diff against the base branch, [CODING_STANDARDS.md](../../CODING_STANDARDS.md),
+and the issue the PR body says it closes (`Closes #n`), with comments from
+people with write access. With no `Closes #n`, the Spec axis reports "no spec
+available" and is never guessed. It never sees the implementer's session.
+
+**What happens.**
+
+1. `agent:review` and `agent:blocked` come off the PR and `agent:in-progress`
+   goes on.
+2. The PR's head is checked out and installed as in implement. The run fails
+   here if `pnpm install` did not install the pre-commit hook.
+3. The agent reviews on two separate axes, standards and spec. It fixes what
+   it can as commits through the pre-commit hook, and writes a verdict. It
+   holds no GitHub token and never talks to real devices.
+4. The fixes are pushed onto the PR's branch, never forced. If someone pushed
+   to the branch during the run, the push is rejected and the fixes go to a
+   new branch, `<pr branch>-<run id>`, opened as a draft PR against the same
+   base. The original PR gets `agent:blocked`: keep one of the two.
+5. The verdict is posted as a comment. Findings it left unfixed are posted as
+   one review with inline comments, on the PR the fixes went to. Comments on
+   lines outside the diff are dropped, because GitHub rejects the whole
+   review for one.
+6. The PR is marked **ready for review**, on a fail as well as a pass, but
+   only when a real verdict was posted. If the agent broke, the PR stays a
+   draft. Ready is not approved: the merge stays yours.
+7. `agent:in-progress` comes off.
+
+**The verdict.**
+
+```
+## Standards: PASS | CHANGES REQUESTED
+## Spec: PASS | CHANGES REQUESTED | NO SPEC AVAILABLE
+## Rules this review wanted and could not find
+```
+
+Each finding says whether it was fixed (with its commit) or left (with its
+file and line), citing the standard by heading. The last section lists what
+the reviewer wanted to fail the change for that no standard covers:
+candidates for new rules.
+
+**Labels.**
+
+| Label               | When                                                 |
+| ------------------- | ---------------------------------------------------- |
+| `agent:review`      | Implement or you add it; removed when the run starts |
+| `agent:in-progress` | On the PR while the run is going                     |
+| `agent:blocked`     | On the PR if the run failed or its push was rejected |
+
+**Retry.** A failed run leaves `agent:blocked` and a comment linking the logs;
+the PR stays a draft. Re-add `agent:review` to retry. After a rejected push,
+close one of the two PRs, then re-add `agent:review` to the one you keep if
+you want it reviewed again.
 
 ### Implement spec
 
