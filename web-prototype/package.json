@@ -1,0 +1,17 @@
+{
+  "name": "chargeonsolar-ui-prototype",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE, throw away. Answers 'UI: day timeline and live view' (issue #19). Made-up data only.",
+  "scripts": {
+    "dev": "vite --open"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.0",
+    "vite": "^8.0.0"
+  }
+}
