@@ -6,6 +6,10 @@ name: Agent — Implement A Ticket
 #   Someone puts the `agent:implement` label on an issue. That is the whole
 #   interface. No comment, no trigger phrase, no @mention: one label.
 #
+#   agent-implement-spec.yml also calls it, as a reusable workflow, for the
+#   next ticket in a spec's queue. It passes `issue_number` and
+#   `spec_number`, and closes the ticket itself once this has succeeded.
+#
 # WHAT IT DOES
 #   Checks the repo out, gives an agent the ticket and the repo's own
 #   verification checks, and opens a DRAFT pull request with whatever the
@@ -87,14 +91,37 @@ name: Agent — Implement A Ticket
 on:
   issues:
     types: [labeled]
+  workflow_call:
+    inputs:
+      issue_number:
+        description: The ticket to build.
+        type: number
+        required: true
+      spec_number:
+        description: The spec whose queue the ticket came from. Only changes how the status comment says to retry.
+        type: number
+        required: true
+    outputs:
+      pr_url:
+        description: The draft pull request, once it is open.
+        value: ${{ jobs.publish.outputs.url }}
+    # Passed by name, not inherited, so it is plain which secrets come in.
+    # As below, only the jobs that mention one are handed it.
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+      FACTORY_PAT:
+        required: true
 
 # One run per ticket, never cancelled. A second `agent:implement` on the same
 # issue waits for the first run to finish rather than building the ticket
-# twice at once. Every other label, including the ones this run applies
-# itself (`agent:in-progress`, `agent:blocked`), gets a throwaway group of its
-# own, so it can never replace a waiting retry.
+# twice at once, and so does a queue run for that ticket. Every other label,
+# including the ones this run applies itself (`agent:in-progress`,
+# `agent:blocked`), gets a throwaway group of its own, so it can never
+# replace a waiting retry. When called, `github.event` is the caller's event,
+# so the inputs are read first.
 concurrency:
-  group: ${{ github.event.label.name == 'agent:implement' && format('agent-implement-{0}', github.event.issue.number) || format('ignore-{0}', github.run_id) }}
+  group: ${{ inputs.issue_number && format('agent-implement-{0}', inputs.issue_number) || (github.event.label.name == 'agent:implement' && format('agent-implement-{0}', github.event.issue.number) || format('ignore-{0}', github.run_id)) }}
   cancel-in-progress: false
 
 # Nothing by default. Only the build job asks for something: the read its
@@ -104,15 +131,18 @@ permissions: {}
 
 env:
   GH_REPO: ${{ github.repository }}
-  ISSUE_NUMBER: ${{ github.event.issue.number }}
+  ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number }}
+  # Empty unless agent-implement-spec.yml called this.
+  SPEC_NUMBER: ${{ inputs.spec_number }}
   # The run id makes the branch new on every run. See WHAT IT DOES.
-  BRANCH: agent/issue-${{ github.event.issue.number }}-${{ github.run_id }}
+  BRANCH: agent/issue-${{ inputs.issue_number || github.event.issue.number }}-${{ github.run_id }}
   RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
   prepare:
-    # Every other label on every other issue stops here, for free.
-    if: github.event.label.name == 'agent:implement'
+    # Every other label on every other issue stops here, for free. A call
+    # from agent-implement-spec.yml always goes on.
+    if: inputs.issue_number || github.event.label.name == 'agent:implement'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -375,6 +405,8 @@ jobs:
           BASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
+          # A scheduled caller's event carries no repository to read it from.
+          base="${BASE_BRANCH:-$(gh repo view "$GH_REPO" --json defaultBranchRef --jq .defaultBranchRef.name)}"
           title="$(gh issue view "$ISSUE_NUMBER" --json title --jq .title)"
           body_file=/tmp/pr-body.md
           if [ -s /tmp/handoff/pr-body.md ]; then
@@ -402,7 +434,7 @@ jobs:
 
           url="$(gh pr create \
             --draft \
-            --base "$BASE_BRANCH" \
+            --base "$base" \
             --head "$BRANCH" \
             --title "$title" \
             --body-file "$body_file" \
@@ -456,6 +488,9 @@ jobs:
               # The pull request exists. Only the hand-off failed, so a new
               # implement run would build a second pull request.
               retry=" The pull request was not handed to the reviewer. Add \`agent:review\` to it to have it reviewed."
+            elif [ -n "$SPEC_NUMBER" ]; then
+              # The queue skips a ticket that is `agent:blocked`.
+              retry=" The queue for #${SPEC_NUMBER} skips this ticket while it is \`agent:blocked\`. Take that label off and start implement-spec again to retry it in the queue, or re-add \`agent:implement\` to build it on its own."
             else
               retry=" Re-add \`agent:implement\` to retry."
             fi

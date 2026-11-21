@@ -1,0 +1,641 @@
+name: Agent — Implement A Spec
+
+# A spec's sub-issues, worked as a queue, one ticket per run. See
+# docs/agents/factory.md#implement-spec.
+#
+# WHAT TRIGGERS IT
+#   Someone puts the `agent:implement-spec` label on a spec issue, or starts
+#   this workflow from the Actions tab, with or without a spec number. Without
+#   one, it works the lowest-numbered open issue labelled
+#   `agent:implement-spec`. The label stays on the spec while its queue is
+#   worked: it is the on-switch, and taking it off stops the queue.
+#
+# THE QUEUE
+#   The queue is the spec's GitHub sub-issues, in sub-issue order. A ticket is
+#   buildable when it is open, not `agent:blocked`, not `agent:in-progress`,
+#   and has no open native "blocked by" dependency. The first buildable one
+#   wins. The rule is .sandcastle/agent-workflows/implement-spec/queue.ts,
+#   and its answer is one of:
+#
+#     split         the spec has no sub-issues yet: split it into some.
+#     build         build ticket N.
+#     drained       every sub-issue is closed. The label comes off the spec.
+#     all-blocked   open tickets remain and none is buildable. Stop.
+#     no-spec       nothing labelled to work. Stop.
+#
+# THE JOBS
+#     survey       runs no agent and checks nothing out. It fetches the spec
+#                  and its sub-issues as JSON, and runs queue.ts on them,
+#                  fetched from this commit. Every job after it branches on
+#                  the answer.
+#     announce     runs no agent. It posts the answer on the spec and moves
+#                  the spec's labels. For a split, it hands the spec on as a
+#                  file.
+#     split        runs the agent, which hands back tickets. It holds no
+#                  FACTORY_PAT.
+#     split-apply  runs no agent and checks nothing out. It checks the
+#                  tickets with split-check.ts, then creates them as
+#                  sub-issues with their "blocked by" dependencies.
+#     build        agent-implement.yml, called as a reusable workflow: the
+#                  same prepare, build, publish and finish jobs, the same
+#                  script and prompt, the same token split. A draft PR with
+#                  `agent:review`.
+#     close        closes the ticket once build has succeeded.
+#     chain        starts this workflow again, after a split or a build.
+#     finish       on a failure at spec level, marks the spec `agent:blocked`
+#                  and reports on it. Always takes `agent:in-progress` off the
+#                  spec after a split.
+#
+#   A failed build leaves its ticket open and `agent:blocked` (build's own
+#   finish job does that), and the chain goes on: the queue skips that ticket
+#   from now on. A failed split does not chain. The spec is split at most
+#   once: announce marks it before the agent starts, and survey reads that
+#   mark.
+#
+# THE CHAIN HAS NO RUN COUNTER
+#   Its only brakes are the queue running out (drained, all-blocked, no-spec)
+#   and chain refusing to go on after a build that left its ticket neither
+#   closed nor `agent:blocked`, because the next run would pick that ticket
+#   again. Take the label off the spec to stop it by hand.
+#
+#   A closed ticket's pull request may not be merged yet. The next ticket is
+#   built from the default branch, without it.
+#
+# WHAT IT NEEDS
+#   secrets.CLAUDE_CODE_OAUTH_TOKEN: the agent's auth token, for split and
+#     build.
+#   secrets.FACTORY_PAT: the fine-grained PAT the whole factory uses, from
+#     survey, announce, split-apply, close, chain and finish, and from build's
+#     own prepare, publish and finish jobs. Never from split, or from build's
+#     build job. `gh workflow run` is why chain needs it: Actions write.
+#   secrets.GITHUB_TOKEN: supplied by Actions, used only for checkouts.
+#   The `agent:implement-spec` label. No workflow can create the label that
+#     starts it; scripts/setup-factory.sh creates it once.
+#
+# WHERE THE TOKENS GO
+#   As in agent-explore.yml and agent-implement.yml. A job is handed only the
+#   secrets it mentions, so the jobs that run an agent (split here, and
+#   build's build job) never mention FACTORY_PAT, and the machines they run on
+#   never hold it. The jobs that hold it check nothing out and run nothing an
+#   agent wrote: split-apply reads the plan as data and runs one file fetched
+#   from this commit.
+#
+# A CAUTION THAT COMES WITH IT
+#   `issues: labeled` fires on issues, which cannot come from a fork. Do not
+#   copy this trigger onto `pull_request_target`.
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: Spec issue number. Empty works the lowest-numbered open issue labelled agent:implement-spec.
+        type: string
+        required: false
+  # Off until the factory has earned it. GitHub disables a schedule in a repo
+  # with no commits for sixty days.
+  # schedule:
+  #   - cron: "0 6 * * 1-5"
+# One run at a time, repo-wide, never cancelled. A run started mid-run waits.
+# Every other label, including the ones this workflow applies itself, gets a
+# throwaway group of its own, so it can never bump the run that is waiting.
+# GitHub keeps one waiting run per group: labelling a second spec while a
+# chain is going replaces the chain's waiting run, and the first spec's queue
+# waits for a run started by hand.
+concurrency:
+  group: ${{ (github.event_name != 'issues' || github.event.label.name == 'agent:implement-spec') && 'agent-implement-spec' || format('ignore-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+# Nothing by default. Only the split and build jobs ask for something: the
+# read their checkouts need.
+permissions: {}
+
+env:
+  GH_REPO: ${{ github.repository }}
+  RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  survey:
+    # Every other label on every other issue stops here, for free.
+    if: github.event_name != 'issues' || github.event.label.name == 'agent:implement-spec'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent. It only fetches JSON with FACTORY_PAT and runs
+    # the decider.
+    permissions: {}
+
+    outputs:
+      # The spec this run was pointed at, written before anything can fail,
+      # so finish can report on it.
+      candidate: ${{ steps.candidate.outputs.number }}
+      decision: ${{ steps.decide.outputs.decision }}
+      kind: ${{ steps.decide.outputs.kind }}
+      spec: ${{ steps.decide.outputs.spec }}
+      ticket: ${{ steps.decide.outputs.ticket }}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+
+    steps:
+      - name: Find the spec
+        id: candidate
+        env:
+          # Through env, never pasted into the script: the input is free text.
+          SPEC_INPUT: ${{ inputs.spec }}
+          EVENT_ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          spec="${SPEC_INPUT:-${EVENT_ISSUE:-}}"
+          if [ -z "$spec" ]; then
+            spec="$(gh issue list --state open --label "agent:implement-spec" --limit 100 \
+              --json number --jq 'map(.number) | min // empty')"
+          fi
+          if [ -n "$spec" ] && ! [[ "$spec" =~ ^[0-9]+$ ]]; then
+            echo "::error::Not an issue number: '$spec'."
+            exit 1
+          fi
+          echo "Spec: ${spec:-none}"
+          echo "number=$spec" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the spec and its sub-issues
+        env:
+          SPEC: ${{ steps.candidate.outputs.number }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SPEC" ]; then
+            echo '{"spec": null, "sub_issues": []}' > /tmp/snapshot.json
+            exit 0
+          fi
+          gh api "repos/$GH_REPO/issues/$SPEC" > /tmp/spec.json
+          # split-apply leaves this mark before it creates anything. Only
+          # people with write access (the factory posts as one) can leave it.
+          gh api --paginate "repos/$GH_REPO/issues/$SPEC/comments?per_page=100" \
+            | jq -s 'add // [] | any(
+                (.author_association | IN("OWNER", "MEMBER", "COLLABORATOR"))
+                and (.body | contains("<!-- factory:split -->")))' \
+            > /tmp/split-before.json
+          # In sub-issue order. Each carries its "blocked by" summary.
+          gh api --paginate "repos/$GH_REPO/issues/$SPEC/sub_issues?per_page=100" \
+            | jq -s 'add // [] | map({number, state, labels: [.labels[].name], issue_dependencies_summary})' \
+            > /tmp/sub-issues.json
+          # A pull request shares the number space, and is not a spec.
+          jq --slurpfile split /tmp/split-before.json --slurpfile subs /tmp/sub-issues.json '{
+              spec: (if has("pull_request") then null else
+                {number, state, labels: [.labels[].name], split_before: $split[0]} end),
+              sub_issues: $subs[0]
+            }' /tmp/spec.json > /tmp/snapshot.json
+          cat /tmp/snapshot.json
+
+      - name: Fetch the decider
+        # The one file the decider needs, at the commit this run is for. It
+        # imports nothing, so plain Node runs it without an install.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/queue
+          gh api -H "Accept: application/vnd.github.raw" \
+            "repos/$GH_REPO/contents/.sandcastle/agent-workflows/implement-spec/queue.ts?ref=$GITHUB_SHA" \
+            > /tmp/queue/queue.ts
+
+      # Node 24 runs TypeScript as-is. Pinned here, not read from
+      # .node-version, because there is no checkout to read it from.
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Decide
+        id: decide
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const { decideQueue } = await import(process.argv[1]);
+            const decision = decideQueue(JSON.parse(readFileSync(process.argv[2], "utf8")));
+            console.log(JSON.stringify(decision));
+          ' /tmp/queue/queue.ts /tmp/snapshot.json > /tmp/decision.json
+          cat /tmp/decision.json
+          {
+            echo "decision=$(jq -c . /tmp/decision.json)"
+            echo "kind=$(jq -r .kind /tmp/decision.json)"
+            echo "spec=$(jq -r '.spec // empty' /tmp/decision.json)"
+            echo "ticket=$(jq -r '.ticket // empty' /tmp/decision.json)"
+          } >> "$GITHUB_OUTPUT"
+
+  announce:
+    needs: survey
+    if: needs.survey.outputs.kind != 'no-spec'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent. It comments and moves labels with FACTORY_PAT.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      DECISION: ${{ needs.survey.outputs.decision }}
+      KIND: ${{ needs.survey.outputs.kind }}
+      SPEC: ${{ needs.survey.outputs.spec }}
+      TICKET: ${{ needs.survey.outputs.ticket }}
+
+    steps:
+      - name: Move the spec's labels
+        run: |
+          set -euo pipefail
+          # The state labels may not exist yet. Existing ones are left as they are.
+          gh label create "agent:in-progress" --color FBCA04 \
+            --description "An agent is working on this right now" || true
+          gh label create "agent:blocked" --color B60205 \
+            --description "An agent run failed here. Its comment says how to retry" || true
+          case "$KIND" in
+            split)
+              gh issue edit "$SPEC" --remove-label "agent:blocked" || true
+              gh issue edit "$SPEC" --add-label "agent:in-progress"
+              ;;
+            build)
+              # The queue is moving again, so an earlier failure at spec
+              # level no longer holds.
+              gh issue edit "$SPEC" --remove-label "agent:blocked" || true
+              ;;
+            drained)
+              gh issue edit "$SPEC" --remove-label "agent:blocked" || true
+              gh issue edit "$SPEC" --remove-label "agent:implement-spec"
+              ;;
+          esac
+
+      - name: Report on the spec
+        run: |
+          set -euo pipefail
+          case "$KIND" in
+            split)
+              line="No sub-issues yet. Splitting this spec into tickets. A spec is split at most once, so if this run fails, add the sub-issues by hand."
+              # The mark. Posted before the agent starts, so however the
+              # split ends, the spec is never split again. Survey reads it.
+              mark=" <!-- factory:split -->"
+              ;;
+            build)
+              line="Next in the queue: #${TICKET}. Building it."
+              ;;
+            drained)
+              line="Queue drained: every sub-issue is closed. \`agent:implement-spec\` is off. Add it again once there are new sub-issues."
+              ;;
+            all-blocked)
+              reasons="$(jq -r '.reasons[] | "- " + .' <<< "$DECISION")"
+              line="$(printf 'Queue stopped: no open sub-issue can be built.\n\n%s\n\nSettle these, then start implement-spec from the Actions tab.' "$reasons")"
+              ;;
+          esac
+          # Tagged, so no agent reads it as part of the spec.
+          gh issue comment "$SPEC" --body "$(printf '%s\n\n[Logs](%s) <!-- factory:status -->%s' "$line" "$RUN_URL" "${mark:-}")"
+
+      - name: Read the spec
+        if: env.KIND == 'split'
+        run: |
+          set -euo pipefail
+          # As in agent-implement.yml: comments from people with write access
+          # only, and none of the factory's status lines.
+          mkdir -p /tmp/spec
+          gh issue view "$SPEC" --json number,title,body,comments \
+            | jq '.comments |= map(select(
+                (.authorAssociation | IN("OWNER", "MEMBER", "COLLABORATOR"))
+                and (.body | contains("<!-- factory:status -->") | not)))' \
+            > /tmp/spec.json
+          jq -r '
+            "# " + .title + "\n\n" + .body
+            + (if (.comments | length) > 0
+               then "\n\n## Comments\n"
+                 + ([.comments[] | "\n### " + .author.login + " (" + .createdAt + ")\n\n" + .body + "\n"] | join(""))
+               else "" end)
+          ' /tmp/spec.json > /tmp/spec/spec.md
+          cat /tmp/spec/spec.md
+
+      - name: Hand the spec to the split job
+        if: env.KIND == 'split'
+        uses: actions/upload-artifact@v4
+        with:
+          name: split-spec
+          path: /tmp/spec/spec.md
+
+  split:
+    needs: [survey, announce]
+    if: needs.survey.outputs.kind == 'split'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    # No FACTORY_PAT anywhere in this job. Keep it that way.
+    permissions:
+      contents: read # the checkout
+
+    outputs:
+      plan: ${{ steps.plan.outputs.json }}
+
+    env:
+      # Claude Code and agent-browser. Only the agent's step puts this on its
+      # PATH, as in agent-implement.yml.
+      TOOLS_PREFIX: /home/runner/.factory-tools
+
+    steps:
+      - name: Take the spec from the announce job
+        # The agent reads /tmp/spec/spec.md.
+        uses: actions/download-artifact@v4
+        with:
+          name: split-spec
+          path: /tmp/spec
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Reads the pnpm version from `packageManager` in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js (version from .node-version)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Week of the year
+        # Same weekly key as agent-implement.yml.
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      # Restore only, never save, as in agent-explore.yml: this job runs an
+      # agent that has just read an issue, and nothing from here goes into
+      # the cache later runs use.
+      - name: Restore Claude Code and agent-browser
+        id: tools-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.TOOLS_PREFIX }}
+            ~/.agent-browser
+          key: factory-tools-${{ runner.os }}-${{ steps.week.outputs.week }}
+
+      - name: Install Claude Code and agent-browser
+        if: steps.tools-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          npm install -g --prefix "$TOOLS_PREFIX" @anthropic-ai/claude-code agent-browser
+          "$TOOLS_PREFIX/bin/agent-browser" install
+
+      - name: Check the tools run
+        run: |
+          "$TOOLS_PREFIX/bin/claude" --version
+          "$TOOLS_PREFIX/bin/agent-browser" --version
+
+      - name: Split the spec
+        # No GitHub token here, and no device or vendor credentials anywhere.
+        # The plan comes back as split-plan.json, shaped by split-schema.ts.
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          OUTPUT_DIR: ${{ runner.temp }}
+        run: |
+          PATH="$TOOLS_PREFIX/bin:$PATH" \
+            pnpm exec tsx .sandcastle/agent-workflows/implement-spec/split.ts
+
+      - name: Hand the plan to the split-apply job
+        id: plan
+        run: |
+          set -euo pipefail
+          # One line of JSON: newlines inside bodies stay escaped.
+          echo "json=$(jq -c . "$RUNNER_TEMP/split-plan.json")" >> "$GITHUB_OUTPUT"
+
+  split-apply:
+    needs: [survey, split]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # No checkout and no agent, so the GITHUB_TOKEN gets nothing. This job
+    # writes with FACTORY_PAT.
+    permissions: {}
+
+    env:
+      # On the job, which is fine here: nothing in it runs code from an agent
+      # or from a checkout. It reads the plan as data, and runs one file
+      # fetched from this commit.
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      SPEC: ${{ needs.survey.outputs.spec }}
+
+    steps:
+      - name: Fetch the split check
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/split-check
+          gh api -H "Accept: application/vnd.github.raw" \
+            "repos/$GH_REPO/contents/.sandcastle/agent-workflows/implement-spec/split-check.ts?ref=$GITHUB_SHA" \
+            > /tmp/split-check/split-check.ts
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check the plan
+        env:
+          # Through env, never pasted into the script. A `${{ }}` inside
+          # `run:` is text bash runs, and an agent wrote the plan.
+          PLAN: ${{ needs.split.outputs.plan }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PLAN" > /tmp/plan.json
+          [ -s /tmp/plan.json ] || { echo "::error::The split run returned no plan."; exit 1; }
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const { checkSplit } = await import(process.argv[1]);
+            let plan;
+            try {
+              plan = JSON.parse(readFileSync(process.argv[2], "utf8"));
+            } catch {
+              plan = undefined;
+            }
+            const problems = checkSplit(plan);
+            if (problems.length > 0) {
+              console.log("::error::Refusing the plan. Nothing was created, and the finish job marks the spec agent:blocked.");
+              for (const problem of problems) console.log(`::error::${problem}`);
+              process.exit(1);
+            }
+          ' /tmp/split-check/split-check.ts /tmp/plan.json
+
+      - name: Create the sub-issues
+        # The plan passed the check, so every blocker is the position of an
+        # earlier ticket.
+        run: |
+          set -euo pipefail
+          count="$(jq '.tickets | length' /tmp/plan.json)"
+
+          gh label create "ready-for-agent" --color 0E8A16 \
+            --description "Fully specified, ready for an AFK agent" || true
+
+          # Create them all first, then attach them, so a failure halfway
+          # leaves loose issues rather than half a queue.
+          numbers=()
+          ids=()
+          for i in $(seq 0 $((count - 1))); do
+            jq -r --argjson i "$i" '.tickets[$i].title' /tmp/plan.json > /tmp/title.txt
+            {
+              printf '## Parent\n\n#%s\n\n' "$SPEC"
+              jq -r --argjson i "$i" '.tickets[$i].body' /tmp/plan.json
+            } > /tmp/body.md
+            url="$(gh issue create --title "$(cat /tmp/title.txt)" \
+              --body-file /tmp/body.md --label "ready-for-agent")"
+            n="${url##*/}"
+            numbers+=("$n")
+            ids+=("$(gh api "repos/$GH_REPO/issues/$n" --jq .id)")
+            echo "Ticket $((i + 1)): #$n"
+          done
+
+          # In plan order, which becomes sub-issue order.
+          for id in "${ids[@]}"; do
+            gh api --method POST "repos/$GH_REPO/issues/$SPEC/sub_issues" \
+              -F "sub_issue_id=$id" --silent
+          done
+
+          # Native "blocked by" dependencies, by the plan's 1-based positions.
+          for i in $(seq 0 $((count - 1))); do
+            for blocker in $(jq -r --argjson i "$i" '.tickets[$i].blocked_by[]' /tmp/plan.json); do
+              gh api --method POST "repos/$GH_REPO/issues/${numbers[$i]}/dependencies/blocked_by" \
+                -F "issue_id=${ids[$((blocker - 1))]}" --silent
+            done
+          done
+
+          list="$(printf -- '- #%s\n' "${numbers[@]}")"
+          gh issue comment "$SPEC" --body \
+            "$(printf 'Split into %s sub-issues, in build order:\n\n%s\n\n[Logs](%s) <!-- factory:status -->' "$count" "$list" "$RUN_URL")"
+
+  build:
+    needs: [survey, announce]
+    if: needs.survey.outputs.kind == 'build'
+    # The most the called workflow may use: its build job's checkout.
+    permissions:
+      contents: read
+    uses: ./.github/workflows/agent-implement.yml
+    with:
+      issue_number: ${{ fromJSON(needs.survey.outputs.ticket) }}
+      spec_number: ${{ fromJSON(needs.survey.outputs.spec) }}
+    # agent-implement.yml hands each one only to the jobs that mention it, so
+    # its build job, which runs the agent, never gets FACTORY_PAT.
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      FACTORY_PAT: ${{ secrets.FACTORY_PAT }}
+
+  close:
+    needs: [survey, build]
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      SPEC: ${{ needs.survey.outputs.spec }}
+      TICKET: ${{ needs.survey.outputs.ticket }}
+      PR_URL: ${{ needs.build.outputs.pr_url }}
+
+    steps:
+      - name: Close the ticket
+        # Closed now, so the next run moves on to the next ticket. The pull
+        # request stays a draft until the reviewer posts its verdict, and the
+        # merge stays yours.
+        run: |
+          gh issue close "$TICKET" --reason completed --comment \
+            "Built in ${PR_URL}. Closed by the implement-spec queue for #${SPEC}, so the queue can move on; the pull request still needs your merge. <!-- factory:status -->"
+
+      - name: Mark the ticket blocked if it would not close
+        # Otherwise it stays open and unmarked, and chain's brake stops the
+        # queue with nothing on the ticket to say why.
+        if: failure()
+        run: |
+          gh issue edit "$TICKET" --add-label "agent:blocked" || true
+          gh issue comment "$TICKET" --body \
+            "Built in ${PR_URL}, but the implement-spec queue could not close this ticket — [logs](${RUN_URL}). Close it yourself once the pull request is in, or take \`agent:blocked\` off to have the queue look at it again. <!-- factory:status -->" \
+            || true
+
+  chain:
+    needs: [survey, split-apply, build, close]
+    # After a split that created its tickets, or after a build that finished,
+    # well or badly. Not after a cancelled build: cancelling is how you stop.
+    if: >-
+      always() && (
+        (needs.survey.outputs.kind == 'split' && needs.split-apply.result == 'success') ||
+        (needs.survey.outputs.kind == 'build' && (needs.build.result == 'success' || needs.build.result == 'failure'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      KIND: ${{ needs.survey.outputs.kind }}
+      SPEC: ${{ needs.survey.outputs.spec }}
+      TICKET: ${{ needs.survey.outputs.ticket }}
+
+    steps:
+      - name: Check the ticket left the queue
+        # The brake. A ticket still open and not `agent:blocked` would be
+        # picked again by the next run, and again after that.
+        if: env.KIND == 'build'
+        run: |
+          set -euo pipefail
+          read -r state blocked < <(gh issue view "$TICKET" --json state,labels \
+            --jq '[.state, (any(.labels[]; .name == "agent:blocked") | tostring)] | @tsv')
+          if [ "$state" != "CLOSED" ] && [ "$blocked" != "true" ]; then
+            echo "::error::#$TICKET is still open and not agent:blocked. Not starting another run: it would build #$TICKET again."
+            exit 1
+          fi
+
+      - name: Start the next run
+        # It waits in this workflow's concurrency group until this run ends.
+        run: gh workflow run agent-implement-spec.yml -f "spec=$SPEC"
+
+  # The spec-level end of the run. A failed build is reported on its ticket by
+  # build's own finish job, not here.
+  finish:
+    needs: [survey, announce, split, split-apply, build, close, chain]
+    if: always() && needs.survey.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # No checkout and no agent. It writes labels and comments with FACTORY_PAT.
+    permissions: {}
+
+    env:
+      GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+      KIND: ${{ needs.survey.outputs.kind }}
+      SPEC: ${{ needs.survey.outputs.spec || needs.survey.outputs.candidate }}
+
+    steps:
+      - name: Mark the spec blocked on failure
+        if: >-
+          env.SPEC != '' && (
+            contains(fromJSON('["failure", "cancelled"]'), needs.survey.result) ||
+            contains(fromJSON('["failure", "cancelled"]'), needs.announce.result) ||
+            contains(fromJSON('["failure", "cancelled"]'), needs.split.result) ||
+            contains(fromJSON('["failure", "cancelled"]'), needs.split-apply.result) ||
+            contains(fromJSON('["failure", "cancelled"]'), needs.close.result) ||
+            contains(fromJSON('["failure", "cancelled"]'), needs.chain.result)
+          )
+        run: |
+          gh issue edit "$SPEC" --add-label "agent:blocked" || true
+          if [ "$KIND" = "split" ]; then
+            retry="The spec is split at most once. If no sub-issues were created, add them by hand; then start implement-spec from the Actions tab."
+          else
+            retry="Start implement-spec from the Actions tab to retry."
+          fi
+          # Tagged, so no agent reads it as part of the spec.
+          gh issue comment "$SPEC" --body \
+            "Implement-spec run **failed** — [logs](${RUN_URL}). The queue has stopped. ${retry} <!-- factory:status -->" \
+            || true
+
+      - name: Always remove in-progress after a split
+        if: env.KIND == 'split'
+        run: gh issue edit "$SPEC" --remove-label "agent:in-progress" || true

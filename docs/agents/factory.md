@@ -120,6 +120,9 @@ prompt.
 **Trigger.** Put `agent:implement` on an issue, or let explore do it for an
 easy ticket. Any other label does nothing. One run per issue at a time: a
 second label event waits for the first run to finish.
+Implement-spec calls this workflow for the next ticket in a spec's queue, and
+its run for a ticket waits behind a label run for the same ticket, and the
+other way round.
 
 **What happens.** Four jobs. Only the build job runs the agent, and it is the
 one job that never references the factory token, so the token is never on the
@@ -241,4 +244,88 @@ you want it reviewed again.
 
 ### Implement spec
 
-_To be written in #41._
+A spec's sub-issues, worked as a queue, one ticket per run. Workflow:
+`.github/workflows/agent-implement-spec.yml`. Deciders and agent:
+`.sandcastle/agent-workflows/implement-spec/`: the queue decider, the split
+script with its prompt, schema and plan check.
+
+**Trigger.** Put `agent:implement-spec` on a spec issue, or start the workflow
+from the Actions tab, optionally with a spec number. Without one it works the
+lowest-numbered open issue labelled `agent:implement-spec`. The label stays on
+the spec while its queue is worked: take it off to stop the queue. One run at
+a time across the repository, never cancelled. Other labels never bump the
+waiting run. A cron schedule is in the workflow, commented out.
+
+**The queue.** The spec's GitHub sub-issues, in sub-issue order. A ticket is
+buildable when it is open, not `agent:blocked`, not `agent:in-progress`, and
+has no open native "blocked by" dependency. The first buildable one wins.
+The rule lives in `queue.ts`, a pure function with Vitest tests. Its answer
+is one of: split the spec, build ticket N, drained, all blocked, no spec.
+
+**What happens.**
+
+1. **Survey.** With no agent and no checkout, the run fetches the spec, its
+   sub-issues and their dependency summaries as JSON with `gh`, and runs
+   `queue.ts` on them, fetched from this commit. Every later job branches on
+   the answer.
+2. **Announce.** The answer goes on the spec as a status comment. On drained,
+   `agent:implement-spec` comes off the spec. On all blocked, the comment
+   lists why each open ticket could not be built.
+3. **Build** a ticket by calling the implement workflow as a reusable
+   workflow: the same jobs, script, prompt and token split as
+   [Implement](#implement). The ticket is claimed with `agent:in-progress`,
+   built, and a draft PR opens with `agent:review`. **Close** then closes the
+   ticket. On failure the ticket stays open with `agent:blocked`, and the
+   queue skips it from then on.
+4. **Split** a spec with no sub-issues. An agent with no GitHub token reads
+   the spec and the code and hands back tickets: title, body, and the earlier
+   tickets each is blocked by. A job with no agent and no checkout checks the
+   plan with `split-check.ts` (at least one ticket, no empty title or body,
+   each blocked only by earlier tickets) and refuses it whole on any problem.
+   Then it creates each ticket labelled
+   `ready-for-agent` with `## Parent` pointing at the spec, attaches them as
+   sub-issues in plan order, and adds the native "blocked by" dependencies.
+   A spec is split at most once: announce marks it before the agent starts,
+   and survey reads the mark.
+5. **Chain.** After a split that created its tickets, or a build that
+   finished, well or badly, the run starts the workflow again for the same
+   spec. Not after a cancelled build. The queue stops on drained, all blocked
+   or no spec.
+6. **Finish.** A failure at spec level (survey, split, close, chain) marks the
+   spec `agent:blocked` with a status comment linking the logs. A failed
+   build is reported on its ticket by implement's own finish job.
+
+**The chain has no run counter.** Its only brakes are the queue running out,
+and chain refusing to start another run when a build left its ticket neither
+closed nor `agent:blocked`, since the next run would pick it again. Take the
+label off the spec to stop it by hand.
+
+A ticket in progress (`agent:in-progress`) is skipped as well, so a queue run
+never opens a second PR for a ticket another run is building. If the queue
+fails to close a built ticket, the ticket gets `agent:blocked` and a comment.
+
+**Closed is not merged.** A ticket is closed once its draft PR is open, so the
+queue can move on. The next ticket is built from `main`, which does not have
+the previous ticket's PR in it until you merge it. Tickets that depend on it
+are unblocked by the close, not by the merge.
+
+**One waiting run.** GitHub keeps one waiting run per concurrency group.
+Labelling a second spec while a chain is going replaces the chain's waiting
+run, so the first spec's queue waits until you start implement-spec for it
+from the Actions tab.
+
+**Labels.**
+
+| Label                  | When                                                           |
+| ---------------------- | -------------------------------------------------------------- |
+| `agent:implement-spec` | You add it to the spec; removed when the queue is drained      |
+| `agent:in-progress`    | On the ticket being built; on the spec while it is being split |
+| `agent:blocked`        | On a ticket whose build failed; on the spec if a run failed    |
+| `ready-for-agent`      | On every ticket a split creates                                |
+| `agent:review`         | On each PR the queue opens                                     |
+
+**Retry.** A ticket marked `agent:blocked` is skipped. Take the label off and
+start implement-spec from the Actions tab to put it back in the queue, or add
+`agent:implement` to build it on its own. When the queue stopped because all
+remaining tickets are blocked, settle them, then start it again from the
+Actions tab. A failed split is not retried: add the sub-issues by hand.
