@@ -7,11 +7,12 @@ import VariantA from './VariantA.jsx';
 import VariantB from './VariantB.jsx';
 import VariantC from './VariantC.jsx';
 import VariantD from './VariantD.jsx';
+import VariantE from './VariantE.jsx';
 
-const VARIANTS = { A: VariantA, B: VariantB, C: VariantC, D: VariantD };
+const VARIANTS = { A: VariantA, B: VariantB, C: VariantC, D: VariantD, E: VariantE };
 
 function App() {
-  const [variant, setVariant] = useParam('variant', 'A');
+  const [variant, setVariant] = useParam('variant', 'E');
   const [scenario, setScenario] = useParam('scenario', 'charging');
   const [frame, setFrame] = useParam('frame', 'none');
   const live = useLive(scenario);

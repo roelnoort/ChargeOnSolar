@@ -49,7 +49,7 @@ export function useOverride(setScenario) {
   return [status, send];
 }
 
-const VARIANT_NAMES = { A: 'Timeline first', B: 'Now first', C: 'Lanes + log', D: 'B now + stacked day chart' };
+const VARIANT_NAMES = { A: 'Timeline first', B: 'Now first', C: 'Lanes + log', D: 'B now + stacked day chart', E: 'Tabs, real vs Shadow' };
 
 export function Switcher({ variants, current, onChange }) {
   const i = variants.indexOf(current);
@@ -77,6 +77,7 @@ export function Switcher({ variants, current, onChange }) {
 }
 
 export function ProtoControls({ scenario, setScenario, frame, setFrame }) {
+  const [theme, setTheme] = useParam('theme', 'system');
   if (import.meta.env.PROD) return null;
   return (
     <div className="proto-controls">
@@ -94,6 +95,14 @@ export function ProtoControls({ scenario, setScenario, frame, setFrame }) {
       <label>
         <input type="checkbox" checked={frame === 'phone'} onChange={(e) => setFrame(e.target.checked ? 'phone' : 'none')} />{' '}
         phone frame
+      </label>{' '}
+      <label>
+        Theme (E only):{' '}
+        <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+          <option value="system">system</option>
+          <option value="light">light</option>
+          <option value="dark">dark</option>
+        </select>
       </label>
     </div>
   );
