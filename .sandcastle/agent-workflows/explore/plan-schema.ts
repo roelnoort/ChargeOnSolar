@@ -3,7 +3,8 @@ import { exploreTags } from "./plan-check.ts";
 
 // The plan the explore run hands back. The apply job in agent-explore.yml
 // checks the whole plan with plan-check.ts, then does what it says, and it
-// branches on `tag`.
+// branches on `tag`. plan-check.ts runs without zod, so it checks these
+// rules again by hand: change one, change both.
 export const explorePlanSchema = z
   .strictObject({
     issues: z

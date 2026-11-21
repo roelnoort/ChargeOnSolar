@@ -145,7 +145,7 @@ jobs:
           # `<!-- factory:status -->`).
           mkdir -p /tmp/explore
           gh issue list --state open --label "agent:explore" --limit 100 \
-            --json number,title,body,createdAt,labels,comments \
+            --json number,title,body,createdAt,comments \
             | jq 'map(.comments |= map(select(
                 (.authorAssociation | IN("OWNER", "MEMBER", "COLLABORATOR"))
                 and (.body | contains("<!-- factory:status -->") | not))))' \
@@ -362,12 +362,17 @@ jobs:
             dup="$(jq -r '.duplicate_of // empty' <<< "$entry")"
             tag="$(jq -r '.tag' <<< "$entry")"
 
+            # The branch. Every path takes `agent:in-progress` off: this
+            # issue is done, and finish leaves it alone.
             if [ -n "$dup" ]; then
               next="Closed as duplicate of #$dup."
+              move=(--remove-label "agent:in-progress")
             elif [ "$tag" = "easy-call" ]; then
               next="Easy call. Handed to the implementer. Nobody is being asked first."
+              move=(--remove-label "agent:in-progress" --add-label "agent:implement")
             else
               next="Stopped at \`$tag\`. Settle the open questions, then label \`agent:implement\` yourself."
+              move=(--remove-label "agent:in-progress" --add-label "needs-a-human")
             fi
 
             jq -r '.comment' <<< "$entry" > /tmp/comment.md
@@ -378,18 +383,10 @@ jobs:
             for png in /tmp/evidence/"$n"-*.png; do attach+=(--attach "$png"); done
             gh issue comment "$n" --body-file /tmp/comment.md "${attach[@]}"
 
-            # The branch. Every path takes `agent:in-progress` off: this
-            # issue is done, and finish leaves it alone.
+            gh issue edit "$n" "${move[@]}"
             if [ -n "$dup" ]; then
-              gh issue edit "$n" --remove-label "agent:in-progress"
               gh api --method PATCH "repos/$GH_REPO/issues/$n" \
                 -f state=closed -f state_reason=duplicate --silent
-            elif [ "$tag" = "easy-call" ]; then
-              gh issue edit "$n" \
-                --remove-label "agent:in-progress" --add-label "agent:implement"
-            else
-              gh issue edit "$n" \
-                --remove-label "agent:in-progress" --add-label "needs-a-human"
             fi
           done
 
