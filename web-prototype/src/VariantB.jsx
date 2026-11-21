@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { today as day, fmt, kw, ago, CHARGER_MAX, MIN_A, V } from './data.js';
 
-function Hero({ live }) {
+export function Hero({ live }) {
   const d = live.decision;
   const big =
     d.state === 'charging' ? `Would charge at ${d.amps} A` : d.state === 'paused' ? d.label : d.state === 'no-car' ? 'No car connected' : 'Would not charge';
@@ -36,7 +36,7 @@ function Hero({ live }) {
   );
 }
 
-function Flow({ live }) {
+export function Flow({ live }) {
   // Solar is lagging (Enphase), so House is derived from live figures where possible:
   // House consumption = Net power + Solar − Charger. Shown dimmed because solar is stale.
   const exporting = live.netW < 0;
@@ -81,7 +81,7 @@ function Flow({ live }) {
   );
 }
 
-function Controls({ live, override, sendOverride }) {
+export function Controls({ live, override, sendOverride }) {
   return (
     <div className="card" style={{ textAlign: 'center' }}>
       {live.canResume ? (

@@ -49,7 +49,7 @@ export function useOverride(setScenario) {
   return [status, send];
 }
 
-const VARIANT_NAMES = { A: 'Timeline first', B: 'Now first', C: 'Lanes + log' };
+const VARIANT_NAMES = { A: 'Timeline first', B: 'Now first', C: 'Lanes + log', D: 'B now + stacked day chart' };
 
 export function Switcher({ variants, current, onChange }) {
   const i = variants.indexOf(current);

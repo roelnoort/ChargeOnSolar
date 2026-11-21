@@ -6,8 +6,9 @@ import { Switcher, ProtoControls, useParam, useLive, useOverride } from './share
 import VariantA from './VariantA.jsx';
 import VariantB from './VariantB.jsx';
 import VariantC from './VariantC.jsx';
+import VariantD from './VariantD.jsx';
 
-const VARIANTS = { A: VariantA, B: VariantB, C: VariantC };
+const VARIANTS = { A: VariantA, B: VariantB, C: VariantC, D: VariantD };
 
 function App() {
   const [variant, setVariant] = useParam('variant', 'A');
