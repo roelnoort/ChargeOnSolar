@@ -53,7 +53,60 @@ safe to re-run, e.g. when a token expires.
 
 ### Explore
 
-_To be written in #40._
+The cheap, read-only run in front of implement, over a batch of tickets.
+Workflow: `.github/workflows/agent-explore.yml`. Agent:
+`.sandcastle/agent-workflows/explore/`, a Sandcastle script, its prompt, the
+plan schema and the plan check.
+
+**Trigger.** Put `agent:explore` on one or more issues. The run explores
+_every_ open issue carrying the label, together, as one batch, so duplicates
+and shared root causes are noticed. Any other label does nothing. One batch at
+a time, never cancelled: a label added mid-run queues one more run, which
+picks up only the issues labelled since.
+
+**What happens.**
+
+1. The batch is listed with the factory token, before the agent exists. Each
+   issue and the comments from people with write access go to a file for the
+   agent, without the factory's status comments. Each issue swaps
+   `agent:explore` (and any `agent:blocked`) for `agent:in-progress`.
+2. The repo is installed as in implement. The agent reads the glossary, the
+   ADRs and the coding standards, groups related tickets, explores each group
+   with a subagent, and hands back a plan: one entry per issue with a findings
+   comment, a tag (`easy-call`, `needs-a-human` or `blocked`) and, for a
+   duplicate, the surviving issue it duplicates. It holds no GitHub token, the
+   job's built-in token can only read the code, and it writes nothing outside
+   `/tmp`. It never talks to real devices.
+3. A separate apply job, with no agent and no checkout, checks the plan with
+   `plan-check.ts`: every batch issue exactly once, known tags, no empty
+   comment, every duplicate pointing at a surviving issue in the batch. Any
+   problem refuses the whole plan: nothing is written.
+4. Apply posts each findings comment, with its screenshots attached, survivors
+   before duplicates. Then it branches on the entry:
+   - a duplicate is closed as a duplicate of its survivor;
+   - `easy-call` gets `agent:implement`, which starts implement;
+   - anything else gets `needs-a-human`.
+5. A finish job marks every issue still `agent:in-progress` as
+   `agent:blocked` with a comment linking the logs if the run failed, and
+   always takes `agent:in-progress` off.
+
+The findings comments carry no status marker, on purpose: implement reads
+them as part of the ticket.
+
+**Labels.**
+
+| Label               | When                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| `agent:explore`     | You add it; removed from the whole batch when the run starts |
+| `agent:in-progress` | On each issue in the batch until apply moves it on           |
+| `agent:implement`   | Apply adds it to an easy call                                |
+| `needs-a-human`     | Apply adds it to anything else that survives                 |
+| `agent:blocked`     | On each issue apply did not reach, if the run failed         |
+
+**Retry.** A failed run, including a refused plan, leaves `agent:blocked` and
+a comment linking the logs on every issue it did not finish. Re-add
+`agent:explore` to retry. For `needs-a-human`, settle the open questions in a
+comment, then add `agent:implement` yourself.
 
 ### Implement
 
