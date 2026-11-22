@@ -75,8 +75,8 @@ describe("collecting from the P1 meter", () => {
   it("keeps answering the API while the P1 meter is unreachable", async () => {
     server = await startTestServer({ p1Unreachable: true });
 
-    expect((await server.request(healthPath)).status).toBe(200);
-    expect((await server.request(livePath)).status).toBe(200);
+    expect((await server.requestSignedIn(healthPath)).status).toBe(200);
+    expect((await server.requestSignedIn(livePath)).status).toBe(200);
   });
 
   it("retries an unreachable P1 meter with growing back-off", async () => {
@@ -104,7 +104,7 @@ describe("collecting from the P1 meter", () => {
     server.p1.send({ netPowerW: 250 });
 
     const { p1 } = liveSnapshot.parse(
-      await (await server.request(livePath)).json()
+      await (await server.requestSignedIn(livePath)).json()
     );
     expect(p1?.reading.netPowerW).toBe(250);
     expect(server.logs).toContainEqual(

@@ -60,6 +60,14 @@ _Avoid_: Any solar, solar plus grid, boost
 A household member with their own account. All Users have the same rights in v1; every Manual override records which User sent it.
 _Avoid_: Account, operator, admin
 
+**Login code**:
+The 6-digit code a User gets by email to log in. It works once, for 10 minutes.
+_Avoid_: OTP, password, PIN
+
+**Signed-in device**:
+A device on which a User is logged in: one session, which stays valid for 90 days after it was last used. A User can revoke one, or sign out everywhere.
+_Avoid_: Session (in the UI), login, token
+
 **Manual override**:
 A pause or resume command that the user sends to the charger by hand. Setting the Charging current by hand is not part of it.
 _Avoid_: Manual mode, force charge

@@ -16,7 +16,9 @@ const allDay = {
 };
 
 async function snapshot() {
-  return liveSnapshot.parse(await (await server?.request(livePath))?.json());
+  return liveSnapshot.parse(
+    await (await server?.requestSignedIn(livePath))?.json()
+  );
 }
 
 describe("collecting from Zaptec", () => {
@@ -117,7 +119,7 @@ describe("collecting from Zaptec", () => {
     server = await startTestServer({ zaptecUnreachable: true });
     server.p1.send({ netPowerW: -900 });
 
-    expect((await server.request(healthPath)).status).toBe(200);
+    expect((await server.requestSignedIn(healthPath)).status).toBe(200);
     const live = await snapshot();
     expect(live.p1?.reading.netPowerW).toBe(-900);
     expect(live.charger).toBeNull();

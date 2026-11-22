@@ -9,7 +9,7 @@ afterEach(async () => {
 });
 
 async function snapshot() {
-  const response = await server?.request(livePath);
+  const response = await server?.requestSignedIn(livePath);
   expect(response?.status).toBe(200);
   return liveSnapshot.parse(await response?.json());
 }

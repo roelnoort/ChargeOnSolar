@@ -1,9 +1,13 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Hono } from "hono";
 import packageJson from "../package.json" with { type: "json" };
+import type { SessionEnv } from "./api/session.ts";
 import { createApp } from "./app.ts";
+import { createAuth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import { createLiveState } from "./domain/live-state.ts";
+import type { Mailer } from "./mailer.ts";
 import type { P1Client } from "./p1/client.ts";
 import { startP1Collector } from "./p1/collector.ts";
 import { openStorage, type Storage } from "./storage/index.ts";
@@ -12,6 +16,7 @@ import { startZaptecCollector } from "./zaptec/collector.ts";
 
 export interface ServerDependencies extends DataFiles {
   clock: Clock;
+  mailer: Mailer;
   log: (line: string) => void;
   /** The P1 meter's live stream. Without it, no P1 Readings come in. */
   p1Client?: P1Client;
@@ -27,6 +32,13 @@ export interface DataFiles {
   backupDir: string;
 }
 
+/** `DATA_DIR`, or `packages/server/data` when it is not set. */
+export function dataDirFromEnv(env: Record<string, string | undefined>) {
+  return resolve(
+    env.DATA_DIR ?? fileURLToPath(new URL("../data", import.meta.url))
+  );
+}
+
 /** Where the server keeps its database and backups inside a data directory. */
 export function dataFiles(dataDir: string): DataFiles {
   return {
@@ -38,7 +50,7 @@ export function dataFiles(dataDir: string): DataFiles {
 const defaultMainFuseA = 25;
 
 export interface AssembledServer {
-  app: Hono;
+  app: Hono<SessionEnv>;
   storage: Storage;
   close(): Promise<void>;
 }
@@ -52,6 +64,7 @@ export async function assembleServer(
     at: clock.now(),
     version: packageJson.version,
   });
+  const auth = createAuth({ storage, ...dependencies });
   const live = createLiveState();
   const collector = p1Client
     ? startP1Collector({
@@ -87,6 +100,7 @@ export async function assembleServer(
   if (!zaptecClient) log("No Zaptec account configured");
   const app = createApp({
     storage,
+    auth,
     live,
     clock,
     mainFuseA: dependencies.mainFuseA ?? defaultMainFuseA,

@@ -12,6 +12,7 @@ import type { Cancel, Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
+import type { SessionEnv } from "./session.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
@@ -94,7 +95,7 @@ export function toLiveSnapshot(
 }
 
 export function addLiveRoutes(
-  app: Hono,
+  app: Hono<SessionEnv>,
   { live, clock, mainFuseA }: LiveRouteDependencies
 ) {
   app.get(livePath, (c) =>

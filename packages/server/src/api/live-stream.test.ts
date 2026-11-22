@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 async function openStream(): Promise<SseReader> {
-  const response = await server?.request(liveStreamPath);
+  const response = await server?.requestSignedIn(liveStreamPath);
   expect(response?.status).toBe(200);
   expect(response?.headers.get("content-type")).toContain("text/event-stream");
   stream = readSse(response as Response);
