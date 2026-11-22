@@ -3,6 +3,7 @@ import { copyFile, mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { dataFiles } from "./server.ts";
 import { startTestServer, type TestServer } from "./testing/harness.ts";
 
 let dataDir: string;
@@ -19,7 +20,7 @@ afterEach(async () => {
 async function logsOfStartOn(backup: string) {
   const restoredDir = await mkdtemp(join(tmpdir(), "restored-"));
   try {
-    await copyFile(backup, join(restoredDir, "chargeonsolar.db"));
+    await copyFile(backup, dataFiles(restoredDir).databaseFile);
     const restored = await startTestServer({ dataDir: restoredDir });
     await restored.close();
     return restored.logs;

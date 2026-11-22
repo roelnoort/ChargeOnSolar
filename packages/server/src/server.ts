@@ -1,15 +1,27 @@
+import { join } from "node:path";
 import type { Hono } from "hono";
 import packageJson from "../package.json" with { type: "json" };
 import { createApp } from "./app.ts";
 import type { Clock } from "./clock.ts";
 import { openStorage } from "./storage/index.ts";
 
-export interface ServerDependencies {
+export interface ServerDependencies extends DataFiles {
   clock: Clock;
-  databaseFile: string;
-  backupDir: string;
   log: (line: string) => void;
   webRoot?: string;
+}
+
+export interface DataFiles {
+  databaseFile: string;
+  backupDir: string;
+}
+
+/** Where the server keeps its database and backups inside a data directory. */
+export function dataFiles(dataDir: string): DataFiles {
+  return {
+    databaseFile: join(dataDir, "chargeonsolar.db"),
+    backupDir: join(dataDir, "backups"),
+  };
 }
 
 export interface AssembledServer {
@@ -17,10 +29,6 @@ export interface AssembledServer {
   close(): Promise<void>;
 }
 
-/**
- * Puts the whole server together: opens storage (backup, then migrations),
- * records this start, and builds the HTTP app on top.
- */
 export async function assembleServer(
   dependencies: ServerDependencies
 ): Promise<AssembledServer> {

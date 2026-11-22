@@ -4,7 +4,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assembleServer } from "../server.ts";
+import { assembleServer, dataFiles } from "../server.ts";
 import { createFakeClock, type FakeClock } from "./fake-clock.ts";
 
 export interface TestServerOptions {
@@ -36,8 +36,7 @@ export async function startTestServer(
     options.now ?? new Date("2026-06-01T12:00:00.000Z")
   );
   const logs: string[] = [];
-  const databaseFile = join(dataDir, "chargeonsolar.db");
-  const backupDir = join(dataDir, "backups");
+  const { databaseFile, backupDir } = dataFiles(dataDir);
   const server = await assembleServer({
     clock,
     databaseFile,

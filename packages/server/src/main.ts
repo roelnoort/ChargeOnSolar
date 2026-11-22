@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { systemClock } from "./clock.ts";
-import { assembleServer } from "./server.ts";
+import { assembleServer, dataFiles } from "./server.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dataDir = resolve(process.env.DATA_DIR ?? resolve(here, "../data"));
@@ -13,8 +13,7 @@ const webRoot = resolve(here, "../../web/dist");
 mkdirSync(dataDir, { recursive: true });
 const server = await assembleServer({
   clock: systemClock,
-  databaseFile: resolve(dataDir, "chargeonsolar.db"),
-  backupDir: resolve(dataDir, "backups"),
+  ...dataFiles(dataDir),
   log: (line) => console.log(line),
   webRoot,
 });
