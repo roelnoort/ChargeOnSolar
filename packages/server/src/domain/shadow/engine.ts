@@ -208,14 +208,28 @@ function decideWhileCharging(
   if (snapshot.fuseHeadroomAmps < minimumCurrentAmps) {
     return stop("fuse-headroom");
   }
-  if (!enoughSurplus(snapshot.stopWindowSurplusWatts, snapshot, settings)) {
-    const onFor = state.switchedAt
-      ? elapsedMinutes(state.switchedAt, snapshot)
-      : Number.POSITIVE_INFINITY;
-    return onFor < settings.minimumOnTimeMinutes
-      ? hold("minimum-on-time")
-      : stop("surplus-too-low");
+  const changeCurrent = (): ChargeOutcome => {
+    const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
+    return {
+      decision: { kind: "change-current", currentAmps, limitedBy },
+      next: { ...state, currentAmps, currentChangedAt: snapshot.at },
+    };
+  };
+  const surplusGone = !enoughSurplus(
+    snapshot.stopWindowSurplusWatts,
+    snapshot,
+    settings
+  );
+  const onFor = state.switchedAt
+    ? elapsedMinutes(state.switchedAt, snapshot)
+    : Number.POSITIVE_INFINITY;
+  const withinMinimumOnTime = onFor < settings.minimumOnTimeMinutes;
+  if (surplusGone && !withinMinimumOnTime) return stop("surplus-too-low");
+  // The fuse cannot wait out the current hold or the minimum on-time.
+  if ((state.currentAmps ?? 0) > Math.floor(snapshot.fuseHeadroomAmps)) {
+    return changeCurrent();
   }
+  if (surplusGone) return hold("minimum-on-time");
   const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
   if (
     Math.abs(currentAmps - (state.currentAmps ?? 0)) < settings.deadBandAmps
@@ -229,10 +243,7 @@ function decideWhileCharging(
   ) {
     return hold("current-hold");
   }
-  return {
-    decision: { kind: "change-current", currentAmps, limitedBy },
-    next: { ...state, currentAmps, currentChangedAt: snapshot.at },
-  };
+  return changeCurrent();
 }
 
 function decideWhileStopped(

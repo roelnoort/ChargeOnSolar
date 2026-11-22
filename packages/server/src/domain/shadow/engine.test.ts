@@ -376,6 +376,48 @@ describe.each([1, 3] as const)("on %i phase(s)", (phases) => {
             limitedBy: "fuse-headroom",
           });
         });
+
+        it("lowers the Charging current to Fuse headroom at once, inside the current hold", () => {
+          const { decision } = decideShadow(
+            surplusOf(14, { fuseHeadroomAmps: 9.5 }),
+            charging({ currentAmps: 10, currentChangedAt: at(-1) }),
+            rules
+          );
+
+          expect(decision).toEqual({
+            kind: "change-current",
+            currentAmps: 9,
+            limitedBy: "fuse-headroom",
+          });
+        });
+
+        it("lowers the Charging current to Fuse headroom at once, inside the minimum on-time", () => {
+          const { decision } = decideShadow(
+            surplusOf(14, { stopWindowSurplusWatts: 0, fuseHeadroomAmps: 7 }),
+            charging({
+              currentAmps: 10,
+              currentChangedAt: at(-1),
+              switchedAt: at(-1),
+            }),
+            rules
+          );
+
+          expect(decision).toEqual({
+            kind: "change-current",
+            currentAmps: 7,
+            limitedBy: "fuse-headroom",
+          });
+        });
+
+        it("still stops for too little Surplus, after the minimum on-time, above Fuse headroom", () => {
+          const { decision } = decideShadow(
+            surplusOf(14, { stopWindowSurplusWatts: 0, fuseHeadroomAmps: 7 }),
+            charging({ currentAmps: 10 }),
+            rules
+          );
+
+          expect(decision).toEqual({ kind: "stop", reason: "surplus-too-low" });
+        });
       });
 
       it("drops All solar to the 6 A minimum when the Surplus no longer covers it", () => {
