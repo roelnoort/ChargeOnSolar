@@ -81,7 +81,7 @@ export function authRoutes(
 
   app.get(signedInDevicesPath, async (c) => {
     const { user, device: current } = c.get("signedIn");
-    const devices = await storage.listSignedInDevices(user.id);
+    const devices = await auth.signedInDevicesOf(user);
     const body: SignedInDevices = {
       devices: devices.map((device) => toContract(device, current.id)),
     };

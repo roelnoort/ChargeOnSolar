@@ -448,6 +448,18 @@ describe("Signed-in devices", () => {
     ]);
   });
 
+  it("leaves out a device whose 90 days without use have passed", async () => {
+    server = await startTestServer();
+    await server.addUser(anna);
+    await logInOnWeb(anna.email, "Old tablet");
+    server.clock.advance(90 * day);
+    const phone = await logInOnWeb(anna.email, "Phone");
+
+    const devices = await devicesOf(phone);
+
+    expect(devices.map(({ deviceName }) => deviceName)).toEqual(["Phone"]);
+  });
+
   it("revokes another device, which is signed out at once", async () => {
     server = await startTestServer();
     await server.addUser(anna);

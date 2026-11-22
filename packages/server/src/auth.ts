@@ -7,7 +7,10 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import type { Clock } from "./clock.ts";
-import type { SignedInDeviceOfUser } from "./domain/signed-in-device.ts";
+import type {
+  SignedInDevice,
+  SignedInDeviceOfUser,
+} from "./domain/signed-in-device.ts";
 import type { User } from "./domain/user.ts";
 import type { Mailer } from "./mailer.ts";
 import type { Storage } from "./storage/index.ts";
@@ -105,7 +108,16 @@ export function createAuth({ storage, mailer, clock, log }: AuthDependencies) {
     return { user: found.user, device: { ...found.device, lastUsedAt: now } };
   }
 
-  return { requestLoginCode, logIn, authenticate };
+  /** The User's devices whose session is still live, most recent first. */
+  async function signedInDevicesOf(user: User): Promise<SignedInDevice[]> {
+    const now = clock.now();
+    return storage.listSignedInDevices(
+      user.id,
+      new Date(now.getTime() - sessionLifetime)
+    );
+  }
+
+  return { requestLoginCode, logIn, authenticate, signedInDevicesOf };
 }
 
 function hashToken(token: string): string {

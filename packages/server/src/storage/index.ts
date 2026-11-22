@@ -59,7 +59,11 @@ export interface Storage {
     tokenHash: string
   ): Promise<SignedInDeviceOfUser | undefined>;
   touchSignedInDevice(id: number, at: Date): Promise<void>;
-  listSignedInDevices(userId: number): Promise<SignedInDevice[]>;
+  /** The User's devices last used after `usedAfter`, most recent first. */
+  listSignedInDevices(
+    userId: number,
+    usedAfter: Date
+  ): Promise<SignedInDevice[]>;
   /** Signs out one of the User's devices; false when they have no such device. */
   removeSignedInDevice(userId: number, id: number): Promise<boolean>;
   removeAllSignedInDevices(userId: number): Promise<void>;
@@ -243,11 +247,16 @@ function storageOn(
         .where(eq(schema.sessions.id, id))
         .run();
     },
-    async listSignedInDevices(userId) {
+    async listSignedInDevices(userId, usedAfter) {
       return db
         .select(deviceColumns)
         .from(schema.sessions)
-        .where(eq(schema.sessions.userId, userId))
+        .where(
+          and(
+            eq(schema.sessions.userId, userId),
+            gt(schema.sessions.lastUsedAt, usedAfter)
+          )
+        )
         .orderBy(desc(schema.sessions.lastUsedAt))
         .all();
     },
