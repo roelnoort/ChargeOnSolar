@@ -1,6 +1,7 @@
 // The HomeWizard P1 meter's local API v2: a WebSocket over TLS that pushes a
 // measurement about once a second.
-import { WebSocket } from "ws";
+import type { PeerCertificate } from "node:tls";
+import { type ClientOptions, WebSocket } from "ws";
 import { z } from "zod";
 import type { Cancel, Clock } from "../clock.ts";
 import type { P1Phase, P1Reading } from "../domain/p1-reading.ts";
@@ -15,6 +16,14 @@ export interface HomeWizardOptions {
   clock: Clock;
   /** The CA that signed the meter's certificate. HomeWizard's own by default. */
   ca?: string;
+}
+
+// The meter's certificate names the appliance (appliance/<type>/<serial>),
+// not its address on the network.
+function checkApplianceIdentity(_host: string, certificate: PeerCertificate) {
+  const name = certificate.subject?.CN;
+  if (typeof name === "string" && name.startsWith("appliance/")) return;
+  return new Error(`The certificate names ${name}, not a HomeWizard appliance`);
 }
 
 const silenceLimitMs = 30_000;
@@ -82,9 +91,9 @@ export function createHomeWizardP1Client({
         const socket = new WebSocket(`wss://${host}/api/ws`, {
           ca,
           rejectUnauthorized: true,
-          // The meter's certificate names the appliance, not its IP address,
-          // so only the chain to the CA is checked. False means no error.
-          checkServerIdentity: () => false,
+          // @types/ws says boolean; ws hands it to tls.connect, which wants this.
+          checkServerIdentity:
+            checkApplianceIdentity as unknown as ClientOptions["checkServerIdentity"],
           handshakeTimeout: handshakeTimeoutMs,
         });
         let authorized = false;

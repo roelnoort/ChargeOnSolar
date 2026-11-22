@@ -14,7 +14,12 @@ export interface TestCertificates {
   key: string;
 }
 
-export function makeTestCertificates(): TestCertificates {
+export function makeTestCertificates({
+  // Like a real device: named after the appliance, not its IP address.
+  deviceName = "appliance/p1dongle/000000000000",
+}: {
+  deviceName?: string;
+} = {}): TestCertificates {
   const dir = mkdtempSync(join(tmpdir(), "test-certificates-"));
   const file = (name: string) => join(dir, name);
   const openssl = (...args: string[]) =>
@@ -40,9 +45,8 @@ export function makeTestCertificates(): TestCertificates {
       "-newkey",
       "rsa:2048",
       "-nodes",
-      // Like a real device: named after the appliance, not its IP address.
       "-subj",
-      "/CN=appliance\\/p1dongle\\/000000000000",
+      `/CN=${deviceName.replaceAll("/", "\\/")}`,
       "-keyout",
       file("device.key"),
       "-out",
