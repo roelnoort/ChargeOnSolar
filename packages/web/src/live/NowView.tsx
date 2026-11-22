@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Clock } from "../clock.ts";
 import { describeDataAge, describeNetPower, p1DataAgeMs } from "./describe.ts";
 import {
   connectLiveStream,
@@ -6,32 +7,34 @@ import {
   type StreamStatus,
 } from "./live-stream.ts";
 
-function useLiveStream(): LiveStreamState {
+function useLiveStream(clock: Clock): LiveStreamState {
   const [state, setState] = useState<LiveStreamState>({
     status: "connecting",
   });
   useEffect(() => {
     const stream = connectLiveStream({
       createEventSource: (url) => new EventSource(url),
-      after: (milliseconds, callback) => {
-        const timer = setTimeout(callback, milliseconds);
-        return () => clearTimeout(timer);
-      },
-      now: Date.now,
+      after: clock.after,
+      now: clock.now,
       onChange: setState,
     });
     return () => stream.close();
-  }, []);
+  }, [clock]);
   return state;
 }
 
 /** The current time, updated every second. */
-function useNow(): number {
-  const [now, setNow] = useState(Date.now);
+function useNow(clock: Clock): number {
+  const [now, setNow] = useState(clock.now);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    let cancel = () => {};
+    const tick = () => {
+      setNow(clock.now());
+      cancel = clock.after(1000, tick);
+    };
+    cancel = clock.after(1000, tick);
+    return () => cancel();
+  }, [clock]);
   return now;
 }
 
@@ -41,9 +44,9 @@ const statusLabels: Record<StreamStatus, string> = {
   reconnecting: "Reconnecting…",
 };
 
-export function NowView() {
-  const { status, latest } = useLiveStream();
-  const now = useNow();
+export function NowView({ clock }: { clock: Clock }) {
+  const { status, latest } = useLiveStream(clock);
+  const now = useNow(clock);
   const p1 = latest?.snapshot.p1;
   const netPower = p1 && describeNetPower(p1.reading.netPowerW);
   const age =

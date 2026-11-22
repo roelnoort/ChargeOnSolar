@@ -1,6 +1,7 @@
 import type { Health } from "@charge-on-solar/shared";
 import { useEffect, useState } from "react";
 import { createApiClient } from "./api/client.ts";
+import { browserClock } from "./clock.ts";
 import { NowView } from "./live/NowView.tsx";
 
 const api = createApiClient();
@@ -72,7 +73,7 @@ export function App() {
         {tab === "now" ? (
           <section aria-labelledby="now-heading">
             <h2 id="now-heading">Now</h2>
-            <NowView />
+            <NowView clock={browserClock} />
           </section>
         ) : (
           <section aria-labelledby="day-heading">
