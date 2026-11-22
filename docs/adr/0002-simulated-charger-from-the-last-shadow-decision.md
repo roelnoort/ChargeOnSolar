@@ -10,7 +10,8 @@ sunny afternoon would "start" a charge session the engine already started.
 
 - Every Shadow decision row records the simulated charger as it is after the
   decision. On start, the runner reads the most recent row and carries on from
-  that state; with no row it starts from "No car".
+  that state; with no row it starts from "No car". That row is also the live
+  snapshot's current Shadow decision until the first tick replaces it.
 - The runner does not try to work out what happened while it was down. The
   engine's own rules handle the gap: a car unplugged meanwhile gives "No car"
   and a fresh session; a minimum on-time or current hold that ran out during

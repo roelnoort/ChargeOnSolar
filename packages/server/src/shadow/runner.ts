@@ -38,8 +38,9 @@ export const defaultShadowTickMs = 60_000;
 const minute = 60_000;
 
 /**
- * Starts ticking. The simulated charger carries on from the last recorded
- * Shadow decision, so a restart does not forget a simulated charge session;
+ * Starts ticking. The simulated charger and the live state carry on from the
+ * last recorded Shadow decision, so a restart does not forget a simulated
+ * charge session or leave the Now tab empty until the first tick;
  * see docs/adr/0002-simulated-charger-from-the-last-shadow-decision.md.
  */
 export async function startShadowRunner({
@@ -50,8 +51,9 @@ export async function startShadowRunner({
   tickMs,
   settings,
 }: ShadowRunnerOptions): Promise<ShadowRunner> {
-  let simulated: SimulatedCharger =
-    (await storage.latestShadowDecision())?.simulated ?? noCar;
+  const latest = await storage.latestShadowDecision();
+  if (latest) live.recordShadowDecision(latest);
+  let simulated: SimulatedCharger = latest?.simulated ?? noCar;
   const series = {
     surplusW: new StepSeries(),
     netPowerW: new StepSeries(),
