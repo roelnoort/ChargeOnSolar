@@ -62,7 +62,7 @@ export const defaultShadowSettings: ShadowSettings = {
 /** The charger as the Shadow engine would have driven it. */
 export interface SimulatedCharger {
   carConnected: boolean;
-  charging: boolean;
+  /** Null while not charging. */
   currentA: number | null;
   currentChangedAt: Date | null;
   startedAt: Date | null;
@@ -72,9 +72,12 @@ export interface SimulatedCharger {
   switches: number;
 }
 
+export function isCharging(charger: SimulatedCharger): boolean {
+  return charger.currentA !== null;
+}
+
 export const initialSimulatedCharger: SimulatedCharger = {
   carConnected: false,
-  charging: false,
   currentA: null,
   currentChangedAt: null,
   startedAt: null,
@@ -127,7 +130,7 @@ export type ChargingDecision =
   | { kind: "stop"; reason: StopReason; stopAverageW: number }
   | {
       kind: "hold";
-      charging: boolean;
+      /** Null while not charging. */
       currentA: number | null;
       heldBy: HoldReason | null;
       /** Null when there were no Readings in the start window. */
@@ -249,7 +252,7 @@ function carNotAccepting(
 ): Outcome<{ kind: "car-not-accepting" }> {
   return {
     decision: { kind: "car-not-accepting" },
-    next: { ...session, charging: false, currentA: null },
+    next: { ...session, currentA: null },
   };
 }
 
@@ -260,16 +263,7 @@ function decideCharging(
   settings: ShadowSettings
 ): Outcome<ChargingDecision> {
   if (startAverageW === null || stopAverageW === null) {
-    return {
-      decision: {
-        kind: "hold",
-        charging: session.charging,
-        currentA: session.currentA,
-        heldBy: "no-readings",
-        startAverageW: null,
-      },
-      next: session,
-    };
+    return hold(session, "no-readings", null);
   }
   const inputs: Inputs = {
     snapshot,
@@ -279,7 +273,7 @@ function decideCharging(
     stopAverageW,
     headroomA: fuseHeadroomA,
   };
-  return session.charging
+  return isCharging(session)
     ? whileCharging(inputs, session)
     : whileStopped(inputs, session);
 }
@@ -291,6 +285,22 @@ interface Inputs {
   startAverageW: number;
   stopAverageW: number;
   headroomA: number;
+}
+
+function hold(
+  session: SimulatedCharger,
+  heldBy: HoldReason | null,
+  startAverageW: number | null
+): Outcome<ChargingDecision> {
+  return {
+    decision: {
+      kind: "hold",
+      currentA: session.currentA,
+      heldBy,
+      startAverageW,
+    },
+    next: session,
+  };
 }
 
 function surplusAllowsStart(inputs: Inputs): boolean {
@@ -312,27 +322,19 @@ function whileStopped(
   previous: SimulatedCharger
 ): Outcome<ChargingDecision> {
   const { snapshot, wattsPerAmp, startAverageW, headroomA } = inputs;
-  const hold = (heldBy: HoldReason | null): Outcome<ChargingDecision> => ({
-    decision: {
-      kind: "hold",
-      charging: false,
-      currentA: null,
-      heldBy,
-      startAverageW,
-    },
-    next: previous,
-  });
-  if (!surplusAllowsStart(inputs)) return hold(null);
-  if (headroomA < minimumChargingCurrentA) return hold("fuse-headroom");
+  const holdBy = (heldBy: HoldReason | null) =>
+    hold(previous, heldBy, startAverageW);
+  if (!surplusAllowsStart(inputs)) return holdBy(null);
+  if (headroomA < minimumChargingCurrentA) return holdBy("fuse-headroom");
   if (
     previous.stoppedAt &&
     minutesBetween(previous.stoppedAt, snapshot.at) <
       inputs.settings.minimumOffTimeMin
   ) {
-    return hold("minimum-off-time");
+    return holdBy("minimum-off-time");
   }
   if (switchesPerSession - previous.switches < switchReserve) {
-    return hold("switch-budget");
+    return holdBy("switch-budget");
   }
   const { currentA, limitedBy } = chargingCurrent(
     startAverageW,
@@ -344,7 +346,6 @@ function whileStopped(
     decision: { kind: "start", currentA, limitedBy, startAverageW },
     next: {
       ...previous,
-      charging: true,
       currentA,
       currentChangedAt: snapshot.at,
       startedAt: snapshot.at,
@@ -363,29 +364,20 @@ function whileCharging(
     decision: { kind: "stop", reason, stopAverageW },
     next: {
       ...previous,
-      charging: false,
       currentA: null,
       stoppedAt: snapshot.at,
       switches: previous.switches + 1,
     },
   });
-  const hold = (heldBy: HoldReason | null): Outcome<ChargingDecision> => ({
-    decision: {
-      kind: "hold",
-      charging: true,
-      currentA: previous.currentA,
-      heldBy,
-      startAverageW,
-    },
-    next: previous,
-  });
+  const holdBy = (heldBy: HoldReason | null) =>
+    hold(previous, heldBy, startAverageW);
   if (inputs.headroomA < minimumChargingCurrentA) return stop("fuse-headroom");
   if (surplusCallsForStop(inputs)) {
     const onForMin = minutesBetween(
       previous.startedAt ?? snapshot.at,
       snapshot.at
     );
-    if (onForMin < settings.minimumOnTimeMin) return hold("minimum-on-time");
+    if (onForMin < settings.minimumOnTimeMin) return holdBy("minimum-on-time");
     return stop("surplus");
   }
   const { currentA, limitedBy } = chargingCurrent(
@@ -395,13 +387,13 @@ function whileCharging(
     inputs.headroomA
   );
   const differenceA = Math.abs(currentA - (previous.currentA ?? 0));
-  if (differenceA === 0) return hold(null);
-  if (differenceA < settings.deadBandA) return hold("dead-band");
+  if (differenceA === 0) return holdBy(null);
+  if (differenceA < settings.deadBandA) return holdBy("dead-band");
   const heldForMin = minutesBetween(
     previous.currentChangedAt ?? snapshot.at,
     snapshot.at
   );
-  if (heldForMin < settings.currentHoldMin) return hold("current-hold");
+  if (heldForMin < settings.currentHoldMin) return holdBy("current-hold");
   return {
     decision: { kind: "change-current", currentA, limitedBy, startAverageW },
     next: { ...previous, currentA, currentChangedAt: snapshot.at },

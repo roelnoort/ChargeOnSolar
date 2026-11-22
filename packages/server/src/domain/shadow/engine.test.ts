@@ -3,6 +3,7 @@ import {
   decideShadow,
   defaultShadowSettings,
   initialSimulatedCharger,
+  isCharging,
   type PowerReading,
   type ShadowSnapshot,
   type SimulatedCharger,
@@ -48,7 +49,6 @@ function chargingFor(minutes: number, currentA = 10): SimulatedCharger {
   const since = minutesAfter(noon, -minutes);
   return {
     carConnected: true,
-    charging: true,
     currentA,
     currentChangedAt: since,
     startedAt: since,
@@ -60,7 +60,6 @@ function chargingFor(minutes: number, currentA = 10): SimulatedCharger {
 function stoppedFor(minutes: number, switches = 2): SimulatedCharger {
   return {
     carConnected: true,
-    charging: false,
     currentA: null,
     currentChangedAt: null,
     startedAt: minutesAfter(noon, -minutes - 20),
@@ -111,7 +110,7 @@ describe("Shadow engine", () => {
         currentA: 14,
         limitedBy: "surplus",
       });
-      expect(next).toMatchObject({ charging: true, currentA: 14, switches: 1 });
+      expect(next).toMatchObject({ currentA: 14, switches: 1 });
     });
 
     it("averages Surplus over the start window only", () => {
@@ -182,10 +181,10 @@ describe("Shadow engine", () => {
 
       expect(decision).toMatchObject({
         kind: "hold",
-        charging: false,
+        currentA: null,
         heldBy: "fuse-headroom",
       });
-      expect(next.charging).toBe(false);
+      expect(isCharging(next)).toBe(false);
     });
   });
 
@@ -199,7 +198,6 @@ describe("Shadow engine", () => {
 
       expect(decision).toMatchObject({ kind: "stop", reason: "surplus" });
       expect(next).toMatchObject({
-        charging: false,
         currentA: null,
         stoppedAt: noon,
         switches: 2,
@@ -219,7 +217,7 @@ describe("Shadow engine", () => {
       );
 
       expect(decision).toMatchObject({ kind: "change-current", currentA: 6 });
-      expect(next.charging).toBe(true);
+      expect(isCharging(next)).toBe(true);
     });
 
     it("holds until the minimum on-time has passed", () => {
@@ -231,10 +229,10 @@ describe("Shadow engine", () => {
 
       expect(decision).toMatchObject({
         kind: "hold",
-        charging: true,
+        currentA: 10,
         heldBy: "minimum-on-time",
       });
-      expect(next.charging).toBe(true);
+      expect(isCharging(next)).toBe(true);
     });
 
     it("stops at once when Fuse headroom drops below 6 A", () => {
@@ -265,7 +263,6 @@ describe("Shadow engine", () => {
         limitedBy: "surplus",
       });
       expect(next).toMatchObject({
-        charging: true,
         currentA: 14,
         currentChangedAt: noon,
         switches: 1,
@@ -286,7 +283,6 @@ describe("Shadow engine", () => {
 
       expect(decision).toMatchObject({
         kind: "hold",
-        charging: true,
         currentA: 10,
         heldBy: "current-hold",
       });
@@ -461,7 +457,6 @@ describe("Shadow engine", () => {
       expect(decision).toEqual({ kind: "car-not-accepting" });
       expect(next).toMatchObject({
         carConnected: true,
-        charging: false,
         currentA: null,
         switches: 1,
       });
@@ -478,7 +473,7 @@ describe("Shadow engine", () => {
         kind: "paused-by-you",
         underlying: { kind: "start", currentA: 14 },
       });
-      expect(next).toMatchObject({ charging: true, currentA: 14 });
+      expect(next).toMatchObject({ currentA: 14 });
     });
   });
 
@@ -530,9 +525,9 @@ describe("Shadow engine", () => {
 
   describe("without Readings", () => {
     it.each([
-      { name: "stopped", previous: initialSimulatedCharger, charging: false },
-      { name: "charging", previous: chargingFor(30), charging: true },
-    ])("holds while $name", ({ previous, charging }) => {
+      { name: "stopped", previous: initialSimulatedCharger, currentA: null },
+      { name: "charging", previous: chargingFor(30, 10), currentA: 10 },
+    ])("holds while $name", ({ previous, currentA }) => {
       const stale = surplusOf(3000, { at: minutesAfter(noon, -20) });
 
       const { decision, next } = decideShadow(
@@ -543,10 +538,10 @@ describe("Shadow engine", () => {
 
       expect(decision).toMatchObject({
         kind: "hold",
-        charging,
+        currentA,
         heldBy: "no-readings",
       });
-      expect(next.charging).toBe(charging);
+      expect(next.currentA).toBe(currentA);
     });
   });
 });
