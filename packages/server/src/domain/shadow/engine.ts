@@ -68,7 +68,7 @@ export interface ShadowSnapshot {
 /** The charger as the engine would have driven it. Never sent anywhere. */
 export interface SimulatedCharger {
   carConnected: boolean;
-  charging: boolean;
+  /** The Charging current it set; null while it is not charging. */
   currentAmps: number | null;
   currentChangedAt: Date | null;
   /** When charging last started or stopped; null until the first start of the charge session. */
@@ -79,7 +79,6 @@ export interface SimulatedCharger {
 
 export const noCar: SimulatedCharger = {
   carConnected: false,
-  charging: false,
   currentAmps: null,
   currentChangedAt: null,
   switchedAt: null,
@@ -167,7 +166,7 @@ function decideForCar(
       next: stoppedWithoutSwitch(session, snapshot),
     };
   }
-  return session.charging
+  return isCharging(session)
     ? decideWhileCharging(snapshot, session, settings)
     : decideWhileStopped(snapshot, session, settings);
 }
@@ -177,10 +176,9 @@ function stoppedWithoutSwitch(
   state: SimulatedCharger,
   snapshot: ShadowSnapshot
 ): SimulatedCharger {
-  if (!state.charging) return state;
+  if (!isCharging(state)) return state;
   return {
     ...state,
-    charging: false,
     currentAmps: null,
     switchedAt: snapshot.at,
   };
@@ -195,26 +193,19 @@ function decideWhileCharging(
     decision: { kind: "stop", reason },
     next: {
       ...state,
-      charging: false,
       currentAmps: null,
       switchedAt: snapshot.at,
       switchCount: state.switchCount + 1,
     },
   });
-  const hold = (reason: HoldReason): ChargeOutcome => ({
-    decision: { kind: "hold", reason },
-    next: state,
-  });
   if (snapshot.fuseHeadroomAmps < minimumCurrentAmps) {
     return stop("fuse-headroom");
   }
-  const changeCurrent = (): ChargeOutcome => {
-    const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
-    return {
-      decision: { kind: "change-current", currentAmps, limitedBy },
-      next: { ...state, currentAmps, currentChangedAt: snapshot.at },
-    };
-  };
+  const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
+  const changeCurrent = (): ChargeOutcome => ({
+    decision: { kind: "change-current", currentAmps, limitedBy },
+    next: { ...state, currentAmps, currentChangedAt: snapshot.at },
+  });
   const surplusGone = !enoughSurplus(
     snapshot.stopWindowSurplusWatts,
     snapshot,
@@ -229,19 +220,18 @@ function decideWhileCharging(
   if ((state.currentAmps ?? 0) > Math.floor(snapshot.fuseHeadroomAmps)) {
     return changeCurrent();
   }
-  if (surplusGone) return hold("minimum-on-time");
-  const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
+  if (surplusGone) return hold("minimum-on-time", state);
   if (
     Math.abs(currentAmps - (state.currentAmps ?? 0)) < settings.deadBandAmps
   ) {
-    return hold("within-dead-band");
+    return hold("within-dead-band", state);
   }
   if (
     state.currentChangedAt &&
     elapsedMinutes(state.currentChangedAt, snapshot) <
       settings.currentHoldMinutes
   ) {
-    return hold("current-hold");
+    return hold("current-hold", state);
   }
   return changeCurrent();
 }
@@ -251,30 +241,25 @@ function decideWhileStopped(
   state: SimulatedCharger,
   settings: ShadowSettings
 ): ChargeOutcome {
-  const hold = (reason: HoldReason): ChargeOutcome => ({
-    decision: { kind: "hold", reason },
-    next: state,
-  });
   if (snapshot.fuseHeadroomAmps < minimumCurrentAmps) {
-    return hold("fuse-headroom");
+    return hold("fuse-headroom", state);
   }
   if (!enoughSurplus(snapshot.startWindowSurplusWatts, snapshot, settings))
-    return hold("surplus-too-low");
+    return hold("surplus-too-low", state);
   if (
     state.switchedAt &&
     elapsedMinutes(state.switchedAt, snapshot) < settings.minimumOffTimeMinutes
   ) {
-    return hold("minimum-off-time");
+    return hold("minimum-off-time", state);
   }
   if (switchBudget - state.switchCount < switchesNeededToStart) {
-    return hold("switch-budget");
+    return hold("switch-budget", state);
   }
   const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
   return {
     decision: { kind: "start", currentAmps, limitedBy },
     next: {
       ...state,
-      charging: true,
       currentAmps,
       currentChangedAt: snapshot.at,
       switchedAt: snapshot.at,
@@ -315,6 +300,14 @@ function chargingCurrent(
     return { currentAmps: minimumCurrentAmps, limitedBy: "minimum-current" };
   }
   return { currentAmps: surplusAmps, limitedBy: "surplus" };
+}
+
+function hold(reason: HoldReason, state: SimulatedCharger): ChargeOutcome {
+  return { decision: { kind: "hold", reason }, next: state };
+}
+
+function isCharging(state: SimulatedCharger): boolean {
+  return state.currentAmps !== null;
 }
 
 function elapsedMinutes(since: Date, snapshot: ShadowSnapshot): number {

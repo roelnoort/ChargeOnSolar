@@ -125,27 +125,31 @@ function fuseHeadroom(
   return settings.mainFuseAmps - Math.max(...houseCurrents);
 }
 
+const minute = 60_000;
+
 /** The mean Surplus over the Readings of the last few minutes. */
 class SurplusWindow {
   readonly #milliseconds: number;
-  readonly #samples: { at: number; watts: number }[] = [];
+  readonly #surpluses: { at: number; watts: number }[] = [];
   #total = 0;
 
   constructor(minutes: number) {
-    this.#milliseconds = minutes * 60_000;
+    this.#milliseconds = minutes * minute;
   }
 
   add(at: Date, watts: number): void {
-    this.#samples.push({ at: at.getTime(), watts });
+    this.#surpluses.push({ at: at.getTime(), watts });
     this.#total += watts;
     const oldestKept = at.getTime() - this.#milliseconds;
-    while ((this.#samples[0]?.at ?? oldestKept) <= oldestKept) {
-      this.#total -= this.#samples.shift()?.watts ?? 0;
+    while ((this.#surpluses[0]?.at ?? oldestKept) <= oldestKept) {
+      this.#total -= this.#surpluses.shift()?.watts ?? 0;
     }
   }
 
   average(): number {
-    return this.#samples.length === 0 ? 0 : this.#total / this.#samples.length;
+    return this.#surpluses.length === 0
+      ? 0
+      : this.#total / this.#surpluses.length;
   }
 }
 

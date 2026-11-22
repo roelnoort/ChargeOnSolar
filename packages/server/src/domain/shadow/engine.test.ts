@@ -36,7 +36,6 @@ function snapshot(overrides: Partial<ShadowSnapshot> = {}): ShadowSnapshot {
 function stopped(overrides: Partial<SimulatedCharger> = {}): SimulatedCharger {
   return {
     carConnected: true,
-    charging: false,
     currentAmps: null,
     currentChangedAt: null,
     switchedAt: at(-60),
@@ -49,7 +48,6 @@ function stopped(overrides: Partial<SimulatedCharger> = {}): SimulatedCharger {
 function charging(overrides: Partial<SimulatedCharger> = {}): SimulatedCharger {
   return {
     carConnected: true,
-    charging: true,
     currentAmps: 10,
     currentChangedAt: at(-60),
     switchedAt: at(-60),
@@ -141,7 +139,6 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
         });
         expect(next).toEqual({
           carConnected: true,
-          charging: true,
           currentAmps: 12,
           currentChangedAt: at(0),
           switchedAt: at(0),
@@ -286,7 +283,6 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
 
           expect(next).toEqual({
             carConnected: true,
-            charging: false,
             currentAmps: null,
             currentChangedAt: at(-60),
             switchedAt: at(0),
@@ -326,7 +322,6 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
             limitedBy: "surplus",
           });
           expect(next).toMatchObject({
-            charging: true,
             currentAmps: 12,
             currentChangedAt: at(0),
             switchedAt: at(-60),
@@ -486,7 +481,6 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
 
           expect(decision).toEqual({ kind: "car-not-accepting" });
           expect(next).toMatchObject({
-            charging: false,
             currentAmps: null,
             switchedAt: at(0),
             switchCount: 4,
@@ -518,7 +512,7 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
           );
 
           expect(next).toMatchObject({
-            charging: false,
+            currentAmps: null,
             switchedAt: at(0),
             switchCount: 4,
           });
