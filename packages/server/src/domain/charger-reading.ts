@@ -1,5 +1,4 @@
-import type { PhaseSetting } from "@charge-on-solar/shared";
-import type { P1PhaseName } from "./p1-reading.ts";
+import type { P1PhaseName, PhaseSetting } from "@charge-on-solar/shared";
 
 /** A Reading of the charger and its installation, from the Zaptec cloud. */
 export interface ChargerReading {

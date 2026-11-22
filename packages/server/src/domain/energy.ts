@@ -1,5 +1,10 @@
+import {
+  type P1PhaseName,
+  type PhaseSetting,
+  p1Phases,
+} from "@charge-on-solar/shared";
 import type { ChargerReading } from "./charger-reading.ts";
-import { type P1PhaseName, type P1Reading, p1Phases } from "./p1-reading.ts";
+import type { P1Reading } from "./p1-reading.ts";
 
 /** Surplus in watts: Charger power minus Net power, totalled over all phases. */
 export function surplusW(
@@ -11,7 +16,7 @@ export function surplusW(
 }
 
 // A Go 2 on 1 phase switches to L1.
-const phasesInUse: Record<1 | 3, readonly P1PhaseName[]> = {
+const phasesInUse: Record<PhaseSetting, readonly P1PhaseName[]> = {
   1: ["l1"],
   3: p1Phases,
 };

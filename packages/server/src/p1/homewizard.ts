@@ -1,9 +1,11 @@
 // The HomeWizard P1 meter's local API v2: a WebSocket over TLS that pushes a
 // measurement about once a second.
+
+import type { P1Phase } from "@charge-on-solar/shared";
 import { WebSocket } from "ws";
 import { z } from "zod";
 import type { Cancel, Clock } from "../clock.ts";
-import type { P1Phase, P1Reading } from "../domain/p1-reading.ts";
+import type { P1Reading } from "../domain/p1-reading.ts";
 import type { P1Client, P1Connection } from "./client.ts";
 import { homeWizardCa } from "./homewizard-ca.ts";
 

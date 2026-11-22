@@ -5,6 +5,11 @@ export const liveStreamPath = "/api/live/stream";
 /** The SSE event name `GET /api/live/stream` sends the snapshot under. */
 export const snapshotEvent = "snapshot";
 
+/** The grid's three phases, as the P1 meter and the charger name them. */
+export const p1Phases = ["l1", "l2", "l3"] as const;
+export const p1PhaseName = z.enum(p1Phases);
+export type P1PhaseName = z.infer<typeof p1PhaseName>;
+
 /** One phase as the P1 meter measured it. Null when the meter leaves it out. */
 export const p1Phase = z.object({
   powerW: z.number().nullable(),
@@ -17,7 +22,7 @@ export type P1Phase = z.infer<typeof p1Phase>;
 export const p1Reading = z.object({
   /** Net power in watts: positive when importing, negative when exporting. */
   netPowerW: z.number(),
-  phases: z.object({ l1: p1Phase, l2: p1Phase, l3: p1Phase }),
+  phases: z.record(p1PhaseName, p1Phase),
   /** The meter's own timestamp, as it sent it (local time, no offset). */
   deviceTimestamp: z.string().nullable(),
 });
@@ -64,11 +69,7 @@ export const chargerReading = z.object({
   /** The charger's maximum current, in amperes. */
   maxCurrentA: z.number().nullable(),
   /** The current the charger draws on each phase, in amperes. */
-  phaseCurrentsA: z.object({
-    l1: z.number().nullable(),
-    l2: z.number().nullable(),
-    l3: z.number().nullable(),
-  }),
+  phaseCurrentsA: z.record(p1PhaseName, z.number().nullable()),
   zaptecMode,
   /** Whether Zaptec's load balancing (APM) is in control. */
   apmActive: z.boolean(),
