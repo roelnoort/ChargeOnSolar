@@ -1,0 +1,41 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["**", "!drizzle"]
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["better-sqlite3", "drizzle-orm", "drizzle-orm/**"],
+                "message": "Only the storage module touches the database: call its public functions from storage/index.ts."
+              },
+              {
+                "group": ["**/storage/*", "!**/storage/index.ts"],
+                "message": "Import the storage module through its single public entry, storage/index.ts."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/storage/**", "drizzle.config.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
+}
