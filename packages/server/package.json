@@ -9,7 +9,8 @@
     "typecheck": "tsc -p .",
     "db:generate": "drizzle-kit generate",
     "db:drift": "node scripts/check-migration-drift.ts",
-    "replay": "node scripts/replay-shadow.ts"
+    "replay": "node scripts/replay-shadow.ts",
+    "users": "node src/users-cli.ts"
   },
   "dependencies": {
     "@charge-on-solar/shared": "workspace:*",
@@ -17,10 +18,14 @@
     "better-sqlite3": "^13.2.0",
     "drizzle-orm": "~0.45.4",
     "hono": "4.13.19",
+    "nodemailer": "^10.6.1",
+    "ws": "^8.23.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/ws": "^8.18.2",
     "drizzle-kit": "^0.31.11"
   }
 }

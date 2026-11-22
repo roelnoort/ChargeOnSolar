@@ -3,17 +3,39 @@ import { type ApiError, healthPath } from "@charge-on-solar/shared";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { authRoutes } from "./api/auth.ts";
 import { toHealth } from "./api/health.ts";
+import { addLiveRoutes } from "./api/live.ts";
+import {
+  requireCsrfHeader,
+  requireSession,
+  type SessionEnv,
+} from "./api/session.ts";
+import type { Auth } from "./auth.ts";
+import type { Clock } from "./clock.ts";
+import type { LiveState } from "./domain/live-state.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
   storage: Storage;
+  auth: Auth;
+  live: LiveState;
+  clock: Clock;
+  /** The main fuse rating, in amperes. */
+  mainFuseA: number;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
 
-export function createApp({ storage, webRoot }: AppDependencies): Hono {
-  const app = new Hono();
+export function createApp({
+  storage,
+  auth,
+  live,
+  clock,
+  mainFuseA,
+  webRoot,
+}: AppDependencies): Hono<SessionEnv> {
+  const app = new Hono<SessionEnv>();
 
   app.onError((error, c) => {
     const { status, message } =
@@ -25,11 +47,16 @@ export function createApp({ storage, webRoot }: AppDependencies): Hono {
     return c.json(body, status);
   });
 
+  app.use("/api/*", requireCsrfHeader, requireSession(auth));
+  authRoutes(app, { auth, storage });
+
   app.get(healthPath, async (c) => {
     const startup = await storage.latestStartup();
     if (!startup) throw new HTTPException(503, { message: "Not started" });
     return c.json(toHealth(startup));
   });
+
+  addLiveRoutes(app, { live, clock, mainFuseA });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

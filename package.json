@@ -11,6 +11,7 @@
     "dev": "pnpm --parallel --filter @charge-on-solar/server --filter @charge-on-solar/web run dev",
     "build": "pnpm --filter @charge-on-solar/web run build",
     "start": "pnpm --filter @charge-on-solar/server run start",
+    "users": "pnpm --filter @charge-on-solar/server run users",
     "typecheck": "tsc -p .sandcastle/agent-workflows",
     "typecheck:all": "pnpm -r --include-workspace-root --if-present run typecheck",
     "test": "vitest run",

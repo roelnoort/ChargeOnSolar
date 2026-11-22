@@ -12,13 +12,21 @@ afterEach(async () => {
   server = undefined;
 });
 
+async function signedInHeaders(on: TestServer) {
+  await on.addUser({ name: "Anna", email: "anna@example.com" });
+  return { headers: await on.signIn("anna@example.com") };
+}
+
 describe("GET /api/health", () => {
   it("answers with the server's version and when it started", async () => {
     server = await startTestServer({
       now: new Date("2026-06-01T08:30:00.000Z"),
     });
 
-    const response = await server.request(healthPath);
+    const response = await server.request(
+      healthPath,
+      await signedInHeaders(server)
+    );
 
     expect(response.status).toBe(200);
     expect(health.parse(await response.json())).toEqual({
@@ -32,9 +40,12 @@ describe("GET /api/health", () => {
     server = await startTestServer({
       now: new Date("2026-06-01T08:30:00.000Z"),
     });
+    const signedIn = await signedInHeaders(server);
     server.clock.advance(60_000);
 
-    const body = health.parse(await (await server.request(healthPath)).json());
+    const body = health.parse(
+      await (await server.request(healthPath, signedIn)).json()
+    );
 
     expect(body.startedAt).toBe("2026-06-01T08:30:00.000Z");
   });
@@ -44,7 +55,10 @@ describe("an unknown API route", () => {
   it("answers 404 in the shared error shape", async () => {
     server = await startTestServer();
 
-    const response = await server.request("/api/no-such-thing");
+    const response = await server.request(
+      "/api/no-such-thing",
+      await signedInHeaders(server)
+    );
 
     expect(response.status).toBe(404);
     expect(apiError.parse(await response.json()).error.status).toBe(404);
@@ -96,7 +110,10 @@ describe("the web app", () => {
   it("does not swallow unknown API routes", async () => {
     server = await startTestServer({ webRoot: await builtWebApp() });
 
-    const response = await server.request("/api/no-such-thing");
+    const response = await server.request(
+      "/api/no-such-thing",
+      await signedInHeaders(server)
+    );
 
     expect(response.status).toBe(404);
   });
