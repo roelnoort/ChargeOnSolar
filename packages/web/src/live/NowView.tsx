@@ -121,7 +121,7 @@ function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
       <FlowCircle
         label={grid?.label ?? "Grid"}
         power={grid?.power}
-        kind={netPowerW !== undefined && netPowerW > 0 ? "import" : "export"}
+        kind={grid?.direction === "importing" ? "import" : "export"}
       />
     </section>
   );

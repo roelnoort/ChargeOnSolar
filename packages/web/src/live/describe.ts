@@ -30,9 +30,12 @@ export function formatSignedPower(watts: number): string {
 }
 
 /** Net power is positive when importing, negative when exporting. */
+function netPowerDirection(netPowerW: number): NetPowerDirection {
+  return netPowerW > 0 ? "importing" : netPowerW < 0 ? "exporting" : "balanced";
+}
+
 export function describeNetPower(netPowerW: number) {
-  const direction: NetPowerDirection =
-    netPowerW > 0 ? "importing" : netPowerW < 0 ? "exporting" : "balanced";
+  const direction = netPowerDirection(netPowerW);
   return {
     direction,
     label: directionLabels[direction],
@@ -40,11 +43,19 @@ export function describeNetPower(netPowerW: number) {
   };
 }
 
-/** Power from the grid is positive, power to the grid negative. */
+const gridLabels: Record<NetPowerDirection, string> = {
+  importing: "From grid",
+  exporting: "To grid",
+  balanced: "Grid",
+};
+
 export function describeGrid(netPowerW: number) {
-  const label =
-    netPowerW > 0 ? "From grid" : netPowerW < 0 ? "To grid" : "Grid";
-  return { label, power: formatPower(netPowerW) };
+  const direction = netPowerDirection(netPowerW);
+  return {
+    direction,
+    label: gridLabels[direction],
+    power: formatPower(netPowerW),
+  };
 }
 
 export function formatCurrent(amperes: number): string {

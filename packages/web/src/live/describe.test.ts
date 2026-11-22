@@ -82,17 +82,26 @@ describe("the data age", () => {
 describe("describing the grid circle", () => {
   it("says power comes from the grid when importing", () => {
     expect(describeGrid(2300)).toEqual({
+      direction: "importing",
       label: "From grid",
       power: "2.30 kW",
     });
   });
 
   it("says power goes to the grid when exporting", () => {
-    expect(describeGrid(-1230)).toEqual({ label: "To grid", power: "1.23 kW" });
+    expect(describeGrid(-1230)).toEqual({
+      direction: "exporting",
+      label: "To grid",
+      power: "1.23 kW",
+    });
   });
 
   it("says just grid at zero", () => {
-    expect(describeGrid(0)).toEqual({ label: "Grid", power: "0 W" });
+    expect(describeGrid(0)).toEqual({
+      direction: "balanced",
+      label: "Grid",
+      power: "0 W",
+    });
   });
 });
 
