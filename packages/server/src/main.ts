@@ -1,20 +1,25 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { systemClock } from "./clock.ts";
+import { mailerFromEnv } from "./mailer.ts";
 import { assembleServer, dataFiles } from "./server.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
+const envFile = resolve(here, "../.env");
+if (existsSync(envFile)) process.loadEnvFile(envFile);
 const dataDir = resolve(process.env.DATA_DIR ?? resolve(here, "../data"));
 const port = Number(process.env.PORT ?? 3000);
 const webRoot = resolve(here, "../../web/dist");
 
+const log = (line: string) => console.log(line);
 mkdirSync(dataDir, { recursive: true });
 const server = await assembleServer({
   clock: systemClock,
+  mailer: mailerFromEnv(process.env, log),
   ...dataFiles(dataDir),
-  log: (line) => console.log(line),
+  log,
   webRoot,
 });
 
