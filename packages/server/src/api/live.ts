@@ -1,5 +1,6 @@
 import {
   type ChargerState,
+  decisionEvent,
   type LiveSnapshot,
   livePath,
   liveStreamPath,
@@ -13,6 +14,7 @@ import type { ChargerReading } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import type { SessionEnv } from "./session.ts";
+import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
@@ -59,6 +61,7 @@ export function toLiveSnapshot(
 ): LiveSnapshot {
   const p1 = live.p1();
   const charger = live.charger();
+  const shadowDecision = live.shadowDecision();
   return {
     at: now.toISOString(),
     p1: p1
@@ -91,6 +94,9 @@ export function toLiveSnapshot(
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
+    shadowDecision: shadowDecision
+      ? toShadowDecisionRecord(shadowDecision)
+      : null,
   };
 }
 
@@ -130,8 +136,15 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
+      const stopDecisions = live.onShadowDecision((decision) => {
+        void stream.writeSSE({
+          event: decisionEvent,
+          data: JSON.stringify(toShadowDecisionRecord(decision)),
+        });
+      });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
+      stopDecisions();
       pending?.();
     })
   );

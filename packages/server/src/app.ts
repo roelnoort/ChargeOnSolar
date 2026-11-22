@@ -11,6 +11,7 @@ import {
   requireSession,
   type SessionEnv,
 } from "./api/session.ts";
+import { addShadowRoutes } from "./api/shadow.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
@@ -57,6 +58,7 @@ export function createApp({
   });
 
   addLiveRoutes(app, { live, clock, mainFuseA });
+  addShadowRoutes(app, { storage });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

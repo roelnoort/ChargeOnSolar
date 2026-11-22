@@ -112,3 +112,37 @@ export const chargerReadings = sqliteTable(
   },
   (table) => [index("charger_readings_received_at").on(table.receivedAt)]
 );
+
+/**
+ * One Shadow decision per tick of the Shadow runner, with the averaged live
+ * data and Zaptec's own state it was made beside. Kept, never cleaned up.
+ */
+export const shadowDecisions = sqliteTable(
+  "shadow_decisions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    /** The decision, with its Charging current, limit or reason, as JSON. */
+    decision: text("decision").notNull(),
+    /** The simulated charger after the decision, as JSON. */
+    simulated: text("simulated").notNull(),
+    surplusW: real("surplus_w"),
+    netPowerW: real("net_power_w"),
+    solarProductionW: real("solar_production_w"),
+    chargerPowerW: real("charger_power_w"),
+    fuseHeadroomA: real("fuse_headroom_a"),
+    startWindowSurplusW: real("start_window_surplus_w"),
+    stopWindowSurplusW: real("stop_window_surplus_w"),
+    p1AgeMs: integer("p1_age_ms"),
+    chargerAgeMs: integer("charger_age_ms"),
+    solarAgeMs: integer("solar_age_ms"),
+    availableCurrentMode: integer("available_current_mode"),
+    enabledFeatures: integer("enabled_features"),
+    surplusModeActive: integer("surplus_mode_active", { mode: "boolean" }),
+    chargeCurrentSetA: real("charge_current_set_a"),
+    rulesVersion: integer("rules_version").notNull(),
+    /** The Shadow settings, Solar mode included, as JSON. */
+    settings: text("settings").notNull(),
+  },
+  (table) => [index("shadow_decisions_at").on(table.at)]
+);

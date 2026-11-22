@@ -39,6 +39,7 @@ export interface TestServerOptions {
   /** Start with the fake Zaptec cloud unreachable. */
   zaptecUnreachable?: boolean;
   mainFuseA?: number;
+  shadowTickMs?: number;
 }
 
 export interface TestServer {
@@ -67,6 +68,11 @@ export interface TestServer {
    * read that comes due to be handled.
    */
   pollZaptec(milliseconds?: number): Promise<void>;
+  /**
+   * Moves the clock on a second at a time, letting everything that comes
+   * due (Zaptec reads, Shadow runner ticks) finish before the next second.
+   */
+  advance(milliseconds: number): Promise<void>;
   storage: Storage;
   /** Every line the server logged. */
   logs: string[];
@@ -103,6 +109,7 @@ export async function startTestServer(
     p1Client: p1,
     zaptecClient: zaptec,
     mainFuseA: options.mainFuseA,
+    shadowTickMs: options.shadowTickMs,
     webRoot: options.webRoot,
   });
   if (!p1.unreachable) await p1.whenConnected();
@@ -157,6 +164,12 @@ export async function startTestServer(
       await read;
       await settle();
     },
+    async advance(milliseconds) {
+      for (let left = milliseconds; left > 0; left -= second) {
+        clock.advance(Math.min(left, second));
+        await settle();
+      }
+    },
     storage: server.storage,
     logs,
     databaseFile,
@@ -170,6 +183,8 @@ export async function startTestServer(
   };
   return testServer;
 }
+
+const second = 1000;
 
 /** Lets the promise callbacks already queued run, e.g. a collector's. */
 function settle(): Promise<void> {
