@@ -18,7 +18,6 @@ const publicRoutes = new Set([`POST ${loginCodePath}`, `POST ${loginPath}`]);
 
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
 
-/** Rejects a state-changing request that lacks the CSRF header. */
 export const requireCsrfHeader: MiddlewareHandler = async (c, next) => {
   if (
     !safeMethods.has(c.req.method) &&
