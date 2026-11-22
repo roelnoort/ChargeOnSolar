@@ -512,6 +512,9 @@ const storedSimulatedCharger = z.object({
   currentChangedAt: storedDate.nullable(),
   switchedAt: storedDate.nullable(),
   switchCount: z.number(),
+  // Rows recorded before the holds were kept with the simulated charger.
+  switchHoldMinutes: z.number().nullable().default(null),
+  currentHoldMinutes: z.number().nullable().default(null),
 }) satisfies z.ZodType<SimulatedCharger, unknown>;
 
 const settingsKey = "settings";

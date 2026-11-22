@@ -40,6 +40,8 @@ function stopped(overrides: Partial<SimulatedCharger> = {}): SimulatedCharger {
     currentChangedAt: null,
     switchedAt: at(-60),
     switchCount: 1,
+    switchHoldMinutes: 15,
+    currentHoldMinutes: null,
     ...overrides,
   };
 }
@@ -52,6 +54,8 @@ function charging(overrides: Partial<SimulatedCharger> = {}): SimulatedCharger {
     currentChangedAt: at(-60),
     switchedAt: at(-60),
     switchCount: 2,
+    switchHoldMinutes: 15,
+    currentHoldMinutes: 15,
     ...overrides,
   };
 }
@@ -143,6 +147,8 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
           currentChangedAt: at(0),
           switchedAt: at(0),
           switchCount: 4,
+          switchHoldMinutes: 15,
+          currentHoldMinutes: 15,
         });
       });
     });
@@ -287,6 +293,8 @@ describe.each(phaseSettings)("on %i phase(s)", (phases) => {
             currentChangedAt: at(-60),
             switchedAt: at(0),
             switchCount: 6,
+            switchHoldMinutes: 15,
+            currentHoldMinutes: 15,
           });
         });
       });

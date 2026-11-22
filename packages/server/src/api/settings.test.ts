@@ -222,6 +222,65 @@ describe("Settings", () => {
     expect(next?.chargingCurrentA).toBe(14);
   });
 
+  it("do not shorten a current hold already under way", async () => {
+    const { p1, advance } = await start({ charger: carPluggedIn });
+    p1.send(exporting(3300));
+    await advance(minute);
+
+    await changeSettings({ currentHoldMinutes: 1 });
+    p1.send(exporting(2300));
+    await advance(5 * minute);
+
+    const [started, ...after] = await decisions();
+    expect(started?.decision).toMatchObject({ kind: "start", currentAmps: 14 });
+    expect(after.map(({ chargingCurrentA }) => chargingCurrentA)).toEqual([
+      14, 14, 14, 14, 14,
+    ]);
+  });
+
+  it("do not shorten a minimum on-time already under way", async () => {
+    const { p1, advance } = await start({ charger: carPluggedIn });
+    p1.send(exporting(3300));
+    await advance(minute);
+
+    await changeSettings({ minimumOnTimeMinutes: 1 });
+    p1.send(exporting(0));
+    await advance(12 * minute);
+
+    const [started, ...after] = await decisions();
+    expect(started?.decision).toMatchObject({ kind: "start" });
+    expect(after.at(-1)?.decision).toEqual({
+      kind: "hold",
+      reason: "minimum-on-time",
+    });
+  });
+
+  it("do not shorten a minimum off-time already under way", async () => {
+    const { p1, advance } = await start({ charger: carPluggedIn });
+    await changeSettings({ minimumOnTimeMinutes: 1, stopWindowMinutes: 1 });
+    p1.send(exporting(3300));
+    await advance(minute);
+    p1.send(exporting(0));
+    await advance(3 * minute);
+    const stopped = (await decisions()).find(
+      ({ decision }) => decision.kind === "stop"
+    );
+    if (!stopped) throw new Error("The simulated charge session never stopped");
+
+    await changeSettings({ minimumOffTimeMinutes: 1, startWindowMinutes: 1 });
+    p1.send(exporting(3300));
+    await advance(5 * minute);
+
+    const sinceStop = (await decisions()).filter(({ at }) => at > stopped.at);
+    expect(sinceStop.map(({ decision }) => decision.kind)).not.toContain(
+      "start"
+    );
+    expect(sinceStop.at(-1)?.decision).toEqual({
+      kind: "hold",
+      reason: "minimum-off-time",
+    });
+  });
+
   it("change the tick interval from the next tick on", async () => {
     const { p1, advance } = await start({ charger: carPluggedIn });
     p1.send(exporting(3300));
