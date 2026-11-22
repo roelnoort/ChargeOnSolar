@@ -6,6 +6,7 @@ import { cpSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import config from "../drizzle.config.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const migrations = join(packageDir, "drizzle");
@@ -27,8 +28,8 @@ try {
       "exec",
       "drizzle-kit",
       "generate",
-      "--dialect=sqlite",
-      "--schema=./src/storage/schema.ts",
+      `--dialect=${config.dialect}`,
+      `--schema=${config.schema}`,
       // drizzle-kit mangles an absolute path here.
       `--out=${relative(packageDir, copy)}`,
     ],
