@@ -1,5 +1,4 @@
-export const p1Phases = ["l1", "l2", "l3"] as const;
-export type P1PhaseName = (typeof p1Phases)[number];
+import type { P1PhaseName } from "@charge-on-solar/shared";
 
 /** One phase as the P1 meter measured it. Null when the meter leaves it out. */
 export interface P1Phase {

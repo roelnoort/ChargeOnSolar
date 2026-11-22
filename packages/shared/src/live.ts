@@ -5,6 +5,10 @@ export const liveStreamPath = "/api/live/stream";
 /** The SSE event name `GET /api/live/stream` sends the snapshot under. */
 export const snapshotEvent = "snapshot";
 
+/** The grid's phases, as the P1 meter names them. */
+export const p1PhaseName = z.enum(["l1", "l2", "l3"]);
+export type P1PhaseName = z.infer<typeof p1PhaseName>;
+
 /** One phase as the P1 meter measured it. Null when the meter leaves it out. */
 export const p1Phase = z.object({
   powerW: z.number().nullable(),
@@ -17,7 +21,7 @@ export type P1Phase = z.infer<typeof p1Phase>;
 export const p1Reading = z.object({
   /** Net power in watts: positive when importing, negative when exporting. */
   netPowerW: z.number(),
-  phases: z.object({ l1: p1Phase, l2: p1Phase, l3: p1Phase }),
+  phases: z.record(p1PhaseName, p1Phase),
   /** The meter's own timestamp, as it sent it (local time, no offset). */
   deviceTimestamp: z.string().nullable(),
 });

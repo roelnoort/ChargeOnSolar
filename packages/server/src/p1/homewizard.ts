@@ -1,6 +1,7 @@
 // The HomeWizard P1 meter's local API v2: a WebSocket over TLS that pushes a
 // measurement about once a second.
 import type { PeerCertificate } from "node:tls";
+import type { P1PhaseName } from "@charge-on-solar/shared";
 import { type ClientOptions, WebSocket } from "ws";
 import { z } from "zod";
 import type { Cancel, Clock } from "../clock.ts";
@@ -66,17 +67,17 @@ export function toP1Reading(
   data: z.infer<typeof measurement>,
   receivedAt: Date
 ): P1Reading {
-  const phase = (n: 1 | 2 | 3): P1Phase => ({
-    powerW: data[`power_l${n}_w`],
-    currentA: data[`current_l${n}_a`],
-    voltageV: data[`voltage_l${n}_v`],
+  const phase = (name: P1PhaseName): P1Phase => ({
+    powerW: data[`power_${name}_w`],
+    currentA: data[`current_${name}_a`],
+    voltageV: data[`voltage_${name}_v`],
   });
   return {
     receivedAt,
     deviceTimestamp: data.timestamp ?? null,
     // The P1 meter reports export as negative power.
     netPowerW: data.power_w,
-    phases: { l1: phase(1), l2: phase(2), l3: phase(3) },
+    phases: { l1: phase("l1"), l2: phase("l2"), l3: phase("l3") },
   };
 }
 
