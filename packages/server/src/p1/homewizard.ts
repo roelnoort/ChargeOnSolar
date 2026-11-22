@@ -57,6 +57,7 @@ const deviceMessage = z.discriminatedUnion("type", [
     data: z.object({ message: z.string() }),
   }),
 ]);
+const messageEnvelope = z.object({ type: z.string() });
 const knownTypes = new Set<string>(
   deviceMessage.options.map((o) => o.shape.type.value)
 );
@@ -126,8 +127,9 @@ export function createHomeWizardP1Client({
           } catch {
             return end("The P1 meter sent a message that is not JSON");
           }
-          const type = (parsed as { type?: unknown } | null)?.type;
-          if (typeof type !== "string" || !knownTypes.has(type)) return;
+          const envelope = messageEnvelope.safeParse(parsed);
+          if (!envelope.success || !knownTypes.has(envelope.data.type)) return;
+          const { type } = envelope.data;
           const result = deviceMessage.safeParse(parsed);
           if (!result.success) {
             return end(`The P1 meter sent an unexpected ${type} message`);
