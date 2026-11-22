@@ -42,6 +42,9 @@ export interface ShadowSettings {
   tickMin: number;
 }
 
+/** Raised whenever a rule changes, so recorded decisions say which rules made them. */
+export const shadowRulesVersion = 1;
+
 export const defaultShadowSettings: ShadowSettings = {
   startWindowMin: 5,
   stopWindowMin: 10,
@@ -139,7 +142,20 @@ interface Outcome<Decision> {
   decision: Decision;
   next: SimulatedCharger;
 }
-export type ShadowOutcome = Outcome<ShadowDecision>;
+
+/** The figures a decision was based on, worked out from the snapshot. */
+export interface ShadowInputs {
+  /** Null when there were no Readings in the window. */
+  startAverageW: number | null;
+  stopAverageW: number | null;
+  fuseHeadroomA: number;
+}
+
+export interface ShadowOutcome extends Outcome<ShadowDecision> {
+  inputs: ShadowInputs;
+  settings: ShadowSettings;
+  rulesVersion: number;
+}
 
 function averageSurplus(
   readings: readonly PowerReading[],
@@ -182,6 +198,29 @@ export function decideShadow(
   previous: SimulatedCharger,
   settings: ShadowSettings
 ): ShadowOutcome {
+  const inputs: ShadowInputs = {
+    startAverageW: averageSurplus(
+      snapshot.readings,
+      snapshot.at,
+      settings.startWindowMin
+    ),
+    stopAverageW: averageSurplus(
+      snapshot.readings,
+      snapshot.at,
+      settings.stopWindowMin
+    ),
+    fuseHeadroomA: fuseHeadroom(settings.mainFuseA, snapshot.phaseCurrents),
+  };
+  const stamp = { inputs, settings, rulesVersion: shadowRulesVersion };
+  return { ...decide(snapshot, inputs, previous, settings), ...stamp };
+}
+
+function decide(
+  snapshot: ShadowSnapshot,
+  inputs: ShadowInputs,
+  previous: SimulatedCharger,
+  settings: ShadowSettings
+): Outcome<ShadowDecision> {
   if (snapshot.car === "no-car") {
     return { decision: { kind: "no-car" }, next: initialSimulatedCharger };
   }
@@ -191,7 +230,7 @@ export function decideShadow(
   const underlying =
     snapshot.car === "not-accepting"
       ? carNotAccepting(session)
-      : decideCharging(snapshot, session, settings);
+      : decideCharging(snapshot, inputs, session, settings);
   if (!snapshot.finalStopActive) return underlying;
   return {
     decision: { kind: "paused-by-you", underlying: underlying.decision },
@@ -210,19 +249,10 @@ function carNotAccepting(
 
 function decideCharging(
   snapshot: ShadowSnapshot,
+  { startAverageW, stopAverageW, fuseHeadroomA }: ShadowInputs,
   session: SimulatedCharger,
   settings: ShadowSettings
 ): Outcome<ChargingDecision> {
-  const startAverageW = averageSurplus(
-    snapshot.readings,
-    snapshot.at,
-    settings.startWindowMin
-  );
-  const stopAverageW = averageSurplus(
-    snapshot.readings,
-    snapshot.at,
-    settings.stopWindowMin
-  );
   if (startAverageW === null || stopAverageW === null) {
     return {
       decision: {
@@ -241,7 +271,7 @@ function decideCharging(
     wattsPerAmp: settings.voltageV * snapshot.phases,
     startAverageW,
     stopAverageW,
-    headroomA: fuseHeadroom(settings.mainFuseA, snapshot.phaseCurrents),
+    headroomA: fuseHeadroomA,
   };
   return session.charging
     ? whileCharging(inputs, session)

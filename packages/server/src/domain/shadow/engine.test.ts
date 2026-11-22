@@ -6,6 +6,7 @@ import {
   type PowerReading,
   type ShadowSnapshot,
   type SimulatedCharger,
+  shadowRulesVersion,
 } from "./engine.ts";
 
 const noon = new Date("2026-06-01T12:00:00.000Z");
@@ -478,6 +479,52 @@ describe("Shadow engine", () => {
         underlying: { kind: "start", currentA: 14 },
       });
       expect(next).toMatchObject({ charging: true, currentA: 14 });
+    });
+  });
+
+  describe("what each decision is stamped with", () => {
+    it.each([
+      { name: "a start", car: "connected" },
+      { name: "No car", car: "no-car" },
+      { name: "Car not accepting charge", car: "not-accepting" },
+    ] as const)(
+      "stamps $name with its inputs, settings and rules version",
+      ({ car }) => {
+        const settings = { ...defaultShadowSettings, mainFuseA: 20 };
+
+        const outcome = decideShadow(
+          snapshot({
+            car,
+            readings: [
+              ...surplusOf(0, { at: minutesAfter(noon, -5), minutes: 5 }),
+              ...surplusOf(3000, { minutes: 5 }),
+            ],
+            phaseCurrents: { p1A: [4, 8, 2], chargerA: [0, 2, 0] },
+          }),
+          initialSimulatedCharger,
+          settings
+        );
+
+        expect(outcome).toMatchObject({
+          inputs: {
+            startAverageW: 3000,
+            stopAverageW: 1500,
+            fuseHeadroomA: 14,
+          },
+          settings,
+          rulesVersion: shadowRulesVersion,
+        });
+      }
+    );
+
+    it("stamps no averages when there are no Readings", () => {
+      const { inputs } = decideShadow(
+        snapshot(),
+        initialSimulatedCharger,
+        defaultShadowSettings
+      );
+
+      expect(inputs).toMatchObject({ startAverageW: null, stopAverageW: null });
     });
   });
 
