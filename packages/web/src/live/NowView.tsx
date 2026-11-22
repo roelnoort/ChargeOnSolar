@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   chargerStaleAfterMs,
   dataAgeMs,
+  describeApmWarning,
   describeChargerState,
   describeDataAge,
   describeGrid,
@@ -76,11 +77,11 @@ function ageOf(
 
 function ApmOffBanner({ charger }: { charger: LiveSnapshot["charger"] }) {
   if (!charger || charger.reading.apmActive) return null;
+  const warning = describeApmWarning(charger.reading.zaptecMode);
+  if (!warning) return null;
   return (
     <p className="banner banner-warning" role="alert">
-      Zaptec's load balancing (APM) is not active: Zaptec is in{" "}
-      {describeZaptecMode(charger.reading.zaptecMode)} mode, so it does not
-      guard the main fuse.
+      {warning}
     </p>
   );
 }

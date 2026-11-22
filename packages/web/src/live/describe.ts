@@ -80,6 +80,15 @@ export function describeZaptecMode(mode: ZaptecMode): string {
   return zaptecModeLabels[mode];
 }
 
+/** The warning to show when APM is not known to guard the main fuse. */
+export function describeApmWarning(mode: ZaptecMode): string | null {
+  if (mode === "apm") return null;
+  if (mode === "unknown") {
+    return "Zaptec did not report its mode, so ChargeOnSolar cannot tell whether load balancing (APM) guards the main fuse.";
+  }
+  return `Zaptec's load balancing (APM) is not active: Zaptec is in ${describeZaptecMode(mode)} mode, so it does not guard the main fuse.`;
+}
+
 /**
  * How old a device's data is now: its age by the server's clock when the
  * snapshot was taken, plus the time since it arrived here. This way the

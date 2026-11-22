@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   chargerStaleAfterMs,
   dataAgeMs,
+  describeApmWarning,
   describeChargerState,
   describeDataAge,
   describeGrid,
@@ -128,5 +129,23 @@ describe("a signed power", () => {
   it("keeps the minus of a negative Surplus", () => {
     expect(formatSignedPower(-800)).toBe("−800 W");
     expect(formatSignedPower(4200)).toBe("4.20 kW");
+  });
+});
+
+describe("the APM warning", () => {
+  it("is not shown while Zaptec's load balancing (APM) is active", () => {
+    expect(describeApmWarning("apm")).toBeNull();
+  });
+
+  it("says APM does not guard the main fuse in another known mode", () => {
+    expect(describeApmWarning("scheduled")).toBe(
+      "Zaptec's load balancing (APM) is not active: Zaptec is in Scheduled mode, so it does not guard the main fuse."
+    );
+  });
+
+  it("does not claim a mode Zaptec did not report", () => {
+    expect(describeApmWarning("unknown")).toBe(
+      "Zaptec did not report its mode, so ChargeOnSolar cannot tell whether load balancing (APM) guards the main fuse."
+    );
   });
 });
