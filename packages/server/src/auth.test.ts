@@ -135,6 +135,20 @@ describe("asking for a Login code", () => {
     expect(server.mailer.sent).toHaveLength(5);
   });
 
+  it("holds the limit when requests for one address arrive together", async () => {
+    server = await startTestServer();
+    await server.addUser(anna);
+
+    const responses = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        post(loginCodePath, { email: anna.email })
+      )
+    );
+
+    expect(responses.filter(({ status }) => status === 429)).toHaveLength(3);
+    expect(server.mailer.sent).toHaveLength(5);
+  });
+
   it("lets the address ask again once the hour has passed", async () => {
     server = await startTestServer();
     await server.addUser(anna);
@@ -183,6 +197,19 @@ describe("logging in with a Login code", () => {
     expect(again.status).toBe(401);
   });
 
+  it("signs in only one device when the same code arrives twice at once", async () => {
+    server = await startTestServer();
+    await server.addUser(anna);
+    const code = await codeFor(anna.email);
+
+    const responses = await Promise.all([
+      post(loginPath, { email: anna.email, code }),
+      post(loginPath, { email: anna.email, code }),
+    ]);
+
+    expect(responses.map(({ status }) => status).sort()).toEqual([200, 401]);
+  });
+
   it("refuses an earlier code once a newer one was sent", async () => {
     server = await startTestServer();
     await server.addUser(anna);
@@ -210,6 +237,23 @@ describe("logging in with a Login code", () => {
     const right = await post(loginPath, { email: anna.email, code });
 
     expect(right.status).toBe(401);
+  });
+
+  it("holds the cap when wrong attempts arrive together", async () => {
+    server = await startTestServer();
+    await server.addUser(anna);
+    const code = await codeFor(anna.email);
+
+    const responses = await Promise.all([
+      ...Array.from({ length: 5 }, () =>
+        post(loginPath, { email: anna.email, code: wrongCodeThan(code) })
+      ),
+      post(loginPath, { email: anna.email, code }),
+    ]);
+
+    expect(responses.map(({ status }) => status)).toEqual(
+      Array.from({ length: 6 }, () => 401)
+    );
   });
 
   it("still accepts the code after 4 wrong attempts", async () => {

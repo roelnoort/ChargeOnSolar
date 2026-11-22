@@ -44,12 +44,11 @@ export function createAuth({ storage, mailer, clock, log }: AuthDependencies) {
     email: string
   ): Promise<"sent" | "rate-limited"> {
     const now = clock.now();
-    const recent = await storage.countLoginCodeRequestsAfter(
-      email,
-      new Date(now.getTime() - loginCodeRequestLimit.window)
-    );
-    if (recent >= loginCodeRequestLimit.requests) return "rate-limited";
-    await storage.recordLoginCodeRequest(email, now);
+    const allowed = await storage.recordLoginCodeRequest(email, now, {
+      requests: loginCodeRequestLimit.requests,
+      after: new Date(now.getTime() - loginCodeRequestLimit.window),
+    });
+    if (!allowed) return "rate-limited";
 
     const user = await storage.findUserByEmail(email);
     if (!user) return "sent";
@@ -76,19 +75,18 @@ export function createAuth({ storage, mailer, clock, log }: AuthDependencies) {
     const now = clock.now();
     const user = await storage.findUserByEmail(attempt.email);
     if (!user) return undefined;
-    const live = await storage.findLiveLoginCode(user.id, now);
-    if (!live) return undefined;
-    if (!sameHash(live.codeHash, hashCode(user, attempt.code))) {
-      await storage.recordWrongAttempt(live.id, wrongAttemptCap, now);
-      return undefined;
-    }
     const token = randomBytes(32).toString("base64url");
-    const device = await storage.redeemLoginCode(live.id, {
-      userId: user.id,
-      tokenHash: hashToken(token),
-      deviceName: attempt.deviceName,
-      at: now,
-    });
+    const candidate = hashCode(user, attempt.code);
+    const device = await storage.redeemLoginCode(
+      { matches: (codeHash) => sameHash(codeHash, candidate), wrongAttemptCap },
+      {
+        userId: user.id,
+        tokenHash: hashToken(token),
+        deviceName: attempt.deviceName,
+        at: now,
+      }
+    );
+    if (!device) return undefined;
     return { token, device, user };
   }
 

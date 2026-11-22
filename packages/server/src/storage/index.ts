@@ -4,11 +4,11 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-import { and, count, desc, eq, gt, gte, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Clock } from "../clock.ts";
-import type { NewLoginCode, StoredLoginCode } from "../domain/login-code.ts";
+import type { NewLoginCode } from "../domain/login-code.ts";
 import type {
   NewSignedInDevice,
   SignedInDevice,
@@ -29,21 +29,31 @@ export interface Storage {
   listUsers(): Promise<User[]>;
   findUserByEmail(email: string): Promise<User | undefined>;
 
-  recordLoginCodeRequest(email: string, at: Date): Promise<void>;
-  countLoginCodeRequestsAfter(email: string, after: Date): Promise<number>;
+  /**
+   * Records a request for a Login code, unless the address already made
+   * `limit.requests` of them after `limit.after`: then false, and nothing is
+   * recorded. One step, so requests arriving together cannot pass the limit.
+   */
+  recordLoginCodeRequest(
+    email: string,
+    at: Date,
+    limit: { requests: number; after: Date }
+  ): Promise<boolean>;
   /** Saves a new Login code and retires the User's earlier ones. */
   saveLoginCode(code: NewLoginCode): Promise<void>;
-  findLiveLoginCode(
-    userId: number,
-    now: Date
-  ): Promise<StoredLoginCode | undefined>;
-  /** Counts a wrong attempt, retiring the code once it reaches the cap. */
-  recordWrongAttempt(codeId: number, cap: number, at: Date): Promise<void>;
-  /** Retires the code and signs the device in, both or neither. */
+  /**
+   * Tries the User's live Login code in one step, so two requests arriving
+   * together cannot both use it or slip past the cap. When `matches` accepts
+   * its hash, retires the code and signs the device in; otherwise counts a
+   * wrong attempt, retiring the code once it reaches the cap.
+   */
   redeemLoginCode(
-    codeId: number,
+    attempt: {
+      matches: (codeHash: string) => boolean;
+      wrongAttemptCap: number;
+    },
     device: NewSignedInDevice
-  ): Promise<SignedInDevice>;
+  ): Promise<SignedInDevice | undefined>;
 
   findSignedInDevice(
     tokenHash: string
@@ -135,21 +145,22 @@ function storageOn(
         .get();
     },
 
-    async recordLoginCodeRequest(email, at) {
-      db.insert(schema.loginCodeRequests).values({ email, at }).run();
-    },
-    async countLoginCodeRequestsAfter(email, after) {
-      const row = db
-        .select({ requests: count() })
-        .from(schema.loginCodeRequests)
-        .where(
-          and(
-            eq(schema.loginCodeRequests.email, email),
-            gt(schema.loginCodeRequests.at, after)
+    async recordLoginCodeRequest(email, at, limit) {
+      return db.transaction((tx) => {
+        const recent = tx
+          .select({ requests: count() })
+          .from(schema.loginCodeRequests)
+          .where(
+            and(
+              eq(schema.loginCodeRequests.email, email),
+              gt(schema.loginCodeRequests.at, limit.after)
+            )
           )
-        )
-        .get();
-      return row?.requests ?? 0;
+          .get();
+        if ((recent?.requests ?? 0) >= limit.requests) return false;
+        tx.insert(schema.loginCodeRequests).values({ email, at }).run();
+        return true;
+      });
     },
     async saveLoginCode({ userId, codeHash, createdAt, expiresAt }) {
       db.transaction((tx) => {
@@ -167,48 +178,42 @@ function storageOn(
           .run();
       });
     },
-    async findLiveLoginCode(userId, now) {
-      return db
-        .select({
-          id: schema.loginCodes.id,
-          userId: schema.loginCodes.userId,
-          codeHash: schema.loginCodes.codeHash,
-          expiresAt: schema.loginCodes.expiresAt,
-          wrongAttempts: schema.loginCodes.wrongAttempts,
-        })
-        .from(schema.loginCodes)
-        .where(
-          and(
-            eq(schema.loginCodes.userId, userId),
-            isNull(schema.loginCodes.retiredAt),
-            gt(schema.loginCodes.expiresAt, now)
-          )
-        )
-        .orderBy(desc(schema.loginCodes.id))
-        .get();
-    },
-    async recordWrongAttempt(codeId, cap, at) {
-      db.transaction((tx) => {
-        tx.update(schema.loginCodes)
-          .set({ wrongAttempts: sql`${schema.loginCodes.wrongAttempts} + 1` })
-          .where(eq(schema.loginCodes.id, codeId))
-          .run();
-        tx.update(schema.loginCodes)
-          .set({ retiredAt: at })
+    async redeemLoginCode(
+      { matches, wrongAttemptCap },
+      { userId, tokenHash, deviceName, at }
+    ) {
+      return db.transaction((tx) => {
+        const live = tx
+          .select({
+            id: schema.loginCodes.id,
+            codeHash: schema.loginCodes.codeHash,
+            wrongAttempts: schema.loginCodes.wrongAttempts,
+          })
+          .from(schema.loginCodes)
           .where(
             and(
-              eq(schema.loginCodes.id, codeId),
-              gte(schema.loginCodes.wrongAttempts, cap)
+              eq(schema.loginCodes.userId, userId),
+              isNull(schema.loginCodes.retiredAt),
+              gt(schema.loginCodes.expiresAt, at)
             )
           )
-          .run();
-      });
-    },
-    async redeemLoginCode(codeId, { userId, tokenHash, deviceName, at }) {
-      return db.transaction((tx) => {
+          .orderBy(desc(schema.loginCodes.id))
+          .get();
+        if (!live) return undefined;
+        if (!matches(live.codeHash)) {
+          const wrongAttempts = live.wrongAttempts + 1;
+          tx.update(schema.loginCodes)
+            .set({
+              wrongAttempts,
+              retiredAt: wrongAttempts >= wrongAttemptCap ? at : null,
+            })
+            .where(eq(schema.loginCodes.id, live.id))
+            .run();
+          return undefined;
+        }
         tx.update(schema.loginCodes)
           .set({ retiredAt: at })
-          .where(eq(schema.loginCodes.id, codeId))
+          .where(eq(schema.loginCodes.id, live.id))
           .run();
         return tx
           .insert(schema.sessions)
