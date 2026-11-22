@@ -1,10 +1,12 @@
 // The Zaptec cloud REST API (api.zaptec.com). Read-only: ChargeOnSolar never
 // sends Zaptec a command or a setting.
-import { type PhaseSetting, phaseSetting } from "@charge-on-solar/shared";
 import { z } from "zod";
 import packageJson from "../../package.json" with { type: "json" };
 import type { Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toPhaseSetting,
+} from "../domain/charger-reading.ts";
 import type { ZaptecClient } from "./client.ts";
 
 export interface ZaptecCloudOptions {
@@ -106,11 +108,6 @@ export function toChargerReading(
     surplusModeActive: site.surplusMode?.active ?? null,
     rawState: JSON.stringify(raw),
   };
-}
-
-function toPhaseSetting(maxPhases: number | null): PhaseSetting | null {
-  const parsed = phaseSetting.safeParse(maxPhases);
-  return parsed.success ? parsed.data : null;
 }
 
 class Unauthorized extends Error {}

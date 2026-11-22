@@ -3,13 +3,15 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type PhaseSetting, phaseSetting } from "@charge-on-solar/shared";
 import Database from "better-sqlite3";
 import { and, asc, desc, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toPhaseSetting,
+} from "../domain/charger-reading.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
 import type { Startup } from "../domain/startup.ts";
 import * as schema from "./schema.ts";
@@ -189,11 +191,6 @@ function fromChargerRow({
     phaseSetting: toPhaseSetting(storedPhaseSetting),
     phaseCurrentsA: { l1: currentL1A, l2: currentL2A, l3: currentL3A },
   };
-}
-
-function toPhaseSetting(stored: number | null): PhaseSetting | null {
-  const parsed = phaseSetting.safeParse(stored);
-  return parsed.success ? parsed.data : null;
 }
 
 function backUp(sqlite: Database.Database, options: OpenStorageOptions) {

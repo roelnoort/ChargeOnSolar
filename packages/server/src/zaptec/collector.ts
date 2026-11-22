@@ -1,5 +1,6 @@
 import type { Cancel, Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
+import { type BackOff, backOffMs, messageOf } from "../supervision.ts";
 import type { ZaptecClient } from "./client.ts";
 
 export interface ZaptecCollectorOptions {
@@ -16,12 +17,10 @@ export interface ZaptecCollector {
 // Zaptec advises against aggressive polling of charger state but gives no
 // number; two requests every 30 s stays far below its 10 requests a second.
 export const zaptecPollIntervalMs = 30_000;
-const longestRetryMs = 10 * 60_000;
-
-/** How long to wait before the next attempt, after `failures` in a row. */
-export function zaptecRetryDelayMs(failures: number): number {
-  return Math.min(zaptecPollIntervalMs * 2 ** (failures - 1), longestRetryMs);
-}
+const retryBackOff: BackOff = {
+  firstMs: zaptecPollIntervalMs,
+  longestMs: 10 * 60_000,
+};
 
 /**
  * Reads Zaptec every poll interval, backing off while it fails. Never throws,
@@ -57,7 +56,7 @@ export function startZaptecCollector({
       }
     }
     const delay =
-      failures === 0 ? zaptecPollIntervalMs : zaptecRetryDelayMs(failures);
+      failures === 0 ? zaptecPollIntervalMs : backOffMs(retryBackOff, failures);
     if (failures > 0) log(`Reading Zaptec again in ${delay / 1000} s`);
     cancelNext = clock.after(delay, () => void poll());
   }
@@ -70,8 +69,4 @@ export function startZaptecCollector({
       cancelNext?.();
     },
   };
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

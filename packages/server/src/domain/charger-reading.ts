@@ -1,4 +1,8 @@
-import type { P1PhaseName, PhaseSetting } from "@charge-on-solar/shared";
+import {
+  type P1PhaseName,
+  type PhaseSetting,
+  phaseSetting,
+} from "@charge-on-solar/shared";
 
 /** A Reading of the charger and its installation, from the Zaptec cloud. */
 export interface ChargerReading {
@@ -28,4 +32,10 @@ export interface ChargerReading {
   surplusModeActive: boolean | null;
   /** The charger state and installation exactly as Zaptec sent them, as JSON. */
   rawState: string;
+}
+
+/** The Phase setting for Zaptec's MaxPhases; null for anything but 1 or 3. */
+export function toPhaseSetting(maxPhases: number | null): PhaseSetting | null {
+  const parsed = phaseSetting.safeParse(maxPhases);
+  return parsed.success ? parsed.data : null;
 }
