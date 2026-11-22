@@ -28,5 +28,3 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
     health: (): Promise<Health> => get(healthPath, health),
   };
 }
-
-export type ApiClient = ReturnType<typeof createApiClient>;

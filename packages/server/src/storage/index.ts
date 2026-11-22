@@ -29,10 +29,6 @@ const migrationsFolder = fileURLToPath(
   new URL("../../drizzle", import.meta.url)
 );
 
-/**
- * Opens the database: writes a backup copy of it, then applies the pending
- * migrations, logging which ones it applied.
- */
 export async function openStorage(
   options: OpenStorageOptions
 ): Promise<Storage> {

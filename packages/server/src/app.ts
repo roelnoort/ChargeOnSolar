@@ -16,9 +16,10 @@ export function createApp({ storage, webRoot }: AppDependencies): Hono {
   const app = new Hono();
 
   app.onError((error, c) => {
-    const status = error instanceof HTTPException ? error.status : 500;
-    const message =
-      error instanceof HTTPException ? error.message : "Internal server error";
+    const { status, message } =
+      error instanceof HTTPException
+        ? error
+        : { status: 500 as const, message: "Internal server error" };
     if (status === 500) console.error(error);
     const body: ApiError = { error: { status, message } };
     return c.json(body, status);
