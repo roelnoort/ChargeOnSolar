@@ -1,10 +1,17 @@
+import { overrideCommands } from "@charge-on-solar/shared";
 import {
+  type AnySQLiteColumn,
   index,
   integer,
   real,
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import {
+  confirmationOutcomes,
+  pauseEndings,
+  pauseSources,
+} from "../domain/override.ts";
 
 export const startups = sqliteTable("startups", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -111,4 +118,48 @@ export const chargerReadings = sqliteTable(
     rawState: text("raw_state").notNull(),
   },
   (table) => [index("charger_readings_received_at").on(table.receivedAt)]
+);
+
+/** Every Manual override sent: who, what, what Zaptec answered, what the charger did. */
+export const manualOverrides = sqliteTable(
+  "manual_overrides",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    sentAt: integer("sent_at", { mode: "timestamp_ms" }).notNull(),
+    userId: integer("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** The User's name when they sent it, so the record outlives the User. */
+    userName: text("user_name").notNull(),
+    command: text("command", { enum: overrideCommands }).notNull(),
+    /** Null until Zaptec has answered. */
+    commandResult: text("command_result", { enum: ["accepted", "rejected"] }),
+    rejectionCode: integer("rejection_code"),
+    rejectionReason: text("rejection_reason"),
+    /** Null until the charger confirmed the command or the wait ran out. */
+    confirmation: text("confirmation", { enum: confirmationOutcomes }),
+    /** For a Resume: the pause it answers. */
+    answersPauseId: integer("answers_pause_id").references(
+      (): AnySQLiteColumn => pauses.id
+    ),
+  },
+  (table) => [index("manual_overrides_sent_at").on(table.sentAt)]
+);
+
+/** Every final-stop pause seen, whoever made it, and how it ended. */
+export const pauses = sqliteTable(
+  "pauses",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    source: text("source", { enum: pauseSources }).notNull(),
+    /** The Manual override that made it; null for an External pause. */
+    overrideId: integer("override_id").references(
+      (): AnySQLiteColumn => manualOverrides.id
+    ),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+    /** Null while the pause is open. */
+    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+    ending: text("ending", { enum: pauseEndings }),
+  },
+  (table) => [index("pauses_ended_at").on(table.endedAt)]
 );

@@ -6,6 +6,7 @@ import { HTTPException } from "hono/http-exception";
 import { authRoutes } from "./api/auth.ts";
 import { toHealth } from "./api/health.ts";
 import { addLiveRoutes } from "./api/live.ts";
+import { addOverrideRoutes } from "./api/overrides.ts";
 import {
   requireCsrfHeader,
   requireSession,
@@ -14,12 +15,14 @@ import {
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
+import type { Overrides } from "./overrides.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
   storage: Storage;
   auth: Auth;
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
   /** The main fuse rating, in amperes. */
   mainFuseA: number;
@@ -31,6 +34,7 @@ export function createApp({
   storage,
   auth,
   live,
+  overrides,
   clock,
   mainFuseA,
   webRoot,
@@ -56,7 +60,8 @@ export function createApp({
     return c.json(toHealth(startup));
   });
 
-  addLiveRoutes(app, { live, clock, mainFuseA });
+  addLiveRoutes(app, { live, overrides, clock, mainFuseA });
+  addOverrideRoutes(app, { overrides });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

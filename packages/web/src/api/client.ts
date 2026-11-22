@@ -9,6 +9,10 @@ import {
   loginPath,
   loginResponse,
   logoutPath,
+  type ManualOverride,
+  manualOverride,
+  type OverrideCommand,
+  overridesPath,
   type Session,
   type SignedInDevice,
   session,
@@ -80,6 +84,8 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
     signOutEverywhere: async (): Promise<void> => {
       await call("POST", signOutEverywherePath, noBody);
     },
+    sendOverride: (command: OverrideCommand): Promise<ManualOverride> =>
+      call("POST", overridesPath, manualOverride, { command }),
   };
 }
 

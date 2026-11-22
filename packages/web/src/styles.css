@@ -353,3 +353,44 @@ button.link {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+.override-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+button.override-button {
+  flex: 1;
+  min-height: 4rem;
+  font-size: 1.25rem;
+}
+
+.override-budget {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.override-reason {
+  min-height: 1.25rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.override-progress {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+}
+
+.override-failed {
+  color: var(--danger);
+}
+
+.override-by {
+  font-weight: 400;
+  color: var(--muted);
+}

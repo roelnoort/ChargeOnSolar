@@ -2,6 +2,7 @@
 // live state. Pure: no I/O and no clock of its own; the time comes in with
 // the snapshot.
 import type { SolarMode } from "@charge-on-solar/shared";
+import { switchesPerChargeSession } from "../switch-budget.ts";
 
 /** Bumped whenever a rule changes; stamped together with the settings. */
 export const shadowRulesVersion = 1;
@@ -130,7 +131,6 @@ interface ChargeOutcome {
 const minimumCurrentAmps = 6;
 const minute = 60_000;
 
-const switchBudget = 20;
 // Starting needs a switch left over for the stop that follows it.
 const switchesNeededToStart = 2;
 
@@ -252,7 +252,7 @@ function decideWhileStopped(
   ) {
     return hold("minimum-off-time", state);
   }
-  if (switchBudget - state.switchCount < switchesNeededToStart) {
+  if (switchesPerChargeSession - state.switchCount < switchesNeededToStart) {
     return hold("switch-budget", state);
   }
   const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);

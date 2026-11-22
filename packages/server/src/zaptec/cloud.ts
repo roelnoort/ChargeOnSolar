@@ -1,5 +1,6 @@
-// The Zaptec cloud REST API (api.zaptec.com). Read-only: ChargeOnSolar never
-// sends Zaptec a command or a setting.
+// The Zaptec cloud REST API (api.zaptec.com). ChargeOnSolar reads the charger,
+// and sends it only the pause and resume of a Manual override; never a setting.
+import type { OverrideCommand } from "@charge-on-solar/shared";
 import { z } from "zod";
 import packageJson from "../../package.json" with { type: "json" };
 import type { Clock } from "../clock.ts";
@@ -7,7 +8,7 @@ import {
   type ChargerReading,
   toPhaseSetting,
 } from "../domain/charger-reading.ts";
-import type { ZaptecClient } from "./client.ts";
+import type { CommandResult, ZaptecClient } from "./client.ts";
 
 export interface ZaptecCloudOptions {
   username: string;
@@ -35,6 +36,22 @@ const stateIds = {
   finalStopActive: 718,
   nextScheduleEvent: 763,
 } as const;
+
+/** Zaptec command IDs, from `GET /api/constants`. */
+const commandIds: Record<OverrideCommand, number> = {
+  pause: 506,
+  resume: 507,
+};
+
+/** Readable reasons for the rejection codes Zaptec is known to answer. */
+const rejectionReasons: Record<number, (command: OverrideCommand) => string> = {
+  528: (command) => `Charger can't ${command} in its current state`,
+};
+
+const commandRejection = z.object({
+  code: z.number().int(),
+  message: z.string().nullish(),
+});
 
 const tokenAnswer = z.object({
   access_token: z.string().min(1),
@@ -147,8 +164,13 @@ export function createZaptecCloudClient({
     return logIn();
   }
 
-  async function getOnce(path: string, bearer: string): Promise<unknown> {
+  async function requestOnce(
+    method: "GET" | "POST",
+    path: string,
+    bearer: string
+  ): Promise<Response> {
     const response = await fetchFn(`${baseUrl}${path}`, {
+      method,
       headers: {
         accept: "application/json",
         authorization: `Bearer ${bearer}`,
@@ -156,27 +178,37 @@ export function createZaptecCloudClient({
       },
     });
     if (response.status === 401) throw new Unauthorized();
-    if (!response.ok) {
-      throw new Error(`Zaptec answered ${response.status} to GET ${path}`);
-    }
-    return response.json();
+    return response;
   }
 
-  async function get(path: string): Promise<unknown> {
+  async function request(
+    method: "GET" | "POST",
+    path: string
+  ): Promise<Response> {
     try {
-      return await getOnce(path, await accessToken());
+      return await requestOnce(method, path, await accessToken());
     } catch (error) {
       if (!(error instanceof Unauthorized)) throw error;
       token = undefined;
       try {
-        return await getOnce(path, await logIn());
+        return await requestOnce(method, path, await logIn());
       } catch (retryError) {
         if (retryError instanceof Unauthorized) {
-          throw new Error(`Zaptec rejected a fresh token for GET ${path}`);
+          throw new Error(
+            `Zaptec rejected a fresh token for ${method} ${path}`
+          );
         }
         throw retryError;
       }
     }
+  }
+
+  async function get(path: string): Promise<unknown> {
+    const response = await request("GET", path);
+    if (!response.ok) {
+      throw new Error(`Zaptec answered ${response.status} to GET ${path}`);
+    }
+    return response.json();
   }
 
   // Zaptec's fair-use policy: fetch the charger list at most once an hour.
@@ -201,5 +233,47 @@ export function createZaptecCloudClient({
         clock.now()
       );
     },
+    async sendCommand(command) {
+      let response: Response;
+      try {
+        const { id } = await findCharger();
+        response = await request(
+          "POST",
+          `/api/chargers/${id}/sendCommand/${commandIds[command]}`
+        );
+      } catch {
+        return {
+          accepted: false,
+          code: null,
+          reason: "Zaptec could not be reached",
+        };
+      }
+      if (response.ok) return { accepted: true };
+      return toRejection(command, response);
+    },
+  };
+}
+
+async function toRejection(
+  command: OverrideCommand,
+  response: Response
+): Promise<CommandResult> {
+  const body: unknown = await response.json().catch(() => undefined);
+  const parsed = commandRejection.safeParse(camelKeys(body));
+  if (!parsed.success) {
+    return {
+      accepted: false,
+      code: null,
+      reason: `Zaptec refused the command (HTTP ${response.status})`,
+    };
+  }
+  const { code, message } = parsed.data;
+  const known = rejectionReasons[code];
+  return {
+    accepted: false,
+    code,
+    reason: known
+      ? known(command)
+      : `Zaptec refused the command: ${message ?? `code ${code}`}`,
   };
 }

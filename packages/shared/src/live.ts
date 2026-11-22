@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { overrideAvailability, switchBudget } from "./override.ts";
 
 export const livePath = "/api/live";
 export const liveStreamPath = "/api/live/stream";
@@ -95,5 +96,9 @@ export const liveSnapshot = z.object({
   mainFuseA: z.number(),
   /** Fuse headroom in amperes. Null without per-phase currents from both. */
   fuseHeadroomA: z.number().nullable(),
+  /** What the Pause/Resume button does now. */
+  override: overrideAvailability,
+  /** Null while no car is connected. */
+  switchBudget: switchBudget.nullable(),
 });
 export type LiveSnapshot = z.infer<typeof liveSnapshot>;

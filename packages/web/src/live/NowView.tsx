@@ -1,5 +1,6 @@
 import type { LiveSnapshot } from "@charge-on-solar/shared";
 import { useEffect, useState } from "react";
+import type { ApiClient } from "../api/client.ts";
 import type { Clock } from "../clock.ts";
 import {
   chargerStaleAfterMs,
@@ -20,6 +21,7 @@ import {
   type LiveStreamState,
   type StreamStatus,
 } from "./live-stream.ts";
+import { OverrideControl } from "./OverrideControl.tsx";
 
 function useLiveStream(clock: Clock): LiveStreamState {
   const [state, setState] = useState<LiveStreamState>({
@@ -135,8 +137,8 @@ function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
   );
 }
 
-export function NowView({ clock }: { clock: Clock }) {
-  const { status, latest } = useLiveStream(clock);
+export function NowView({ clock, api }: { clock: Clock; api: ApiClient }) {
+  const { status, latest, override } = useLiveStream(clock);
   const now = useNow(clock);
   const snapshot = latest?.snapshot;
   const p1 = snapshot?.p1 ?? null;
@@ -155,6 +157,15 @@ export function NowView({ clock }: { clock: Clock }) {
       </p>
 
       <PowerFlows snapshot={snapshot} />
+
+      {snapshot && (
+        <OverrideControl
+          api={api}
+          snapshot={snapshot}
+          streamOverride={override}
+          chargerStale={chargerAge?.stale ?? true}
+        />
+      )}
 
       <article className="card" aria-labelledby="net-power-heading">
         <h3 id="net-power-heading">Net power</h3>

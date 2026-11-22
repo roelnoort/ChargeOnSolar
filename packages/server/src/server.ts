@@ -8,6 +8,7 @@ import { createAuth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import { createLiveState } from "./domain/live-state.ts";
 import type { Mailer } from "./mailer.ts";
+import { createOverrides } from "./overrides.ts";
 import type { P1Client } from "./p1/client.ts";
 import { startP1Collector } from "./p1/collector.ts";
 import { openStorage, type Storage } from "./storage/index.ts";
@@ -66,6 +67,13 @@ export async function assembleServer(
   });
   const auth = createAuth({ storage, ...dependencies });
   const live = createLiveState();
+  const overrides = await createOverrides({
+    client: zaptecClient,
+    storage,
+    live,
+    clock,
+    log,
+  });
   const collector = p1Client
     ? startP1Collector({
         client: p1Client,
@@ -89,6 +97,7 @@ export async function assembleServer(
         log,
         onReading(reading) {
           live.recordCharger(reading);
+          void overrides.onChargerReading(reading);
           storage
             .recordChargerReading(reading)
             .catch((error: unknown) =>
@@ -102,6 +111,7 @@ export async function assembleServer(
     storage,
     auth,
     live,
+    overrides,
     clock,
     mainFuseA: dependencies.mainFuseA ?? defaultMainFuseA,
     webRoot: dependencies.webRoot,

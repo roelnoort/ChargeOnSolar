@@ -27,6 +27,8 @@ describe("GET /api/live", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
     });
   });
 
@@ -64,6 +66,8 @@ describe("GET /api/live", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
     });
   });
 

@@ -3,6 +3,7 @@ import {
   type LiveSnapshot,
   livePath,
   liveStreamPath,
+  overrideEvent,
   snapshotEvent,
   type ZaptecMode,
 } from "@charge-on-solar/shared";
@@ -12,10 +13,14 @@ import type { Cancel, Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
+import { switchesPerChargeSession } from "../domain/switch-budget.ts";
+import type { Overrides } from "../overrides.ts";
+import { toManualOverride } from "./overrides.ts";
 import type { SessionEnv } from "./session.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
   mainFuseA: number;
 }
@@ -52,13 +57,16 @@ function toZaptecMode({ availableCurrentMode }: ChargerReading): ZaptecMode {
     : (zaptecModes[availableCurrentMode] ?? "unknown");
 }
 
-export function toLiveSnapshot(
-  live: LiveState,
-  now: Date,
-  mainFuseA: number
-): LiveSnapshot {
+export function toLiveSnapshot({
+  live,
+  overrides,
+  clock,
+  mainFuseA,
+}: LiveRouteDependencies): LiveSnapshot {
+  const now = clock.now();
   const p1 = live.p1();
   const charger = live.charger();
+  const interruptions = live.interruptions();
   return {
     at: now.toISOString(),
     p1: p1
@@ -91,16 +99,23 @@ export function toLiveSnapshot(
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
+    override: overrides.availability(),
+    switchBudget:
+      interruptions === null
+        ? null
+        : {
+            switchesLeft: Math.max(0, switchesPerChargeSession - interruptions),
+            switchesPerSession: switchesPerChargeSession,
+          },
   };
 }
 
 export function addLiveRoutes(
   app: Hono<SessionEnv>,
-  { live, clock, mainFuseA }: LiveRouteDependencies
+  dependencies: LiveRouteDependencies
 ) {
-  app.get(livePath, (c) =>
-    c.json(toLiveSnapshot(live, clock.now(), mainFuseA))
-  );
+  const { live, overrides, clock } = dependencies;
+  app.get(livePath, (c) => c.json(toLiveSnapshot(dependencies)));
 
   app.get(liveStreamPath, (c) =>
     streamSSE(c, async (stream) => {
@@ -110,7 +125,7 @@ export function addLiveRoutes(
 
       function sendIfChanged() {
         pending = undefined;
-        const snapshot = toLiveSnapshot(live, clock.now(), mainFuseA);
+        const snapshot = toLiveSnapshot(dependencies);
         const state = JSON.stringify({ ...snapshot, at: undefined });
         if (state === lastSentState) return;
         lastSentState = state;
@@ -130,8 +145,16 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
+      const stopFollowingOverrides = overrides.onChange((progress) => {
+        void stream.writeSSE({
+          event: overrideEvent,
+          data: JSON.stringify(toManualOverride(progress)),
+        });
+        onChange();
+      });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
+      stopFollowingOverrides();
       pending?.();
     })
   );

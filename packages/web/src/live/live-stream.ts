@@ -2,6 +2,9 @@ import {
   type LiveSnapshot,
   liveSnapshot,
   liveStreamPath,
+  type ManualOverride,
+  manualOverride,
+  overrideEvent,
   snapshotEvent,
 } from "@charge-on-solar/shared";
 
@@ -16,6 +19,8 @@ export interface LiveStreamState {
   status: StreamStatus;
   /** The latest snapshot, and when it arrived (by `now`). */
   latest?: { snapshot: LiveSnapshot; receivedAt: number };
+  /** The latest step of the latest Manual override, from any screen. */
+  override?: ManualOverride;
 }
 
 /** The part of the browser's EventSource the live stream uses. */
@@ -74,6 +79,11 @@ export function connectLiveStream({
       if (parsed.success) {
         update({ latest: { snapshot: parsed.data, receivedAt: now() } });
       }
+    });
+    current.addEventListener(overrideEvent, (event) => {
+      if (typeof event.data !== "string") return;
+      const parsed = manualOverride.safeParse(parseJson(event.data));
+      if (parsed.success) update({ override: parsed.data });
     });
   }
 
