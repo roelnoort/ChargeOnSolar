@@ -1,6 +1,5 @@
-import type { P1Phase } from "@charge-on-solar/shared";
 import type { Clock } from "../clock.ts";
-import type { P1Reading } from "../domain/p1-reading.ts";
+import type { P1Phase, P1Reading } from "../domain/p1-reading.ts";
 import type { P1Client } from "../p1/client.ts";
 
 export interface FakeReading {

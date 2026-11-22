@@ -40,7 +40,15 @@ function useLiveStream(clock: Clock): LiveStreamState {
 /** The current time, updated every second. */
 function useNow(clock: Clock): number {
   const [now, setNow] = useState(clock.now);
-  useEffect(() => clock.every(1000, () => setNow(clock.now())), [clock]);
+  useEffect(() => {
+    let cancel = () => {};
+    const tick = () => {
+      setNow(clock.now());
+      cancel = clock.after(1000, tick);
+    };
+    cancel = clock.after(1000, tick);
+    return () => cancel();
+  }, [clock]);
   return now;
 }
 

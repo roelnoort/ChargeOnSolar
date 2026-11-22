@@ -102,6 +102,17 @@ describe("the HomeWizard P1 client", () => {
     await expect(client.connect(() => {})).rejects.toThrow(/certificate/i);
   });
 
+  it("refuses a certificate from the CA that does not name an appliance", async () => {
+    const notAnAppliance = makeTestCertificates({ deviceName: "127.0.0.1" });
+    device = await startFakeHomeWizard({
+      certificates: notAnAppliance,
+      token,
+    });
+    const { client } = clientFor(device.host, { ca: notAnAppliance.ca });
+
+    await expect(client.connect(() => {})).rejects.toThrow(/appliance/i);
+  });
+
   it("trusts only HomeWizard's own CA unless told otherwise", async () => {
     const { host } = await startDevice();
     const client = createHomeWizardP1Client({

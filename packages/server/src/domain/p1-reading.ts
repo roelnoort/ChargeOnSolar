@@ -1,4 +1,11 @@
-import type { P1Phase, P1PhaseName } from "@charge-on-solar/shared";
+import type { P1PhaseName } from "@charge-on-solar/shared";
+
+/** One phase as the P1 meter measured it. Null when the meter leaves it out. */
+export interface P1Phase {
+  powerW: number | null;
+  currentA: number | null;
+  voltageV: number | null;
+}
 
 /** A Reading from the P1 meter. */
 export interface P1Reading {

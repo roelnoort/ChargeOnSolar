@@ -2,7 +2,6 @@ import {
   type ChargerState,
   type LiveSnapshot,
   livePath,
-  liveSnapshot,
   liveStreamPath,
   snapshotEvent,
   type ZaptecMode,
@@ -59,7 +58,7 @@ export function toLiveSnapshot(
 ): LiveSnapshot {
   const p1 = live.p1();
   const charger = live.charger();
-  return liveSnapshot.parse({
+  return {
     at: now.toISOString(),
     p1: p1
       ? {
@@ -91,7 +90,7 @@ export function toLiveSnapshot(
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
-  });
+  };
 }
 
 export function addLiveRoutes(
