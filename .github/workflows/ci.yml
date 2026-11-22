@@ -1,0 +1,48 @@
+name: CI
+
+# Runs the repo's own checks on every pull request and every push to main:
+# Biome, typecheck in every package, the Vitest suite and the migration drift
+# check. All four are `pnpm check`, the same command you run locally, so this
+# file only sets up the machine and calls it.
+#
+# The pre-commit hook runs only lint and typecheck, and can be skipped. This
+# workflow is what makes a PR show a red or green check on GitHub, for agent
+# PRs as well: the factory opens and pushes them with FACTORY_PAT, and pushes
+# made with a PAT do start workflows.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same PR or branch cancels the run it replaces.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Reads the pnpm version from `packageManager` in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js (version from .node-version)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint, typecheck, test, migration drift
+        run: pnpm check
