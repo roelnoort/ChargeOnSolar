@@ -10,8 +10,14 @@ export interface SettingsStore {
   update(next: Settings): Promise<void>;
 }
 
+export const defaultTickIntervalSeconds = 60;
+
 export function defaultSettings(mainFuseAmps: number): Settings {
-  return { ...defaultShadowSettings, mainFuseAmps, tickIntervalSeconds: 60 };
+  return {
+    ...defaultShadowSettings,
+    mainFuseAmps,
+    tickIntervalSeconds: defaultTickIntervalSeconds,
+  };
 }
 
 export async function loadSettings({

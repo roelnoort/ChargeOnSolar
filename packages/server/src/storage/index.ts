@@ -29,6 +29,7 @@ import type {
 } from "../domain/signed-in-device.ts";
 import type { Startup } from "../domain/startup.ts";
 import type { NewUser, User } from "../domain/user.ts";
+import { defaultTickIntervalSeconds } from "../settings.ts";
 import * as schema from "./schema.ts";
 
 export interface Storage {
@@ -519,9 +520,11 @@ const storedSimulatedCharger = z.object({
 
 const settingsKey = "settings";
 
-// Decisions recorded before the tick interval was a setting ticked every minute.
+// Decisions recorded before the tick interval was a setting ticked at the default.
 const stampedSettings = settings.extend({
-  tickIntervalSeconds: settings.shape.tickIntervalSeconds.default(60),
+  tickIntervalSeconds: settings.shape.tickIntervalSeconds.default(
+    defaultTickIntervalSeconds
+  ),
 });
 
 function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
