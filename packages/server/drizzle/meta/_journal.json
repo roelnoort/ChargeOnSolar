@@ -8,6 +8,13 @@
       "when": 1795338181874,
       "tag": "0000_startups",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1795354721739,
+      "tag": "0001_p1_readings",
+      "breakpoints": true
     }
   ]
 }

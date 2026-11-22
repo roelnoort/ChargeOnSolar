@@ -1,0 +1,54 @@
+[
+  { "type": "authorization_requested", "data": { "api_version": "2.0.0" } },
+  { "type": "authorized" },
+  {
+    "type": "measurement",
+    "data": {
+      "protocol_version": 50,
+      "meter_model": "ISKRA 2M550T-1012",
+      "unique_id": "<scrubbed>",
+      "timestamp": "2026-06-01T14:00:00",
+      "tariff": 2,
+      "energy_import_kwh": 13779.338,
+      "energy_import_t1_kwh": 10830.511,
+      "energy_import_t2_kwh": 2948.827,
+      "energy_export_kwh": 6120.274,
+      "energy_export_t1_kwh": 1652.012,
+      "energy_export_t2_kwh": 4468.262,
+      "power_w": -1543,
+      "power_l1_w": -1600,
+      "power_l2_w": 23,
+      "power_l3_w": 34,
+      "voltage_l1_v": 231.4,
+      "voltage_l2_v": 229.9,
+      "voltage_l3_v": 230.6,
+      "current_a": 7.4,
+      "current_l1_a": 6.9,
+      "current_l2_a": 0.2,
+      "current_l3_a": 0.3,
+      "frequency_hz": 50.01,
+      "voltage_sag_l1_count": 1,
+      "voltage_swell_l1_count": 0,
+      "any_power_fail_count": 4,
+      "long_power_fail_count": 2
+    }
+  },
+  {
+    "type": "measurement",
+    "data": {
+      "protocol_version": 50,
+      "meter_model": "ISKRA 2M550T-1012",
+      "unique_id": "<scrubbed>",
+      "timestamp": "2026-06-01T14:00:01",
+      "tariff": 2,
+      "energy_import_kwh": 13779.338,
+      "energy_export_kwh": 6120.275,
+      "power_w": 312,
+      "power_l1_w": 312,
+      "voltage_l1_v": 230.2,
+      "current_a": 1.4,
+      "current_l1_a": 1.4,
+      "frequency_hz": 50
+    }
+  }
+]

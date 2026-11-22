@@ -1,11 +1,14 @@
 // The main test seam: the whole server put together in-process, on a
 // temporary SQLite file with the real migrations, and a controllable clock.
-// Later slices plug fake vendor clients and a fake mailer in here.
+// The P1 meter is a fake the test drives. Later slices plug the other fake
+// vendor clients and a fake mailer in here.
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assembleServer, dataFiles } from "../server.ts";
+import type { Storage } from "../storage/index.ts";
 import { createFakeClock, type FakeClock } from "./fake-clock.ts";
+import { createFakeP1Client, type FakeP1Client } from "./fake-p1-client.ts";
 
 export interface TestServerOptions {
   /** The clock's starting time. */
@@ -13,11 +16,16 @@ export interface TestServerOptions {
   /** Reuse a data directory, to start again on the same database. */
   dataDir?: string;
   webRoot?: string;
+  /** Start with the fake P1 meter unreachable. */
+  p1Unreachable?: boolean;
 }
 
 export interface TestServer {
   request(path: string, init?: RequestInit): Promise<Response>;
   clock: FakeClock;
+  /** The fake P1 meter the server collects from. */
+  p1: FakeP1Client;
+  storage: Storage;
   /** Every line the server logged. */
   logs: string[];
   databaseFile: string;
@@ -37,19 +45,25 @@ export async function startTestServer(
   );
   const logs: string[] = [];
   const { databaseFile, backupDir } = dataFiles(dataDir);
+  const p1 = createFakeP1Client(clock);
+  p1.unreachable = options.p1Unreachable ?? false;
   const server = await assembleServer({
     clock,
     databaseFile,
     backupDir,
     log: (line) => logs.push(line),
+    p1Client: p1,
     webRoot: options.webRoot,
   });
+  if (!p1.unreachable) await p1.whenConnected();
   let closed = false;
 
   return {
     request: async (path, init) =>
       server.app.request(`http://localhost${path}`, init),
     clock,
+    p1,
+    storage: server.storage,
     logs,
     databaseFile,
     backupDir,
