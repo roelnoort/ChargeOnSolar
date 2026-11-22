@@ -1,5 +1,4 @@
 import {
-  type ChargerState,
   decisionEvent,
   type LiveSnapshot,
   livePath,
@@ -10,7 +9,10 @@ import {
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toChargerState,
+} from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import type { SettingsStore } from "../settings.ts";
@@ -21,25 +23,6 @@ export interface LiveRouteDependencies {
   live: LiveState;
   clock: Clock;
   settings: SettingsStore;
-}
-
-// Zaptec's ChargerOperationMode (state 710).
-function toChargerState({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): ChargerState {
-  switch (operationMode) {
-    case 1:
-      return "disconnected";
-    case 2:
-      return "connected";
-    case 3:
-      return "charging";
-    case 5:
-      return finalStopActive ? "paused" : "finished";
-    default:
-      return "unknown";
-  }
 }
 
 // Zaptec's availableCurrentMode.

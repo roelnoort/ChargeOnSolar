@@ -2,9 +2,16 @@
 // engine what Automatic control would do, records the decision and hands it
 // to the live state. Shadow decisions are never sent to the charger: the
 // runner has no Zaptec client to send them with.
-import type { AveragedInputs, Settings } from "@charge-on-solar/shared";
+import type {
+  AveragedInputs,
+  ChargerState,
+  Settings,
+} from "@charge-on-solar/shared";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toChargerState,
+} from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import {
@@ -186,22 +193,18 @@ function toSnapshot(
   };
 }
 
-// Zaptec's ChargerOperationMode (state 710) and FinalStopActive (state 718).
-function carStateOf({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): { car: CarState; finalStopPause: boolean } | undefined {
-  switch (operationMode) {
-    case 1:
-      return { car: "none", finalStopPause: false };
-    case 2:
-    case 3:
-      return { car: "accepting", finalStopPause: false };
-    case 5:
-      return finalStopActive
-        ? { car: "accepting", finalStopPause: true }
-        : { car: "not-accepting", finalStopPause: false };
-    default:
-      return undefined;
-  }
+const carStates: Record<
+  ChargerState,
+  { car: CarState; finalStopPause: boolean } | undefined
+> = {
+  disconnected: { car: "none", finalStopPause: false },
+  connected: { car: "accepting", finalStopPause: false },
+  charging: { car: "accepting", finalStopPause: false },
+  paused: { car: "accepting", finalStopPause: true },
+  finished: { car: "not-accepting", finalStopPause: false },
+  unknown: undefined,
+};
+
+function carStateOf(charger: ChargerReading) {
+  return carStates[toChargerState(charger)];
 }
