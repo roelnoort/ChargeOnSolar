@@ -3,6 +3,7 @@ import {
   decideShadow,
   defaultShadowSettings,
   noCar,
+  phaseSettings,
   type ShadowSettings,
   type ShadowSnapshot,
   type SimulatedCharger,
@@ -64,7 +65,7 @@ function settings(overrides: Partial<ShadowSettings> = {}): ShadowSettings {
 const solarOnly = settings({ solarMode: "solar-only" });
 const allSolar = settings({ solarMode: "all-solar", minimumSolarWatts: 300 });
 
-describe.each([1, 3] as const)("on %i phase(s)", (phases) => {
+describe.each(phaseSettings)("on %i phase(s)", (phases) => {
   const sixAmps = sixAmpWatts[phases];
 
   describe("start", () => {
@@ -152,29 +153,34 @@ describe.each([1, 3] as const)("on %i phase(s)", (phases) => {
     describe("Charging current", () => {
       const perAmp = 230 * phases;
 
-      it.each([
-        // [start-window Surplus in amps' worth, charger max, Fuse headroom, current, limit]
-        [9.9, 16, 20, 9, "surplus"],
-        [20, 16, 20, 16, "charger-maximum"],
-        [20, 16, 11.5, 11, "fuse-headroom"],
-        [20, 16, 6, 6, "fuse-headroom"],
-      ] as const)(
-        "%f A worth of Surplus, %i A charger maximum, %f A Fuse headroom: %i A, set by %s",
-        (surplusAmps, chargerMaximumAmps, fuseHeadroomAmps, currentAmps, limitedBy) => {
-          const { decision } = decideShadow(
-            snapshot({
-              phases,
-              startWindowSurplusWatts: surplusAmps * perAmp,
-              chargerMaximumAmps,
-              fuseHeadroomAmps,
-            }),
-            stopped(),
-            solarOnly
-          );
+      describe.each([
+        ["Solar only", solarOnly],
+        ["All solar", allSolar],
+      ] as const)("in %s", (_mode, rules) => {
+        it.each([
+          // [start-window Surplus in amps' worth, charger max, Fuse headroom, current, limit]
+          [9.9, 16, 20, 9, "surplus"],
+          [20, 16, 20, 16, "charger-maximum"],
+          [20, 16, 11.5, 11, "fuse-headroom"],
+          [20, 16, 6, 6, "fuse-headroom"],
+        ] as const)(
+          "%f A worth of Surplus, %i A charger maximum, %f A Fuse headroom: %i A, set by %s",
+          (surplusAmps, chargerMaximumAmps, fuseHeadroomAmps, currentAmps, limitedBy) => {
+            const { decision } = decideShadow(
+              snapshot({
+                phases,
+                startWindowSurplusWatts: surplusAmps * perAmp,
+                chargerMaximumAmps,
+                fuseHeadroomAmps,
+              }),
+              stopped(),
+              rules
+            );
 
-          expect(decision).toEqual({ kind: "start", currentAmps, limitedBy });
-        }
-      );
+            expect(decision).toEqual({ kind: "start", currentAmps, limitedBy });
+          }
+        );
+      });
 
       it("starts All solar at the 6 A minimum when the Surplus is below it", () => {
         const { decision } = decideShadow(
@@ -517,6 +523,28 @@ describe.each([1, 3] as const)("on %i phase(s)", (phases) => {
             switchCount: 4,
           });
         });
+
+        it.each([
+          ["a car that is not accepting charge", { car: "not-accepting" }],
+          ["a final-stop pause", { finalStopPause: true }],
+        ] as const)(
+          "waits the minimum off-time after %s ended charging",
+          (_cause, ending) => {
+            const { next: endedAtT0 } = decideShadow(
+              plenty(ending),
+              charging(),
+              rules
+            );
+
+            expect(
+              decideShadow(plenty({ at: at(14) }), endedAtT0, rules).decision
+            ).toEqual({ kind: "hold", reason: "minimum-off-time" });
+            expect(
+              decideShadow(plenty({ at: at(15) }), endedAtT0, rules).decision
+                .kind
+            ).toBe("start");
+          }
+        );
 
         it("lets a final-stop pause win over a car that is not accepting charge", () => {
           const { decision } = decideShadow(
