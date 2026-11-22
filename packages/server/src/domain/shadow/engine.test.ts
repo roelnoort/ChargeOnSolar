@@ -53,18 +53,18 @@ function chargingFor(minutes: number, currentA = 10): SimulatedCharger {
     currentChangedAt: since,
     startedAt: since,
     stoppedAt: null,
-    switches: 1,
+    simulatedSwitches: 1,
   };
 }
 
-function stoppedFor(minutes: number, switches = 2): SimulatedCharger {
+function stoppedFor(minutes: number, simulatedSwitches = 2): SimulatedCharger {
   return {
     carConnected: true,
     currentA: null,
     currentChangedAt: null,
     startedAt: minutesAfter(noon, -minutes - 20),
     stoppedAt: minutesAfter(noon, -minutes),
-    switches,
+    simulatedSwitches,
   };
 }
 
@@ -110,7 +110,7 @@ describe("Shadow engine", () => {
         currentA: 14,
         limitedBy: "surplus",
       });
-      expect(next).toMatchObject({ currentA: 14, switches: 1 });
+      expect(next).toMatchObject({ currentA: 14, simulatedSwitches: 1 });
     });
 
     it("averages Surplus over the start window only", () => {
@@ -200,7 +200,7 @@ describe("Shadow engine", () => {
       expect(next).toMatchObject({
         currentA: null,
         stoppedAt: noon,
-        switches: 2,
+        simulatedSwitches: 2,
       });
     });
 
@@ -265,7 +265,7 @@ describe("Shadow engine", () => {
       expect(next).toMatchObject({
         currentA: 14,
         currentChangedAt: noon,
-        switches: 1,
+        simulatedSwitches: 1,
       });
     });
 
@@ -337,14 +337,14 @@ describe("Shadow engine", () => {
     );
 
     it.each([
-      { switches: 18, kind: "start" },
-      { switches: 19, kind: "hold" },
+      { simulatedSwitches: 18, kind: "start" },
+      { simulatedSwitches: 19, kind: "hold" },
     ] as const)(
-      "$kind with $switches simulated switches used, keeping 2 in reserve",
-      ({ switches, kind }) => {
+      "$kind with $simulatedSwitches simulated switches used, keeping 2 in reserve",
+      ({ simulatedSwitches, kind }) => {
         const { decision } = decideShadow(
           snapshot({ readings: surplusOf(3000) }),
-          stoppedFor(60, switches),
+          stoppedFor(60, simulatedSwitches),
           defaultShadowSettings
         );
 
@@ -370,7 +370,7 @@ describe("Shadow engine", () => {
       );
 
       expect(decision.kind).toBe("start");
-      expect(next).toMatchObject({ carConnected: true, switches: 1 });
+      expect(next).toMatchObject({ carConnected: true, simulatedSwitches: 1 });
     });
 
     it("remembers the car is plugged in while waiting for Surplus", () => {
@@ -458,7 +458,7 @@ describe("Shadow engine", () => {
       expect(next).toMatchObject({
         carConnected: true,
         currentA: null,
-        switches: 1,
+        simulatedSwitches: 1,
       });
     });
 
