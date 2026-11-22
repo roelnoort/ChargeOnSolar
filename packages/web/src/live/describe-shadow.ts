@@ -1,11 +1,14 @@
-import type {
-  CarDecision,
-  CurrentLimit,
-  HoldReason,
-  ShadowDecisionRecord,
-  StopReason,
+import {
+  type CarDecision,
+  type CurrentLimit,
+  type HoldReason,
+  minimumCurrentAmps,
+  type ShadowDecisionRecord,
+  type StopReason,
 } from "@charge-on-solar/shared";
 import { formatCurrent, formatPower, formatSignedPower } from "./describe.ts";
+
+const minimumCurrent = `${minimumCurrentAmps} A`;
 
 export interface ShadowDecisionSentence {
   sentence: string;
@@ -88,16 +91,16 @@ function describeStop(
     case "surplus-too-low":
       return `Surplus: ${averageOver(inputs.stopWindowSurplusW, settings.stopWindowMinutes)}, ${surplusShortfall(settings)}`;
     case "fuse-headroom":
-      return "Fuse headroom below 6 A";
+      return `Fuse headroom below ${minimumCurrent}`;
   }
 }
 
-/** How Surplus falls short in the Solar mode: Solar only needs 6 A of it. */
+/** How Surplus falls short in the Solar mode: Solar only needs the minimum current of it. */
 function surplusShortfall({
   solarMode,
   minimumSolarWatts,
 }: ShadowDecisionRecord["settings"]): string {
-  if (solarMode === "solar-only") return "below 6 A";
+  if (solarMode === "solar-only") return `below ${minimumCurrent}`;
   return minimumSolarWatts > 0
     ? `not above ${formatPower(minimumSolarWatts)}`
     : "no Surplus";
@@ -110,11 +113,11 @@ function describeHold(
   const texts: Record<HoldReason, string> = {
     "surplus-too-low":
       settings.solarMode === "solar-only"
-        ? "Surplus below 6 A"
+        ? `Surplus below ${minimumCurrent}`
         : surplusShortfall(settings),
     "minimum-off-time": `waiting out the minimum off-time of ${settings.minimumOffTimeMinutes} minutes`,
     "switch-budget": "the Switch budget is used up",
-    "fuse-headroom": "Fuse headroom below 6 A",
+    "fuse-headroom": `Fuse headroom below ${minimumCurrent}`,
     "minimum-on-time": `Surplus too low, but within the minimum on-time of ${settings.minimumOnTimeMinutes} minutes`,
     "within-dead-band": "the Surplus has not changed enough to adjust",
     "current-hold": `holding each Charging current for ${settings.currentHoldMinutes} minutes`,

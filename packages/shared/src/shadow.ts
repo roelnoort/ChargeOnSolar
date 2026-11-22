@@ -5,6 +5,9 @@ export const shadowDecisionsPath = "/api/shadow/decisions";
 /** The SSE event name `GET /api/live/stream` sends each new Shadow decision under. */
 export const decisionEvent = "decision";
 
+/** The lowest Charging current the charger delivers, in amperes. */
+export const minimumCurrentAmps = 6;
+
 /** What set the Charging current of a Shadow decision. */
 export const currentLimit = z.enum([
   "surplus",
