@@ -24,7 +24,15 @@ export const userEmail = z.string().trim().toLowerCase().pipe(z.email());
 export const loginCodeRequest = z.object({ email: userEmail });
 export type LoginCodeRequest = z.infer<typeof loginCodeRequest>;
 
-export const loginCode = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
+/** A Login code's length, and how long it works after it was sent. */
+export const loginCodeRules = { digits: 6, lifetimeMinutes: 10 } as const;
+
+export const loginCode = z
+  .string()
+  .regex(
+    new RegExp(`^\\d{${loginCodeRules.digits}}$`),
+    `Enter the ${loginCodeRules.digits}-digit code`
+  );
 
 /**
  * How the client keeps its session: the web app in an HttpOnly cookie it

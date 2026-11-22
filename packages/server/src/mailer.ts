@@ -1,3 +1,4 @@
+import { loginCodeRules } from "@charge-on-solar/shared";
 import { createTransport } from "nodemailer";
 import { z } from "zod";
 
@@ -18,7 +19,7 @@ export type SmtpSettings = z.infer<typeof smtpSettings>;
 export function loginCodeEmail(code: string) {
   return {
     subject: `${code} is your ChargeOnSolar login code`,
-    text: `Your ChargeOnSolar login code is ${code}.\n\nIt works once, for 10 minutes. If you did not ask for it, you can ignore this email.`,
+    text: `Your ChargeOnSolar login code is ${code}.\n\nIt works once, for ${loginCodeRules.lifetimeMinutes} minutes. If you did not ask for it, you can ignore this email.`,
   };
 }
 

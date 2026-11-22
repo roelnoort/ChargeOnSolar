@@ -1,6 +1,7 @@
 import {
   loginCode,
   loginCodeRequest,
+  loginCodeRules,
   type Session,
 } from "@charge-on-solar/shared";
 import { type FormEvent, useState } from "react";
@@ -79,15 +80,16 @@ export function LoginScreen({
       ) : (
         <form onSubmit={(event) => logIn(event, step.email)}>
           <p>
-            If <strong>{step.email}</strong> belongs to a household member, a
-            6-digit code is on its way. It works for 10 minutes.
+            If <strong>{step.email}</strong> belongs to a household member, a{" "}
+            {loginCodeRules.digits}-digit code is on its way. It works for{" "}
+            {loginCodeRules.lifetimeMinutes} minutes.
           </p>
           <label htmlFor="login-code">Code</label>
           <input
             id="login-code"
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={loginCodeRules.digits}
             required
             value={code}
             onChange={(event) => setCode(event.target.value.trim())}

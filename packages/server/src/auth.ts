@@ -6,6 +6,7 @@ import {
   randomInt,
   timingSafeEqual,
 } from "node:crypto";
+import { loginCodeRules } from "@charge-on-solar/shared";
 import type { Clock } from "./clock.ts";
 import type {
   SignedInDevice,
@@ -18,7 +19,7 @@ import type { Storage } from "./storage/index.ts";
 const minute = 60_000;
 const day = 24 * 60 * minute;
 
-export const loginCodeLifetime = 10 * minute;
+export const loginCodeLifetime = loginCodeRules.lifetimeMinutes * minute;
 /** At most this many Login code requests per address in the window. */
 export const loginCodeRequestLimit = { requests: 5, window: 60 * minute };
 export const wrongAttemptCap = 5;
@@ -55,7 +56,10 @@ export function createAuth({ storage, mailer, clock, log }: AuthDependencies) {
 
     const user = await storage.findUserByEmail(email);
     if (!user) return "sent";
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const { digits } = loginCodeRules;
+    const code = randomInt(0, 10 ** digits)
+      .toString()
+      .padStart(digits, "0");
     await storage.saveLoginCode({
       userId: user.id,
       codeHash: hashCode(user, code),
