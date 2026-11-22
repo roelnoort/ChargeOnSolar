@@ -24,6 +24,10 @@ const snapshot: LiveSnapshot = {
       deviceTimestamp: null,
     },
   },
+  charger: null,
+  surplusW: null,
+  mainFuseA: 25,
+  fuseHeadroomA: null,
 };
 
 class FakeEventSource implements EventSourceLike {

@@ -13,6 +13,8 @@ export interface AppDependencies {
   storage: Storage;
   live: LiveState;
   clock: Clock;
+  /** The main fuse rating, in amperes. */
+  mainFuseA: number;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
@@ -21,6 +23,7 @@ export function createApp({
   storage,
   live,
   clock,
+  mainFuseA,
   webRoot,
 }: AppDependencies): Hono {
   const app = new Hono();
@@ -41,7 +44,7 @@ export function createApp({
     return c.json(toHealth(startup));
   });
 
-  addLiveRoutes(app, { live, clock });
+  addLiveRoutes(app, { live, clock, mainFuseA });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

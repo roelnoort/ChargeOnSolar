@@ -1,0 +1,23 @@
+{
+  "Pages": 1,
+  "Data": [
+    {
+      "OperatingMode": 3,
+      "IsOnline": true,
+      "Id": "00000000-0000-0000-0000-0000000c4a26",
+      "MID": "GPN000000",
+      "DeviceId": "GPN000000",
+      "SerialNo": "<scrubbed>",
+      "Name": "<scrubbed>",
+      "CreatedOnDate": "2025-03-14T09:12:40.123",
+      "CircuitId": "00000000-0000-0000-0000-00000000c1c0",
+      "Active": true,
+      "CurrentUserRoles": 3,
+      "DeviceType": 4,
+      "InstallationName": "<scrubbed>",
+      "InstallationId": "00000000-0000-0000-0000-00000001a5a1",
+      "AuthenticationType": 0,
+      "IsAuthorizationRequired": false
+    }
+  ]
+}

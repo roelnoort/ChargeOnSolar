@@ -8,6 +8,10 @@ import { and, asc, desc, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Clock } from "../clock.ts";
+import {
+  type ChargerReading,
+  toPhaseSetting,
+} from "../domain/charger-reading.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
 import type { Startup } from "../domain/startup.ts";
 import * as schema from "./schema.ts";
@@ -18,6 +22,9 @@ export interface Storage {
   recordP1Reading(reading: P1Reading): Promise<void>;
   /** P1 Readings received in `[from, to)`, oldest first, at most `limit`. */
   listP1Readings(window: ReadingWindow): Promise<P1Reading[]>;
+  recordChargerReading(reading: ChargerReading): Promise<void>;
+  /** Charger Readings received in `[from, to)`, oldest first, at most `limit`. */
+  listChargerReadings(window: ReadingWindow): Promise<ChargerReading[]>;
   close(): Promise<void>;
 }
 
@@ -88,6 +95,20 @@ function storageOn(
         .all()
         .map(fromP1Row);
     },
+    async recordChargerReading(reading) {
+      db.insert(schema.chargerReadings).values(toChargerRow(reading)).run();
+    },
+    async listChargerReadings({ from, to, limit }) {
+      const received = schema.chargerReadings.receivedAt;
+      return db
+        .select()
+        .from(schema.chargerReadings)
+        .where(and(gte(received, from), lt(received, to)))
+        .orderBy(asc(received), asc(schema.chargerReadings.id))
+        .limit(limit)
+        .all()
+        .map(fromChargerRow);
+    },
     async close() {
       sqlite.close();
     },
@@ -140,6 +161,35 @@ function fromP1Row(row: P1Row): P1Reading {
         voltageV: row.voltageL3V,
       },
     },
+  };
+}
+
+type ChargerRow = typeof schema.chargerReadings.$inferSelect;
+
+function toChargerRow({
+  phaseCurrentsA,
+  ...reading
+}: ChargerReading): Omit<ChargerRow, "id"> {
+  return {
+    ...reading,
+    currentL1A: phaseCurrentsA.l1,
+    currentL2A: phaseCurrentsA.l2,
+    currentL3A: phaseCurrentsA.l3,
+  };
+}
+
+function fromChargerRow({
+  id: _id,
+  currentL1A,
+  currentL2A,
+  currentL3A,
+  phaseSetting: storedPhaseSetting,
+  ...row
+}: ChargerRow): ChargerReading {
+  return {
+    ...row,
+    phaseSetting: toPhaseSetting(storedPhaseSetting),
+    phaseCurrentsA: { l1: currentL1A, l2: currentL2A, l3: currentL3A },
   };
 }
 

@@ -59,6 +59,10 @@ describe("GET /api/live/stream", () => {
           deviceTimestamp: null,
         },
       },
+      charger: null,
+      surplusW: null,
+      mainFuseA: 25,
+      fuseHeadroomA: null,
     });
   });
 

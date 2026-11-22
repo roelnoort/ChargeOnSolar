@@ -1,5 +1,6 @@
 import type { Cancel, Clock } from "../clock.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
+import { type BackOff, backOffMs, messageOf } from "../supervision.ts";
 import type { P1Client, P1Connection } from "./client.ts";
 
 export interface P1CollectorOptions {
@@ -13,13 +14,7 @@ export interface P1Collector {
   stop(): void;
 }
 
-const firstRetryMs = 1000;
-const longestRetryMs = 60_000;
-
-/** How long to wait before the next attempt, after `failures` in a row. */
-export function retryDelayMs(failures: number): number {
-  return Math.min(firstRetryMs * 2 ** (failures - 1), longestRetryMs);
-}
+const retryBackOff: BackOff = { firstMs: 1000, longestMs: 60_000 };
 
 /**
  * Keeps the P1 stream open: reconnects with back-off whenever it drops or
@@ -65,7 +60,7 @@ export function startP1Collector({
       connection = undefined;
       if (stopped) break;
       failures = received ? 1 : failures + 1;
-      const delay = retryDelayMs(failures);
+      const delay = backOffMs(retryBackOff, failures);
       log(`Reconnecting to the P1 meter in ${delay / 1000} s`);
       await wait(delay);
     }
@@ -81,8 +76,4 @@ export function startP1Collector({
       connection?.close();
     },
   };
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
