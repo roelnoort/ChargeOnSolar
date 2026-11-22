@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Server data: the SQLite database and its backups
+packages/server/data/

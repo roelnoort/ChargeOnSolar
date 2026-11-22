@@ -4,17 +4,21 @@
   "type": "module",
   "packageManager": "pnpm@12.21.0",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "prepare": "husky",
+    "dev": "pnpm --parallel --filter @charge-on-solar/server --filter @charge-on-solar/web run dev",
+    "build": "pnpm --filter @charge-on-solar/web run build",
+    "start": "pnpm --filter @charge-on-solar/server run start",
     "typecheck": "tsc -p .sandcastle/agent-workflows",
     "typecheck:all": "pnpm -r --include-workspace-root --if-present run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "biome format --write .",
     "lint": "biome check .",
-    "check": "biome check . && pnpm typecheck:all && vitest run"
+    "check": "biome check . && pnpm typecheck:all && vitest run && pnpm db:drift",
+    "db:drift": "pnpm --filter @charge-on-solar/server run db:drift"
   },
   "devDependencies": {
     "@ai-hero/sandcastle": "^0.14.0",

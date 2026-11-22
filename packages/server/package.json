@@ -1,0 +1,25 @@
+{
+  "name": "@charge-on-solar/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/main.ts",
+    "start": "node src/main.ts",
+    "typecheck": "tsc -p .",
+    "db:generate": "drizzle-kit generate",
+    "db:drift": "node scripts/check-migration-drift.ts"
+  },
+  "dependencies": {
+    "@charge-on-solar/shared": "workspace:*",
+    "@hono/node-server": "^2.1.11",
+    "better-sqlite3": "^13.2.0",
+    "drizzle-orm": "~0.45.4",
+    "hono": "4.13.19",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "drizzle-kit": "^0.31.11"
+  }
+}
