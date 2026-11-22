@@ -13,6 +13,7 @@ import {
 } from "@charge-on-solar/shared";
 import type { NewUser, User } from "../domain/user.ts";
 import { assembleServer, dataFiles } from "../server.ts";
+import { runUsersCommand, type UsersCommandResult } from "../users-command.ts";
 import { createFakeClock, type FakeClock } from "./fake-clock.ts";
 import { createFakeMailer, type FakeMailer } from "./fake-mailer.ts";
 
@@ -29,6 +30,8 @@ export interface TestServer {
   clock: FakeClock;
   mailer: FakeMailer;
   addUser(user: NewUser): Promise<User>;
+  /** Runs `pnpm users` with these arguments against this server's database. */
+  usersCommand(args: string[]): Promise<UsersCommandResult>;
   /**
    * Logs a User in through the real flow, as a native client, and answers
    * the headers that carry its session.
@@ -84,6 +87,8 @@ export async function startTestServer(
       if (!added) throw new Error(`A User with ${user.email} already exists`);
       return added;
     },
+    usersCommand: (args) =>
+      runUsersCommand(args, { storage: server.storage, clock }),
     async signIn(email) {
       await post(loginCodePath, { email });
       const code = mailer.lastCodeFor(email);

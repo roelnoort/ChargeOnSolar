@@ -8,7 +8,8 @@
     "start": "node src/main.ts",
     "typecheck": "tsc -p .",
     "db:generate": "drizzle-kit generate",
-    "db:drift": "node scripts/check-migration-drift.ts"
+    "db:drift": "node scripts/check-migration-drift.ts",
+    "users": "node src/users-cli.ts"
   },
   "dependencies": {
     "@charge-on-solar/shared": "workspace:*",

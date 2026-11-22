@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Hono } from "hono";
 import packageJson from "../package.json" with { type: "json" };
 import type { SessionEnv } from "./api/session.ts";
@@ -18,6 +19,13 @@ export interface ServerDependencies extends DataFiles {
 export interface DataFiles {
   databaseFile: string;
   backupDir: string;
+}
+
+/** `DATA_DIR`, or `packages/server/data` when it is not set. */
+export function dataDirFromEnv(env: Record<string, string | undefined>) {
+  return resolve(
+    env.DATA_DIR ?? fileURLToPath(new URL("../data", import.meta.url))
+  );
 }
 
 /** Where the server keeps its database and backups inside a data directory. */

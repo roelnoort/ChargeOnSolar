@@ -44,7 +44,7 @@ export function createAuth({ storage, mailer, clock, log }: AuthDependencies) {
     email: string
   ): Promise<"sent" | "rate-limited"> {
     const now = clock.now();
-    const recent = await storage.countLoginCodeRequestsSince(
+    const recent = await storage.countLoginCodeRequestsAfter(
       email,
       new Date(now.getTime() - loginCodeRequestLimit.window)
     );

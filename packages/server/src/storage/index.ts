@@ -30,7 +30,7 @@ export interface Storage {
   findUserByEmail(email: string): Promise<User | undefined>;
 
   recordLoginCodeRequest(email: string, at: Date): Promise<void>;
-  countLoginCodeRequestsSince(email: string, since: Date): Promise<number>;
+  countLoginCodeRequestsAfter(email: string, after: Date): Promise<number>;
   /** Saves a new Login code and retires the User's earlier ones. */
   saveLoginCode(code: NewLoginCode): Promise<void>;
   findLiveLoginCode(
@@ -138,14 +138,14 @@ function storageOn(
     async recordLoginCodeRequest(email, at) {
       db.insert(schema.loginCodeRequests).values({ email, at }).run();
     },
-    async countLoginCodeRequestsSince(email, since) {
+    async countLoginCodeRequestsAfter(email, after) {
       const row = db
         .select({ requests: count() })
         .from(schema.loginCodeRequests)
         .where(
           and(
             eq(schema.loginCodeRequests.email, email),
-            gte(schema.loginCodeRequests.at, since)
+            gt(schema.loginCodeRequests.at, after)
           )
         )
         .get();
