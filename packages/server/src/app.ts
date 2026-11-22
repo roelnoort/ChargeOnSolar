@@ -4,15 +4,25 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { toHealth } from "./api/health.ts";
+import { addLiveRoutes } from "./api/live.ts";
+import type { Clock } from "./clock.ts";
+import type { LiveState } from "./domain/live-state.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
   storage: Storage;
+  live: LiveState;
+  clock: Clock;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
 
-export function createApp({ storage, webRoot }: AppDependencies): Hono {
+export function createApp({
+  storage,
+  live,
+  clock,
+  webRoot,
+}: AppDependencies): Hono {
   const app = new Hono();
 
   app.onError((error, c) => {
@@ -30,6 +40,8 @@ export function createApp({ storage, webRoot }: AppDependencies): Hono {
     if (!startup) throw new HTTPException(503, { message: "Not started" });
     return c.json(toHealth(startup));
   });
+
+  addLiveRoutes(app, { live, clock });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

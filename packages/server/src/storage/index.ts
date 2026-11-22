@@ -4,17 +4,27 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
-import { desc } from "drizzle-orm";
+import { and, asc, desc, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { Clock } from "../clock.ts";
+import type { P1Reading } from "../domain/p1-reading.ts";
 import type { Startup } from "../domain/startup.ts";
 import * as schema from "./schema.ts";
 
 export interface Storage {
   recordStartup(startup: Startup): Promise<void>;
   latestStartup(): Promise<Startup | undefined>;
+  recordP1Reading(reading: P1Reading): Promise<void>;
+  /** P1 Readings received in `[from, to)`, oldest first, at most `limit`. */
+  listP1Readings(window: ReadingWindow): Promise<P1Reading[]>;
   close(): Promise<void>;
+}
+
+export interface ReadingWindow {
+  from: Date;
+  to: Date;
+  limit: number;
 }
 
 export interface OpenStorageOptions {
@@ -64,8 +74,71 @@ function storageOn(
         .get();
       return row;
     },
+    async recordP1Reading(reading) {
+      db.insert(schema.p1Readings).values(toP1Row(reading)).run();
+    },
+    async listP1Readings({ from, to, limit }) {
+      const received = schema.p1Readings.receivedAt;
+      return db
+        .select()
+        .from(schema.p1Readings)
+        .where(and(gte(received, from), lt(received, to)))
+        .orderBy(asc(received), asc(schema.p1Readings.id))
+        .limit(limit)
+        .all()
+        .map(fromP1Row);
+    },
     async close() {
       sqlite.close();
+    },
+  };
+}
+
+type P1Row = typeof schema.p1Readings.$inferSelect;
+
+function toP1Row({
+  receivedAt,
+  deviceTimestamp,
+  netPowerW,
+  phases: { l1, l2, l3 },
+}: P1Reading): Omit<P1Row, "id"> {
+  return {
+    receivedAt,
+    deviceTimestamp,
+    netPowerW,
+    powerL1W: l1.powerW,
+    powerL2W: l2.powerW,
+    powerL3W: l3.powerW,
+    currentL1A: l1.currentA,
+    currentL2A: l2.currentA,
+    currentL3A: l3.currentA,
+    voltageL1V: l1.voltageV,
+    voltageL2V: l2.voltageV,
+    voltageL3V: l3.voltageV,
+  };
+}
+
+function fromP1Row(row: P1Row): P1Reading {
+  return {
+    receivedAt: row.receivedAt,
+    deviceTimestamp: row.deviceTimestamp,
+    netPowerW: row.netPowerW,
+    phases: {
+      l1: {
+        powerW: row.powerL1W,
+        currentA: row.currentL1A,
+        voltageV: row.voltageL1V,
+      },
+      l2: {
+        powerW: row.powerL2W,
+        currentA: row.currentL2A,
+        voltageV: row.voltageL2V,
+      },
+      l3: {
+        powerW: row.powerL3W,
+        currentA: row.currentL3A,
+        voltageV: row.voltageL3V,
+      },
     },
   };
 }
