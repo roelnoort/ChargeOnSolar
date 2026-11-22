@@ -3,3 +3,4 @@
 export * from "./auth.ts";
 export * from "./health.ts";
 export * from "./live.ts";
+export * from "./solar-mode.ts";

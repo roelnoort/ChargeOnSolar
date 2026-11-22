@@ -9,6 +9,7 @@
     "typecheck": "tsc -p .",
     "db:generate": "drizzle-kit generate",
     "db:drift": "node scripts/check-migration-drift.ts",
+    "replay": "node scripts/replay-shadow.ts",
     "users": "node src/users-cli.ts"
   },
   "dependencies": {
