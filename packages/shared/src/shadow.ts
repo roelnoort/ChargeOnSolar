@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { solarMode } from "./solar-mode.ts";
+import { settings } from "./settings.ts";
 
 export const shadowDecisionsPath = "/api/shadow/decisions";
 /** The SSE event name `GET /api/live/stream` sends each new Shadow decision under. */
@@ -60,22 +60,6 @@ export const shadowDecision = z.union([
 ]);
 export type ShadowDecision = z.infer<typeof shadowDecision>;
 
-/** The settings the Shadow engine decides by. */
-export const shadowSettings = z.object({
-  startWindowMinutes: z.number(),
-  stopWindowMinutes: z.number(),
-  minimumOnTimeMinutes: z.number(),
-  minimumOffTimeMinutes: z.number(),
-  currentHoldMinutes: z.number(),
-  deadBandAmps: z.number(),
-  /** Per-phase voltage, fixed by the grid. */
-  voltage: z.number(),
-  mainFuseAmps: z.number(),
-  minimumSolarWatts: z.number(),
-  solarMode,
-});
-export type ShadowSettings = z.infer<typeof shadowSettings>;
-
 /** The live data of the minute before a Shadow decision, averaged. Null when a device sent nothing. */
 export const averagedInputs = z.object({
   surplusW: z.number().nullable(),
@@ -115,7 +99,8 @@ export const shadowDecisionRecord = z.object({
   inputs: averagedInputs,
   zaptec: zaptecContext,
   rulesVersion: z.number(),
-  settings: shadowSettings,
+  /** The Settings the decision was made by. */
+  settings,
 });
 export type ShadowDecisionRecord = z.infer<typeof shadowDecisionRecord>;
 

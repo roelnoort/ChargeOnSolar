@@ -13,13 +13,14 @@ import type { Cancel, Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
+import type { SettingsStore } from "../settings.ts";
 import type { SessionEnv } from "./session.ts";
 import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
   clock: Clock;
-  mainFuseA: number;
+  settings: SettingsStore;
 }
 
 // Zaptec's ChargerOperationMode (state 710).
@@ -102,10 +103,10 @@ export function toLiveSnapshot(
 
 export function addLiveRoutes(
   app: Hono<SessionEnv>,
-  { live, clock, mainFuseA }: LiveRouteDependencies
+  { live, clock, settings }: LiveRouteDependencies
 ) {
   app.get(livePath, (c) =>
-    c.json(toLiveSnapshot(live, clock.now(), mainFuseA))
+    c.json(toLiveSnapshot(live, clock.now(), settings.current().mainFuseAmps))
   );
 
   app.get(liveStreamPath, (c) =>
@@ -116,7 +117,11 @@ export function addLiveRoutes(
 
       function sendIfChanged() {
         pending = undefined;
-        const snapshot = toLiveSnapshot(live, clock.now(), mainFuseA);
+        const snapshot = toLiveSnapshot(
+          live,
+          clock.now(),
+          settings.current().mainFuseAmps
+        );
         const state = JSON.stringify({ ...snapshot, at: undefined });
         if (state === lastSentState) return;
         lastSentState = state;

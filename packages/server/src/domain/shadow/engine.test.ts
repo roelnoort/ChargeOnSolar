@@ -574,7 +574,10 @@ describe("settings", () => {
   });
 
   it("stamps the settings with the rules version", () => {
-    const changed = settings({ deadBandAmps: 2 });
+    const changed = {
+      ...settings({ deadBandAmps: 2 }),
+      tickIntervalSeconds: 60,
+    };
 
     expect(stampShadowSettings(changed)).toEqual({
       rulesVersion: shadowRulesVersion,

@@ -6,6 +6,7 @@ import type {
   ChargeDecision,
   CurrentLimit,
   HoldReason,
+  Settings,
   ShadowDecision,
   ShadowSettings,
   StopReason,
@@ -46,12 +47,10 @@ export const defaultShadowSettings: ShadowSettings = {
 /** Settings as recorded beside a Shadow decision: which rules read them. */
 export interface StampedShadowSettings {
   rulesVersion: number;
-  settings: ShadowSettings;
+  settings: Settings;
 }
 
-export function stampShadowSettings(
-  settings: ShadowSettings
-): StampedShadowSettings {
+export function stampShadowSettings(settings: Settings): StampedShadowSettings {
   return { rulesVersion: shadowRulesVersion, settings };
 }
 
