@@ -34,3 +34,31 @@ export const p1Readings = sqliteTable(
   },
   (table) => [index("p1_readings_received_at").on(table.receivedAt)]
 );
+
+/** Every Reading from Zaptec, typed, with the raw state it came from. */
+export const chargerReadings = sqliteTable(
+  "charger_readings",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    /** When the server received it, in UTC. */
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+    chargerPowerW: real("charger_power_w"),
+    chargingCurrentSetA: real("charging_current_set_a"),
+    operationMode: integer("operation_mode"),
+    finalStopActive: integer("final_stop_active", {
+      mode: "boolean",
+    }).notNull(),
+    nextScheduleEvent: text("next_schedule_event"),
+    phaseSetting: integer("phase_setting"),
+    maxCurrentA: real("max_current_a"),
+    currentL1A: real("current_l1_a"),
+    currentL2A: real("current_l2_a"),
+    currentL3A: real("current_l3_a"),
+    availableCurrentMode: integer("available_current_mode"),
+    enabledFeatures: integer("enabled_features"),
+    surplusModeActive: integer("surplus_mode_active", { mode: "boolean" }),
+    /** The charger state and installation exactly as Zaptec sent them. */
+    rawState: text("raw_state").notNull(),
+  },
+  (table) => [index("charger_readings_received_at").on(table.receivedAt)]
+);

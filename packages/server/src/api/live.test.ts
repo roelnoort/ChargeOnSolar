@@ -23,6 +23,10 @@ describe("GET /api/live", () => {
     expect(await snapshot()).toEqual({
       at: "2026-06-01T12:00:00.000Z",
       p1: null,
+      charger: null,
+      surplusW: null,
+      mainFuseA: 25,
+      fuseHeadroomA: null,
     });
   });
 
@@ -56,6 +60,10 @@ describe("GET /api/live", () => {
           deviceTimestamp: "2026-06-01T14:00:01",
         },
       },
+      charger: null,
+      surplusW: null,
+      mainFuseA: 25,
+      fuseHeadroomA: null,
     });
   });
 

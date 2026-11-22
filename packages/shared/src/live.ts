@@ -32,11 +32,67 @@ export function liveDevice<T extends z.ZodType>(reading: T) {
   });
 }
 
+/** Whether the charger charges on 1 phase or on 3. */
+export const phaseSetting = z.union([z.literal(1), z.literal(3)]);
+export type PhaseSetting = z.infer<typeof phaseSetting>;
+
+/** What the charger is doing, from Zaptec's operation mode and FinalStopActive. */
+export const chargerState = z.enum([
+  "disconnected",
+  "connected",
+  "charging",
+  "paused",
+  "finished",
+  "unknown",
+]);
+export type ChargerState = z.infer<typeof chargerState>;
+
+/** Who sets the charger's current in Zaptec: its `availableCurrentMode`. */
+export const zaptecMode = z.enum(["default", "scheduled", "apm", "unknown"]);
+export type ZaptecMode = z.infer<typeof zaptecMode>;
+
+/** The latest Reading of the charger, from the Zaptec cloud. */
+export const chargerReading = z.object({
+  /** Charger power in watts. */
+  chargerPowerW: z.number().nullable(),
+  /** The Charging current Zaptec has set, in amperes. */
+  chargingCurrentSetA: z.number().nullable(),
+  state: chargerState,
+  /** Zaptec's NextScheduleEvent, as it sent it. */
+  nextScheduleEvent: z.string().nullable(),
+  phaseSetting: phaseSetting.nullable(),
+  /** The charger's maximum current, in amperes. */
+  maxCurrentA: z.number().nullable(),
+  /** The current the charger draws on each phase, in amperes. */
+  phaseCurrentsA: z.object({
+    l1: z.number().nullable(),
+    l2: z.number().nullable(),
+    l3: z.number().nullable(),
+  }),
+  zaptecMode,
+  /** Whether Zaptec's load balancing (APM) is in control. */
+  apmActive: z.boolean(),
+  /** Whether Zaptec's own Surplus mode is active. */
+  surplusModeActive: z.boolean().nullable(),
+});
+export type ChargerReading = z.infer<typeof chargerReading>;
+
 /** What `GET /api/live` answers and each `snapshot` SSE event carries. */
 export const liveSnapshot = z.object({
   /** The server's time when it took the snapshot. */
   at: z.iso.datetime(),
   /** Null until the P1 meter has sent its first Reading. */
   p1: liveDevice(p1Reading).nullable(),
+  /** Null until Zaptec has been read once. */
+  charger: liveDevice(chargerReading).nullable(),
+  /**
+   * Surplus in watts: Charger power minus Net power. Null without both a P1
+   * Reading and Charger power.
+   */
+  surplusW: z.number().nullable(),
+  /** The main fuse rating, in amperes. */
+  mainFuseA: z.number(),
+  /** Fuse headroom in amperes. Null without per-phase currents from both. */
+  fuseHeadroomA: z.number().nullable(),
 });
 export type LiveSnapshot = z.infer<typeof liveSnapshot>;

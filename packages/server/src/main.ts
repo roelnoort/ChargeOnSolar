@@ -5,6 +5,7 @@ import { serve } from "@hono/node-server";
 import { systemClock } from "./clock.ts";
 import { p1ClientFromEnv } from "./p1/from-env.ts";
 import { assembleServer, dataFiles } from "./server.ts";
+import { mainFuseFromEnv, zaptecClientFromEnv } from "./zaptec/from-env.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dataDir = resolve(process.env.DATA_DIR ?? resolve(here, "../data"));
@@ -19,6 +20,8 @@ const server = await assembleServer({
   ...dataFiles(dataDir),
   log: (line) => console.log(line),
   p1Client: p1ClientFromEnv(process.env, systemClock),
+  zaptecClient: zaptecClientFromEnv(process.env, systemClock),
+  mainFuseA: mainFuseFromEnv(process.env),
   webRoot,
 });
 
