@@ -90,7 +90,12 @@ export const switchesPerSession = 20;
 /** Starting needs this many simulated switches left, so a stop stays possible. */
 export const switchReserve = 2;
 
-export type CurrentLimit = "surplus" | "fuse-headroom" | "charger-maximum";
+export const currentLimits = [
+  "surplus",
+  "fuse-headroom",
+  "charger-maximum",
+] as const;
+export type CurrentLimit = (typeof currentLimits)[number];
 
 export const holdReasons = [
   "fuse-headroom",
@@ -103,7 +108,8 @@ export const holdReasons = [
 ] as const;
 export type HoldReason = (typeof holdReasons)[number];
 
-export type StopReason = "surplus" | "fuse-headroom";
+export const stopReasons = ["surplus", "fuse-headroom"] as const;
+export type StopReason = (typeof stopReasons)[number];
 
 export type ChargingDecision =
   | {
