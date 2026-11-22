@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { describeDataAge, describeNetPower, p1DataAgeMs } from "./describe.ts";
+import {
+  chargerStaleAfterMs,
+  dataAgeMs,
+  describeChargerState,
+  describeDataAge,
+  describeGrid,
+  describeNetPower,
+  describePhaseSetting,
+  describeZaptecMode,
+  formatCurrent,
+  formatSignedPower,
+} from "./describe.ts";
 
 describe("describing Net power", () => {
   it("says the house imports when Net power is positive", () => {
@@ -27,7 +38,7 @@ describe("describing Net power", () => {
   });
 });
 
-describe("the P1 data age", () => {
+describe("the data age", () => {
   const snapshot = {
     at: "2026-06-01T12:00:10.000Z",
     lastSeenAt: "2026-06-01T12:00:08.000Z",
@@ -35,7 +46,7 @@ describe("the P1 data age", () => {
 
   it("is the age when the server sent it, plus the time since", () => {
     expect(
-      p1DataAgeMs({
+      dataAgeMs({
         serverAt: snapshot.at,
         lastSeenAt: snapshot.lastSeenAt,
         receivedAt: 50_000,
@@ -56,5 +67,66 @@ describe("the P1 data age", () => {
       text: "2 h old",
       stale: true,
     });
+  });
+
+  it("calls charger data stale only after a few missed Zaptec reads", () => {
+    expect(describeDataAge(45_000, chargerStaleAfterMs).stale).toBe(false);
+    expect(describeDataAge(95_000, chargerStaleAfterMs)).toEqual({
+      text: "1 min old",
+      stale: true,
+    });
+  });
+});
+
+describe("describing the grid circle", () => {
+  it("says power comes from the grid when importing", () => {
+    expect(describeGrid(2300)).toEqual({
+      label: "From grid",
+      power: "2.30 kW",
+    });
+  });
+
+  it("says power goes to the grid when exporting", () => {
+    expect(describeGrid(-1230)).toEqual({ label: "To grid", power: "1.23 kW" });
+  });
+
+  it("says just grid at zero", () => {
+    expect(describeGrid(0)).toEqual({ label: "Grid", power: "0 W" });
+  });
+});
+
+describe("describing the charger", () => {
+  it("names each charger state", () => {
+    expect(describeChargerState("disconnected")).toBe("No car connected");
+    expect(describeChargerState("connected")).toBe("Car connected, waiting");
+    expect(describeChargerState("charging")).toBe("Charging");
+    expect(describeChargerState("paused")).toBe("Paused");
+    expect(describeChargerState("finished")).toBe("Finished");
+    expect(describeChargerState("unknown")).toBe("Unknown");
+  });
+
+  it("names the Phase setting", () => {
+    expect(describePhaseSetting(1)).toBe("1 phase");
+    expect(describePhaseSetting(3)).toBe("3 phases");
+    expect(describePhaseSetting(null)).toBe("Unknown");
+  });
+
+  it("names Zaptec's mode", () => {
+    expect(describeZaptecMode("apm")).toBe("Load balancing (APM)");
+    expect(describeZaptecMode("default")).toBe("Default");
+    expect(describeZaptecMode("scheduled")).toBe("Scheduled");
+    expect(describeZaptecMode("unknown")).toBe("Unknown");
+  });
+
+  it("formats a current to a tenth of an ampere", () => {
+    expect(formatCurrent(17)).toBe("17.0 A");
+    expect(formatCurrent(37.900000000000006)).toBe("37.9 A");
+  });
+});
+
+describe("a signed power", () => {
+  it("keeps the minus of a negative Surplus", () => {
+    expect(formatSignedPower(-800)).toBe("−800 W");
+    expect(formatSignedPower(4200)).toBe("4.20 kW");
   });
 });

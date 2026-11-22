@@ -1,3 +1,9 @@
+import type {
+  ChargerState,
+  PhaseSetting,
+  ZaptecMode,
+} from "@charge-on-solar/shared";
+
 export const netPowerDirections = [
   "importing",
   "exporting",
@@ -18,6 +24,11 @@ export function formatPower(watts: number): string {
     : `${(size / 1000).toFixed(2)} kW`;
 }
 
+/** A power that keeps its sign, such as a Surplus. */
+export function formatSignedPower(watts: number): string {
+  return `${watts < 0 ? "−" : ""}${formatPower(watts)}`;
+}
+
 /** Net power is positive when importing, negative when exporting. */
 export function describeNetPower(netPowerW: number) {
   const direction: NetPowerDirection =
@@ -29,12 +40,52 @@ export function describeNetPower(netPowerW: number) {
   };
 }
 
+/** Power from the grid is positive, power to the grid negative. */
+export function describeGrid(netPowerW: number) {
+  const label =
+    netPowerW > 0 ? "From grid" : netPowerW < 0 ? "To grid" : "Grid";
+  return { label, power: formatPower(netPowerW) };
+}
+
+export function formatCurrent(amperes: number): string {
+  return `${amperes.toFixed(1)} A`;
+}
+
+const chargerStateLabels: Record<ChargerState, string> = {
+  disconnected: "No car connected",
+  connected: "Car connected, waiting",
+  charging: "Charging",
+  paused: "Paused",
+  finished: "Finished",
+  unknown: "Unknown",
+};
+
+export function describeChargerState(state: ChargerState): string {
+  return chargerStateLabels[state];
+}
+
+export function describePhaseSetting(setting: PhaseSetting | null): string {
+  if (setting === null) return "Unknown";
+  return setting === 1 ? "1 phase" : "3 phases";
+}
+
+const zaptecModeLabels: Record<ZaptecMode, string> = {
+  apm: "Load balancing (APM)",
+  default: "Default",
+  scheduled: "Scheduled",
+  unknown: "Unknown",
+};
+
+export function describeZaptecMode(mode: ZaptecMode): string {
+  return zaptecModeLabels[mode];
+}
+
 /**
- * How old the P1 data is now: its age by the server's clock when the
+ * How old a device's data is now: its age by the server's clock when the
  * snapshot was taken, plus the time since it arrived here. This way the
  * browser's clock never has to agree with the server's.
  */
-export function p1DataAgeMs({
+export function dataAgeMs({
   serverAt,
   lastSeenAt,
   receivedAt,
@@ -49,9 +100,11 @@ export function p1DataAgeMs({
 }
 
 // The meter pushes about once a second; this much silence means trouble.
-const staleAfterMs = 10_000;
+export const p1StaleAfterMs = 10_000;
+// The server reads Zaptec every 30 s; three missed reads mean trouble.
+export const chargerStaleAfterMs = 90_000;
 
-export function describeDataAge(ageMs: number) {
+export function describeDataAge(ageMs: number, staleAfterMs = p1StaleAfterMs) {
   const seconds = Math.floor(ageMs / 1000);
   const text =
     seconds < 1
