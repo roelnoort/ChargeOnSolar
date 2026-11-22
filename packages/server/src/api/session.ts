@@ -9,6 +9,7 @@ export interface SessionEnv {
   Variables: { signedIn: SignedInDeviceOfUser };
 }
 
+// Sessions and CSRF: docs/adr/0001-sessions-by-emailed-code.md
 // The __Host- prefix makes the browser insist on Secure, Path=/ and no Domain.
 const cookieName = "__Host-session";
 
