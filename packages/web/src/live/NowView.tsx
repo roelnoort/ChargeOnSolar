@@ -1,5 +1,6 @@
 import type { LiveSnapshot } from "@charge-on-solar/shared";
 import { useEffect, useState } from "react";
+import type { Clock } from "../clock.ts";
 import {
   chargerStaleAfterMs,
   dataAgeMs,
@@ -20,32 +21,26 @@ import {
   type StreamStatus,
 } from "./live-stream.ts";
 
-function useLiveStream(): LiveStreamState {
+function useLiveStream(clock: Clock): LiveStreamState {
   const [state, setState] = useState<LiveStreamState>({
     status: "connecting",
   });
   useEffect(() => {
     const stream = connectLiveStream({
       createEventSource: (url) => new EventSource(url),
-      after: (milliseconds, callback) => {
-        const timer = setTimeout(callback, milliseconds);
-        return () => clearTimeout(timer);
-      },
-      now: Date.now,
+      after: clock.after,
+      now: clock.now,
       onChange: setState,
     });
     return () => stream.close();
-  }, []);
+  }, [clock]);
   return state;
 }
 
 /** The current time, updated every second. */
-function useNow(): number {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+function useNow(clock: Clock): number {
+  const [now, setNow] = useState(clock.now);
+  useEffect(() => clock.every(1000, () => setNow(clock.now())), [clock]);
   return now;
 }
 
@@ -132,9 +127,9 @@ function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
   );
 }
 
-export function NowView() {
-  const { status, latest } = useLiveStream();
-  const now = useNow();
+export function NowView({ clock }: { clock: Clock }) {
+  const { status, latest } = useLiveStream(clock);
+  const now = useNow(clock);
   const snapshot = latest?.snapshot;
   const p1 = snapshot?.p1 ?? null;
   const charger = snapshot?.charger ?? null;
