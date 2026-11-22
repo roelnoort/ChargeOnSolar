@@ -9,6 +9,7 @@
   --accent: #1f6f4a;
   --border: #e3e0d6;
   --danger: #a3261b;
+  --import: #9a5b00;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   background: var(--bg);
@@ -24,6 +25,7 @@
     --accent: #5fd49a;
     --border: #2e333b;
     --danger: #ff8a80;
+    --import: #f0b45c;
   }
 }
 
@@ -197,4 +199,157 @@ button.link {
   color: var(--bg);
   font-size: 0.75rem;
   white-space: nowrap;
+}
+
+.stream {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.stream-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.stream-connected .stream-dot {
+  background: var(--accent);
+}
+
+.stream-reconnecting {
+  color: var(--danger);
+}
+
+.stream-reconnecting .stream-dot {
+  background: var(--danger);
+}
+
+.card {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.net-power {
+  margin: 0;
+}
+
+.net-power-label {
+  font-weight: 600;
+}
+
+.net-power-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.net-power-exporting {
+  color: var(--accent);
+}
+
+.net-power-importing {
+  color: var(--import);
+}
+
+.data-age {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.data-age-stale {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.banner-warning {
+  color: var(--danger);
+  background: var(--surface);
+  border: 2px solid var(--danger);
+}
+
+.flows {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.flow {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.flow-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  margin: 0 auto 0.25rem;
+  border: 4px solid var(--muted);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-surplus .flow-circle,
+.flow-export .flow-circle {
+  border-color: var(--accent);
+}
+
+.flow-short .flow-circle,
+.flow-import .flow-circle {
+  border-color: var(--import);
+}
+
+.flow-car .flow-circle {
+  border-color: var(--text);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 0;
+}
+
+.figures dt {
+  color: var(--muted);
+}
+
+.figures dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

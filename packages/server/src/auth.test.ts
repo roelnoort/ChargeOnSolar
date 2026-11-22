@@ -320,6 +320,7 @@ describe("protecting the API", () => {
   it.each([
     sessionPath,
     "/api/health",
+    "/api/live",
     "/api/live/stream",
     "/api/a-route-added-later",
   ])("refuses GET %s without a session", async (path) => {

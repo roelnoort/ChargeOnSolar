@@ -1,0 +1,27 @@
+{
+  "Id": "00000000-0000-0000-0000-00000001a5a1",
+  "Name": "<scrubbed>",
+  "Address": "<scrubbed>",
+  "ZipCode": "<scrubbed>",
+  "City": "<scrubbed>",
+  "CountryId": "<scrubbed>",
+  "InstallationType": 0,
+  "MaxCurrent": 25.0,
+  "AvailableCurrent": 25.0,
+  "AvailableCurrentPhase1": 25.0,
+  "AvailableCurrentPhase2": 25.0,
+  "AvailableCurrentPhase3": 25.0,
+  "AvailableCurrentMode": 2,
+  "ThreeToOnePhaseSwitchCurrent": 8.0,
+  "EnabledFeatures": 3,
+  "PropertyEnergySensorIsOffline": false,
+  "SurplusMode": {
+    "Active": false,
+    "Available": true,
+    "Enabled": false,
+    "Strategy": 0,
+    "PartialPowerKw": 0.0
+  },
+  "CurrentUserRoles": 3,
+  "Active": true
+}

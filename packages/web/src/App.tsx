@@ -1,7 +1,9 @@
 import type { Health, Session } from "@charge-on-solar/shared";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createApiClient, NotSignedInError } from "./api/client.ts";
+import type { Clock } from "./clock.ts";
 import { LoginScreen } from "./LoginScreen.tsx";
+import { NowView } from "./live/NowView.tsx";
 import { messageOf } from "./message-of.ts";
 import { SignedInDevicesScreen } from "./SignedInDevicesScreen.tsx";
 
@@ -89,7 +91,7 @@ function ServerStatus({ state }: { state: ServerState }) {
   }
 }
 
-export function App() {
+export function App({ clock }: { clock: Clock }) {
   const { state, signedIn, signedOut } = useSession();
 
   switch (state.kind) {
@@ -112,7 +114,13 @@ export function App() {
         </Shell>
       );
     case "signed-in":
-      return <SignedInApp session={state.session} onSignedOut={signedOut} />;
+      return (
+        <SignedInApp
+          clock={clock}
+          session={state.session}
+          onSignedOut={signedOut}
+        />
+      );
   }
 }
 
@@ -138,9 +146,11 @@ function Shell({
 }
 
 function SignedInApp({
+  clock,
   session,
   onSignedOut,
 }: {
+  clock: Clock;
   session: Session;
   onSignedOut: () => void;
 }) {
@@ -168,9 +178,7 @@ function SignedInApp({
       {tab === "now" && (
         <section aria-labelledby="now-heading">
           <h2 id="now-heading">Now</h2>
-          <p className="placeholder">
-            Surplus, Charger power and the Shadow decision will show here.
-          </p>
+          <NowView clock={clock} />
         </section>
       )}
       {tab === "day" && (

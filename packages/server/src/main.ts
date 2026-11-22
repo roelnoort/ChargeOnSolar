@@ -4,10 +4,12 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { systemClock } from "./clock.ts";
 import { mailerFromEnv } from "./mailer.ts";
+import { p1ClientFromEnv } from "./p1/from-env.ts";
 import { assembleServer, dataDirFromEnv, dataFiles } from "./server.ts";
+import { mainFuseFromEnv, zaptecClientFromEnv } from "./zaptec/from-env.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const envFile = resolve(here, "../.env");
+const envFile = resolve(here, "../../../.env");
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 const dataDir = dataDirFromEnv(process.env);
 const port = Number(process.env.PORT ?? 3000);
@@ -20,6 +22,9 @@ const server = await assembleServer({
   mailer: mailerFromEnv(process.env, log),
   ...dataFiles(dataDir),
   log,
+  p1Client: p1ClientFromEnv(process.env, systemClock),
+  zaptecClient: zaptecClientFromEnv(process.env, systemClock),
+  mainFuseA: mainFuseFromEnv(process.env),
   webRoot,
 });
 
@@ -37,6 +42,8 @@ function shutDown() {
       }
     );
   });
+  // Open live streams never end by themselves.
+  if ("closeAllConnections" in http) http.closeAllConnections();
 }
 process.on("SIGINT", shutDown);
 process.on("SIGTERM", shutDown);

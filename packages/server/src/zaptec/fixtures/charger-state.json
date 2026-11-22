@@ -1,0 +1,86 @@
+[
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": -2,
+    "Timestamp": "2026-06-01T11:59:58.41",
+    "ValueAsString": "1"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 507,
+    "Timestamp": "2026-06-01T11:59:51.02",
+    "ValueAsString": "13.012"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 508,
+    "Timestamp": "2026-06-01T11:59:51.02",
+    "ValueAsString": "0.031"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 509,
+    "Timestamp": "2026-06-01T11:59:51.02",
+    "ValueAsString": "0.027"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 510,
+    "Timestamp": "2026-03-14T09:20:11.5",
+    "ValueAsString": "32"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 513,
+    "Timestamp": "2026-06-01T11:59:51.02",
+    "ValueAsString": "2998.4"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 519,
+    "Timestamp": "2026-06-01T10:02:17.7",
+    "ValueAsString": "1"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 520,
+    "Timestamp": "2026-05-20T18:44:03.9",
+    "ValueAsString": "1"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 553,
+    "Timestamp": "2026-06-01T11:59:51.02",
+    "ValueAsString": "5.822"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 708,
+    "Timestamp": "2026-06-01T10:02:17.7",
+    "ValueAsString": "13"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 710,
+    "Timestamp": "2026-06-01T10:02:15.3",
+    "ValueAsString": "3"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 718,
+    "Timestamp": "2026-06-01T10:02:15.3",
+    "ValueAsString": "0"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 721,
+    "Timestamp": "2026-06-01T10:02:15.3",
+    "ValueAsString": "<scrubbed>"
+  },
+  {
+    "ChargerId": "00000000-0000-0000-0000-0000000c4a26",
+    "StateId": 722,
+    "Timestamp": "2026-06-01T10:02:15.3",
+    "ValueAsString": "<scrubbed>"
+  }
+]

@@ -2,3 +2,4 @@
 // types derived from them. Nothing here depends on either side.
 export * from "./auth.ts";
 export * from "./health.ts";
+export * from "./live.ts";
