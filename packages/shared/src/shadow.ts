@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { settings } from "./settings.ts";
 
+/** The lowest Charging current the charger can deliver, in amperes. */
+export const minimumCurrentAmps = 6;
+
 export const shadowDecisionsPath = "/api/shadow/decisions";
 /** The SSE event name `GET /api/live/stream` sends each new Shadow decision under. */
 export const decisionEvent = "decision";
@@ -60,7 +63,7 @@ export const shadowDecision = z.union([
 ]);
 export type ShadowDecision = z.infer<typeof shadowDecision>;
 
-/** The live data of the minute before a Shadow decision, averaged. Null when a device sent nothing. */
+/** The live data of the tick interval before a Shadow decision, averaged. Null when a device sent nothing. */
 export const averagedInputs = z.object({
   surplusW: z.number().nullable(),
   netPowerW: z.number().nullable(),

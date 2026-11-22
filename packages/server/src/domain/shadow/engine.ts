@@ -1,25 +1,16 @@
 // The Shadow engine: what Automatic control would do, given one moment's
 // live state. Pure: no I/O and no clock of its own; the time comes in with
 // the snapshot.
-import type {
-  CarDecision,
-  ChargeDecision,
-  CurrentLimit,
-  HoldReason,
-  Settings,
-  ShadowDecision,
-  ShadowSettings,
-  StopReason,
-} from "@charge-on-solar/shared";
-
-export type {
-  CarDecision,
-  ChargeDecision,
-  CurrentLimit,
-  HoldReason,
-  ShadowDecision,
-  ShadowSettings,
-  StopReason,
+import {
+  type CarDecision,
+  type ChargeDecision,
+  type CurrentLimit,
+  type HoldReason,
+  minimumCurrentAmps,
+  type Settings,
+  type ShadowDecision,
+  type ShadowSettings,
+  type StopReason,
 } from "@charge-on-solar/shared";
 
 /** Bumped whenever a rule changes; stamped together with the settings. */
@@ -107,7 +98,6 @@ interface ChargeOutcome {
   next: SimulatedCharger;
 }
 
-const minimumCurrentAmps = 6;
 const minute = 60_000;
 
 const switchBudget = 20;

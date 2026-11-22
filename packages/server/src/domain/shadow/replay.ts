@@ -1,13 +1,12 @@
 // The replay harness: runs recorded Readings through the Shadow engine, so a
 // developer can see the decisions a day of real data would have produced.
+import type { ShadowDecision, ShadowSettings } from "@charge-on-solar/shared";
 import { z } from "zod";
 import {
   carStates,
   decideShadow,
   noCar,
   phaseSettings,
-  type ShadowDecision,
-  type ShadowSettings,
   type SimulatedCharger,
 } from "./engine.ts";
 

@@ -1,10 +1,10 @@
+import type { ShadowSettings } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
 import {
   decideShadow,
   defaultShadowSettings,
   noCar,
   phaseSettings,
-  type ShadowSettings,
   type ShadowSnapshot,
   type SimulatedCharger,
   shadowRulesVersion,

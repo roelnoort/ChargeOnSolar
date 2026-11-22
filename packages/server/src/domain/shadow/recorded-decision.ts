@@ -1,9 +1,9 @@
-import type { AveragedInputs, ZaptecContext } from "@charge-on-solar/shared";
 import type {
+  AveragedInputs,
   ShadowDecision,
-  SimulatedCharger,
-  StampedShadowSettings,
-} from "./engine.ts";
+  ZaptecContext,
+} from "@charge-on-solar/shared";
+import type { SimulatedCharger, StampedShadowSettings } from "./engine.ts";
 
 /** One Shadow decision as the runner made and recorded it. */
 export interface RecordedShadowDecision {
