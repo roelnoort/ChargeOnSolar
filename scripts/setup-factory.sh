@@ -405,7 +405,9 @@ elif [[ "$requires_pr" == "false" ]]; then
   note "Left untouched so your existing rules aren't overwritten. Add the rule here:"
   open_url "$BRANCH_SETTINGS"
   SKIPPED+=("require a pull request on main: $BRANCH_SETTINGS")
-elif ! gh api "repos/$REPO/branches/main/protection" 2>/dev/null | grep -q 'Branch not protected'; then
+# An unprotected branch is a 404, so gh exits non-zero even though its output
+# says why; under pipefail, piping it into grep would always read as a failure.
+elif [[ "$(gh api "repos/$REPO/branches/main/protection" 2>/dev/null || true)" != *'Branch not protected'* ]]; then
   warn "Couldn't read main's branch protection, so it's left alone."
   SKIPPED+=("branch protection on main: $BRANCH_SETTINGS")
 elif confirm "Protect main so that merging needs a pull request?"; then
