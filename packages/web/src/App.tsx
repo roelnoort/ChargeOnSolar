@@ -2,6 +2,7 @@ import type { Health, Session } from "@charge-on-solar/shared";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createApiClient, NotSignedInError } from "./api/client.ts";
 import { LoginScreen } from "./LoginScreen.tsx";
+import { messageOf } from "./message-of.ts";
 import { SignedInDevicesScreen } from "./SignedInDevicesScreen.tsx";
 
 const api = createApiClient();
@@ -18,10 +19,6 @@ type SessionState =
   | { kind: "signed-out" }
   | { kind: "signed-in"; session: Session }
   | { kind: "unreachable"; message: string };
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function useSession() {
   const [state, setState] = useState<SessionState>({ kind: "checking" });

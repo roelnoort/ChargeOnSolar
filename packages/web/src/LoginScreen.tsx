@@ -6,12 +6,9 @@ import {
 import { type FormEvent, useState } from "react";
 import type { ApiClient } from "./api/client.ts";
 import { deviceNameFor } from "./device-name.ts";
+import { messageOf } from "./message-of.ts";
 
 type Step = { kind: "email" } | { kind: "code"; email: string };
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function LoginScreen({
   api,

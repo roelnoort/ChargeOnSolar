@@ -1,6 +1,7 @@
 import type { SignedInDevice } from "@charge-on-solar/shared";
 import { useCallback, useEffect, useState } from "react";
 import { type ApiClient, NotSignedInError } from "./api/client.ts";
+import { messageOf } from "./message-of.ts";
 
 type DevicesState =
   | { kind: "loading" }
@@ -20,7 +21,7 @@ export function SignedInDevicesScreen({
   const fail = useCallback(
     (error: unknown) => {
       if (error instanceof NotSignedInError) onSignedOut();
-      else setState({ kind: "failed", message: String(error) });
+      else setState({ kind: "failed", message: messageOf(error) });
     },
     [onSignedOut]
   );
