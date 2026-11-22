@@ -1,0 +1,3986 @@
+{
+  "readings": [
+    {
+      "device": "charger",
+      "at": "2026-06-01T07:59:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T07:59:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:00:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:00:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:00:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:01:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:01:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:01:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:02:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:02:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:02:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:03:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:03:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:03:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:04:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:04:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:04:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:05:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:05:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:05:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:06:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:06:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:06:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:07:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:07:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:07:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:08:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:08:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:08:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:09:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:09:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:09:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:10:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:10:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:10:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:11:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:11:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:11:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:12:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:12:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:12:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:13:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:13:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:13:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:14:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:14:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:14:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:15:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:15:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:15:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:16:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:16:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:16:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:17:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:17:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:17:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:18:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:18:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:18:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:19:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:19:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:19:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:20:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:20:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:20:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:21:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:21:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:21:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:22:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:22:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:22:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:23:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:23:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:23:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:24:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:24:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:24:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:25:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:25:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:25:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:26:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:26:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:26:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:27:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:27:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:27:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:28:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:28:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:28:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:29:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:29:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:29:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:30:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:30:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:30:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:31:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:31:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:31:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:32:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:32:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:32:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:33:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:33:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:33:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:34:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:34:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:34:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:35:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:35:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:35:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:36:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:36:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:36:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:37:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:37:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:37:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:38:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:38:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:38:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:39:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:39:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:39:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:40:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:40:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:40:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:41:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:41:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:41:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:42:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:42:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:42:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:43:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:43:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:43:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:44:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:44:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:44:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:45:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:45:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:45:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:46:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:46:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:46:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:47:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:47:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:47:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:48:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:48:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:48:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:49:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:49:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:49:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:50:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:50:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:50:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:51:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:51:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:51:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:52:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:52:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:52:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:53:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:53:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:53:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:54:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:54:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:54:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:55:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:55:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:55:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:56:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:56:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:56:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:57:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:57:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:57:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:58:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:58:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:58:50.000Z",
+      "productionWatts": 500,
+      "phaseCurrentsAmps": [2.17, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T08:59:00.000Z",
+      "netPowerWatts": 0,
+      "phaseCurrentsAmps": [0.0, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T08:59:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T08:59:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:00:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:00:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:00:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:01:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:01:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:01:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:02:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:02:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:02:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:03:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:03:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:03:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:04:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:04:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:04:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:05:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:05:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:05:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:06:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:06:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:06:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:07:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:07:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:07:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:08:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:08:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:08:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:09:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:09:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:09:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:10:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:10:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:10:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:11:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:11:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:11:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:12:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:12:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:12:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:13:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:13:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:13:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:14:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:14:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:14:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:15:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:15:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:15:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:16:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:16:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:16:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:17:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:17:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:17:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:18:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:18:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:18:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:19:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:19:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:19:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:20:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:20:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:20:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:21:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:21:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:21:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:22:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:22:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:22:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:23:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:23:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:23:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:24:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:24:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:24:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:25:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:25:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:25:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:26:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:26:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:26:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:27:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:27:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:27:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:28:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:28:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:28:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:29:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:29:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:29:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:30:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:30:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:30:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:31:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:31:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:31:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:32:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:32:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:32:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:33:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:33:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:33:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:34:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:34:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:34:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:35:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:35:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:35:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:36:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:36:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:36:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:37:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:37:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:37:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:38:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:38:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:38:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:39:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:39:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:39:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:40:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:40:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:40:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:41:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:41:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:41:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:42:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:42:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:42:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:43:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:43:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:43:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:44:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:44:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:44:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:45:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:45:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:45:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:46:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:46:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:46:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:47:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:47:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:47:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:48:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:48:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:48:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:49:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:49:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:49:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:50:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:50:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:50:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:51:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:51:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:51:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:52:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:52:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:52:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:53:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:53:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:53:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:54:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:54:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:54:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:55:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:55:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:55:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:56:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:56:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:56:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:57:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:57:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:57:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:58:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:58:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:58:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T09:59:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T09:59:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T09:59:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:00:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:00:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:00:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:01:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:01:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:01:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:02:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:02:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:02:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:03:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:03:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:03:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:04:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:04:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:04:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:05:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:05:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:05:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:06:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:06:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:06:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:07:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:07:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:07:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:08:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:08:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:08:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:09:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:09:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:09:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:10:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:10:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:10:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:11:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:11:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:11:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:12:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:12:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:12:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:13:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:13:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:13:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:14:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:14:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:14:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:15:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:15:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:15:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:16:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:16:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:16:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:17:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:17:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:17:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:18:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:18:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:18:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:19:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:19:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:19:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:20:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:20:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:20:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:21:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:21:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:21:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:22:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:22:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:22:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:23:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:23:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:23:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:24:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:24:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:24:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:25:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:25:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:25:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:26:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:26:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:26:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:27:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:27:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:27:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:28:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:28:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:28:50.000Z",
+      "productionWatts": 2500,
+      "phaseCurrentsAmps": [10.87, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:29:00.000Z",
+      "netPowerWatts": -2000,
+      "phaseCurrentsAmps": [-8.7, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:29:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:29:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:30:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:30:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:30:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:31:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:31:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:31:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:32:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:32:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:32:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:33:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:33:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:33:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:34:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:34:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:34:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:35:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:35:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:35:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:36:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:36:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:36:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:37:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:37:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:37:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:38:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:38:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:38:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:39:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:39:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:39:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:40:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:40:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:40:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:41:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:41:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:41:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:42:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:42:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:42:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:43:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:43:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:43:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:44:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:44:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:44:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:45:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:45:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:45:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:46:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:46:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:46:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:47:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:47:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:47:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:48:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:48:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:48:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:49:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:49:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:49:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:50:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:50:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:50:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:51:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:51:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:51:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:52:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:52:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:52:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:53:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:53:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:53:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:54:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:54:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:54:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:55:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:55:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:55:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:56:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:56:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:56:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:57:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:57:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:57:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:58:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:58:40.000Z",
+      "car": "accepting",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:58:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T10:59:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    },
+    {
+      "device": "charger",
+      "at": "2026-06-01T10:59:40.000Z",
+      "car": "none",
+      "phases": 1,
+      "maximumCurrentAmps": 16,
+      "powerWatts": 0,
+      "phaseCurrentsAmps": [0, 0, 0],
+      "finalStopPause": false
+    },
+    {
+      "device": "solar",
+      "at": "2026-06-01T10:59:50.000Z",
+      "productionWatts": 1000,
+      "phaseCurrentsAmps": [4.35, 0, 0]
+    },
+    {
+      "device": "p1",
+      "at": "2026-06-01T11:00:00.000Z",
+      "netPowerWatts": -500,
+      "phaseCurrentsAmps": [-2.17, 0, 0]
+    }
+  ]
+}
