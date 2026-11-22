@@ -15,6 +15,7 @@ import {
   formatPower,
   formatSignedPower,
 } from "./describe.ts";
+import { describeShadowDecision } from "./describe-shadow.ts";
 import {
   connectLiveStream,
   type LiveStreamState,
@@ -135,6 +136,51 @@ function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
   );
 }
 
+function ShadowDecisionCard({
+  snapshot,
+}: {
+  snapshot: LiveSnapshot | undefined;
+}) {
+  const record = snapshot?.shadowDecision ?? null;
+  const described = record && describeShadowDecision(record);
+  const charger = snapshot?.charger?.reading;
+  return (
+    <article
+      className="card shadow-decision"
+      aria-labelledby="shadow-decision-heading"
+    >
+      <h3 id="shadow-decision-heading">Shadow decision</h3>
+      {described ? (
+        <>
+          <p className="shadow-sentence">{described.sentence}</p>
+          {described.withoutPause && (
+            <p className="shadow-underlying">
+              Without the pause: {described.withoutPause}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="placeholder">No Shadow decision yet.</p>
+      )}
+      {charger && (
+        <p className="shadow-charger">
+          The charger itself: {describeChargerState(charger.state)}
+          {charger.chargingCurrentSetA !== null &&
+            `, ${formatCurrent(charger.chargingCurrentSetA)} set by Zaptec`}
+        </p>
+      )}
+      <p className="data-age">
+        Never sent to the charger
+        {record &&
+          ` · decided at ${new Date(record.at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`}
+      </p>
+    </article>
+  );
+}
+
 export function NowView({ clock }: { clock: Clock }) {
   const { status, latest } = useLiveStream(clock);
   const now = useNow(clock);
@@ -153,6 +199,8 @@ export function NowView({ clock }: { clock: Clock }) {
         <span className="stream-dot" aria-hidden="true" />
         {statusLabels[status]}
       </p>
+
+      <ShadowDecisionCard snapshot={snapshot} />
 
       <PowerFlows snapshot={snapshot} />
 
