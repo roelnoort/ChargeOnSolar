@@ -1,7 +1,6 @@
 import {
   type LiveSnapshot,
   livePath,
-  liveSnapshot,
   liveStreamPath,
   snapshotEvent,
 } from "@charge-on-solar/shared";
@@ -17,7 +16,7 @@ export interface LiveRouteDependencies {
 
 export function toLiveSnapshot(live: LiveState, now: Date): LiveSnapshot {
   const p1 = live.p1();
-  return liveSnapshot.parse({
+  return {
     at: now.toISOString(),
     p1: p1
       ? {
@@ -29,7 +28,7 @@ export function toLiveSnapshot(live: LiveState, now: Date): LiveSnapshot {
           },
         }
       : null,
-  });
+  };
 }
 
 export function addLiveRoutes(
