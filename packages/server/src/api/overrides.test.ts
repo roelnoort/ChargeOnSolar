@@ -13,7 +13,7 @@ import {
   overrideEvent,
   overridesPath,
 } from "@charge-on-solar/shared";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { confirmationWaitMs } from "../overrides.ts";
 import type { FakeChargerState } from "../testing/fake-zaptec-client.ts";
 import {
@@ -457,6 +457,47 @@ describe("pauses", () => {
     expect(await pauses()).toEqual([
       expect.objectContaining({ endedAt: null }),
     ]);
+  });
+});
+
+describe("pauses the charger shows while a command is on its way", () => {
+  it("are the ChargeOnSolar pause the Pause made, not an External pause", async () => {
+    const { zaptec, pollZaptec } = await start();
+    const release = zaptec.holdCommands();
+    const sending = send("pause");
+    await vi.waitFor(() => expect(zaptec.commandsSent).toHaveLength(1));
+
+    zaptec.set(pausedByUs);
+    await pollZaptec();
+    release();
+    const sent = manualOverride.parse(await (await sending).json());
+    await pollZaptec();
+
+    expect(await pauses()).toEqual([
+      expect.objectContaining({
+        source: "chargeonsolar",
+        overrideId: sent.id,
+        endedAt: null,
+      }),
+    ]);
+  });
+
+  it("end as resumed by ChargeOnSolar when charging restarts before Zaptec answers the Resume", async () => {
+    const { zaptec, pollZaptec } = await start({ charger: pausedByUs });
+    const release = zaptec.holdCommands();
+    const sending = send("resume");
+    await vi.waitFor(() => expect(zaptec.commandsSent).toHaveLength(1));
+
+    zaptec.set(charging);
+    await pollZaptec();
+    release();
+    await sending;
+    await pollZaptec();
+
+    expect(await pauses()).toEqual([
+      expect.objectContaining({ ending: "resumed-by-chargeonsolar" }),
+    ]);
+    expect((await latestOverride())?.confirmation).toBe("confirmed");
   });
 });
 

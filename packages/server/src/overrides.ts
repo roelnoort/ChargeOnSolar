@@ -218,7 +218,8 @@ export async function createOverrides({
     onChargerReading(reading) {
       return enqueue(async () => {
         await confirmIfShown(reading);
-        await trackPause(reading);
+        // A change seen before Zaptec answers belongs to the command being sent.
+        if (!sending) await trackPause(reading);
       });
     },
     onChange(listener) {

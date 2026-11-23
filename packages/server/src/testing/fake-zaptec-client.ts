@@ -24,6 +24,8 @@ export interface FakeZaptecClient extends ZaptecClient {
   commandResult: CommandResult;
   /** Every command sent, in order. */
   readonly commandsSent: readonly OverrideCommand[];
+  /** Holds back every command's answer until the returned function is called. */
+  holdCommands(): () => void;
 }
 
 export function createFakeZaptecClient(clock: Clock): FakeZaptecClient {
@@ -31,6 +33,7 @@ export function createFakeZaptecClient(clock: Clock): FakeZaptecClient {
   let readAttempts = 0;
   const commandsSent: OverrideCommand[] = [];
   const readListeners: (() => void)[] = [];
+  let held: Promise<void> = Promise.resolve();
 
   function answered() {
     for (const listener of readListeners.splice(0)) listener();
@@ -42,7 +45,15 @@ export function createFakeZaptecClient(clock: Clock): FakeZaptecClient {
     commandsSent,
     async sendCommand(command) {
       commandsSent.push(command);
+      await held;
       return this.commandResult;
+    },
+    holdCommands() {
+      let release = () => {};
+      held = new Promise((resolve) => {
+        release = resolve;
+      });
+      return release;
     },
     get readAttempts() {
       return readAttempts;
