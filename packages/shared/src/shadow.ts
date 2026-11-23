@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { phaseSetting } from "./phase-setting.ts";
 import { settings } from "./settings.ts";
 
 /** The lowest Charging current the charger can deliver, in amperes. */
@@ -99,6 +100,8 @@ export const shadowDecisionRecord = z.object({
   decision: shadowDecision,
   /** The Charging current the simulated charger is at after it; null while it would not charge. */
   chargingCurrentA: z.number().nullable(),
+  /** The Phase setting the decision was made for; null on decisions recorded before it was kept. */
+  phaseSetting: phaseSetting.nullable(),
   inputs: averagedInputs,
   zaptec: zaptecContext,
   rulesVersion: z.number(),
@@ -119,3 +122,21 @@ export const shadowDecisionQuery = z.object({
   to: z.iso.datetime(),
   limit: z.coerce.number().int().min(1).max(1440).default(1440),
 });
+
+/**
+ * The Charger power the simulated charger would deliver after a Shadow
+ * decision, in watts: 0 while it would not charge, null when the Phase
+ * setting is unknown.
+ */
+export function shadowChargerPowerW({
+  chargingCurrentA,
+  phaseSetting,
+  settings: { voltage },
+}: Pick<
+  ShadowDecisionRecord,
+  "chargingCurrentA" | "phaseSetting" | "settings"
+>): number | null {
+  if (chargingCurrentA === null) return 0;
+  if (phaseSetting === null) return null;
+  return chargingCurrentA * voltage * phaseSetting;
+}

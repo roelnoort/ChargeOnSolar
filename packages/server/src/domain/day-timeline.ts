@@ -1,4 +1,10 @@
+import {
+  type ShadowSwitchAt,
+  shadowChargerPowerW,
+  shadowSwitchesOf,
+} from "@charge-on-solar/shared";
 import type { BucketWindow, PowerBucket } from "./power-bucket.ts";
+import type { RecordedShadowDecision } from "./shadow/recorded-decision.ts";
 import type { SolarInterval } from "./solar-interval.ts";
 
 /** Five minutes of one day; each power is an average in watts, null when unknown. */
@@ -8,6 +14,8 @@ export interface DayTimelineBucket {
   solarProductionW: number | null;
   netPowerW: number | null;
   chargerPowerW: number | null;
+  /** Null without a Shadow decision in the bucket. */
+  shadowChargerPowerW: number | null;
 }
 
 export interface DayTimelineSources {
@@ -20,6 +28,8 @@ export interface DayTimelineSources {
   solarIntervals: SolarInterval[];
   netPower: PowerBucket[];
   chargerPower: PowerBucket[];
+  /** The day's Shadow decisions, oldest first. */
+  shadowDecisions: RecordedShadowDecision[];
 }
 
 /**
@@ -34,6 +44,7 @@ export function toDayTimelineBuckets({
   solarIntervals,
   netPower,
   chargerPower,
+  shadowDecisions,
 }: DayTimelineSources): DayTimelineBucket[] {
   // An Enphase interval is identified by when it ended.
   const solarByEnd = byTime(
@@ -44,6 +55,9 @@ export function toDayTimelineBuckets({
   );
   const netByStart = byTime(netPower);
   const chargerByStart = byTime(chargerPower);
+  const shadowByStart = byTime(
+    shadowChargerPowerPerBucket(shadowDecisions, { from, to, bucketMs })
+  );
   const fetchedUntil = solarKnownUntil(solarFetchedAt, solarCompleteAt);
   const buckets: DayTimelineBucket[] = [];
   for (let start = from.getTime(); start < to.getTime(); start += bucketMs) {
@@ -53,6 +67,7 @@ export function toDayTimelineBuckets({
       solarProductionW: end <= fetchedUntil ? (solarByEnd.get(end) ?? 0) : null,
       netPowerW: netByStart.get(start) ?? null,
       chargerPowerW: chargerByStart.get(start) ?? null,
+      shadowChargerPowerW: shadowByStart.get(start) ?? null,
     });
   }
   return buckets;
@@ -72,5 +87,51 @@ function solarKnownUntil(
 function byTime(buckets: PowerBucket[]): Map<number, number> {
   return new Map(
     buckets.map((bucket) => [bucket.start.getTime(), bucket.averageW])
+  );
+}
+
+/**
+ * The mean Charger power of the Shadow decisions in each bucket. Each
+ * decision holds until the next tick, and ticks are evenly spaced, so the
+ * mean weighs each the same as the time it held.
+ */
+function shadowChargerPowerPerBucket(
+  decisions: RecordedShadowDecision[],
+  { from, bucketMs }: BucketWindow
+): PowerBucket[] {
+  const sums = new Map<number, { totalW: number; count: number }>();
+  for (const decision of decisions) {
+    const powerW = shadowChargerPowerW({
+      chargingCurrentA: decision.simulated.currentAmps,
+      phaseSetting: decision.phaseSetting,
+      settings: decision.stamp.settings,
+    });
+    if (powerW === null) continue;
+    const start =
+      from.getTime() +
+      Math.floor((decision.at.getTime() - from.getTime()) / bucketMs) *
+        bucketMs;
+    const sum = sums.get(start) ?? { totalW: 0, count: 0 };
+    sums.set(start, { totalW: sum.totalW + powerW, count: sum.count + 1 });
+  }
+  return [...sums].map(([start, { totalW, count }]) => ({
+    start: new Date(start),
+    averageW: totalW / count,
+  }));
+}
+
+/** A Shadow start or stop of the day, as the domain keeps it. */
+export type DayShadowSwitch = ShadowSwitchAt<Date>;
+
+/** The day's Shadow starts and stops. */
+export function toShadowSwitches(
+  decisions: RecordedShadowDecision[]
+): DayShadowSwitch[] {
+  return shadowSwitchesOf(
+    decisions.map(({ at, decision, simulated }) => ({
+      at,
+      decision,
+      chargingCurrentA: simulated.currentAmps,
+    }))
   );
 }

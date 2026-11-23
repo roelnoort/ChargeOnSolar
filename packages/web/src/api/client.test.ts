@@ -254,6 +254,19 @@ describe("the API client's day timeline", () => {
           solarProductionW: null,
           netPowerW: 350,
           chargerPowerW: 0,
+          shadowChargerPowerW: 1610,
+        },
+      ],
+      shadowSwitches: [
+        { at: "2026-05-31T22:01:00.000Z", kind: "start", currentA: 7 },
+      ],
+      overrides: [
+        {
+          id: 3,
+          command: "pause",
+          status: "confirmed",
+          sentAt: "2026-05-31T22:03:00.000Z",
+          userName: "Sam",
         },
       ],
     };

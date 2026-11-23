@@ -5,6 +5,7 @@ export * from "./day-timeline.ts";
 export * from "./health.ts";
 export * from "./live.ts";
 export * from "./override.ts";
+export * from "./phase-setting.ts";
 export * from "./settings.ts";
 export * from "./shadow.ts";
 export * from "./solar.ts";

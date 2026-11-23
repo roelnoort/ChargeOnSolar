@@ -2,6 +2,7 @@ import {
   chargerStaleAfterMs,
   type OverrideAvailability,
   type OverrideCommand,
+  type OverrideStatus,
 } from "@charge-on-solar/shared";
 import {
   type ChargerReading,
@@ -54,6 +55,16 @@ export interface ManualOverrideRecord {
   confirmation: ConfirmationOutcome | null;
   /** For a Resume: the pause it answers. */
   answersPauseId: number | null;
+}
+
+/** How far a recorded Manual override got. */
+export function overrideStatusOf({
+  commandResult,
+  confirmation,
+}: ManualOverrideRecord): OverrideStatus {
+  if (commandResult === null) return "sending";
+  if (!commandResult.accepted) return "rejected";
+  return confirmation ?? "accepted";
 }
 
 /** A pause as recorded, open or ended. */

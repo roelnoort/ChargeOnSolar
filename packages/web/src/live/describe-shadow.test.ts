@@ -13,6 +13,7 @@ function record(
     at: "2026-06-01T12:01:00.000Z",
     decision,
     chargingCurrentA: null,
+    phaseSetting: 1,
     inputs: {
       surplusW: 3300,
       netPowerW: -3300,

@@ -1,13 +1,18 @@
-import { type DayTimeline, dayTimelineBucketMs } from "@charge-on-solar/shared";
-import { useEffect, useRef, useState } from "react";
+import {
+  type DayOverride,
+  type DayTimeline,
+  overrideCommandLabels,
+  type ShadowSwitch,
+} from "@charge-on-solar/shared";
+import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { amsterdamClockTime } from "../amsterdam-clock.ts";
+import { covers, pointAt } from "./day-points.ts";
+import { labelRows } from "./label-rows.ts";
 import {
   type RealChartBucket,
-  realChartBucket,
   realChartTotals,
   type SolarFetchedBucket,
   type SolarNotFetchedBucket,
-  solarNotFetchedFrom,
   solarNotFetchedStack,
 } from "./real-chart.ts";
 import { band } from "./smooth-band.ts";
@@ -20,9 +25,18 @@ export const realChartAreas = [
   { key: "toGridW", label: "To grid", kind: "to-grid" },
 ] as const;
 
+const labelRowCount = 3;
+const labelRowHeight = 14;
 const plotHeight = 200;
-const pad = { left: 18, right: 44, top: 8, bottom: 22 };
+const pad = {
+  left: 18,
+  right: 44,
+  top: 6 + labelRowCount * labelRowHeight,
+  bottom: 22,
+};
 const smallestScaleW = 3000;
+// Roughly the width of one character of an 11 px chart label.
+const labelCharWidth = 6.2;
 
 /** The width the element is drawn at, followed as it changes. */
 function useWidth<T extends Element>(fallback: number) {
@@ -70,21 +84,86 @@ function stackedTotalW(bucket: RealChartBucket): number {
   }
 }
 
-const kwhFormat = new Intl.NumberFormat("en-GB", {
+/** The kW scale that fits every bucket of all the charts, in whole kW. */
+export function chartScaleW(...charts: RealChartBucket[][]): number {
+  const peakW = Math.max(0, ...charts.flat().map(stackedTotalW));
+  return Math.max(smallestScaleW, Math.ceil(peakW / 1000) * 1000);
+}
+
+const oneDecimal = new Intl.NumberFormat("en-GB", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
+const kw = (watts: number) => `${oneDecimal.format(watts / 1000)} kW`;
 
-export function RealChart({
-  timeline,
-  now,
-}: {
+function describeBucket(bucket: RealChartBucket | undefined, empty: string) {
+  switch (bucket?.kind) {
+    case "solar-fetched":
+      return realChartAreas.map(
+        ({ key, label }) => `${label} ${kw(bucket[key])}`
+      );
+    case "solar-not-fetched":
+      return [
+        `Car ${kw(bucket.carW)}`,
+        `From grid ${kw(bucket.fromGridW)}`,
+        `To grid ${kw(bucket.toGridW)}`,
+      ];
+    default:
+      return [empty];
+  }
+}
+
+const switchArrows = { start: "▲", stop: "▼" } as const;
+const overrideFlag = "⚑";
+
+function switchLabel({ kind, currentA }: ShadowSwitch) {
+  const arrow = switchArrows[kind];
+  return currentA === null ? arrow : `${arrow} ${Math.round(currentA)} A`;
+}
+
+function overrideLabel({ command, userName }: DayOverride) {
+  return `${overrideFlag} ${overrideCommandLabels[command]} · ${userName}`;
+}
+
+export interface DayChartProps {
+  name: "real" | "shadow";
+  title: string;
+  subtitle: string;
   timeline: DayTimeline;
+  buckets: RealChartBucket[];
+  /** The top of the kW scale, shared by the charts of the day. */
+  scaleW: number;
   now: number;
-}) {
+  /** Where Enphase has not been asked for Solar production yet, if anywhere. */
+  solarNotFetchedFrom: number | undefined;
+  switches: ShadowSwitch[];
+  overrides: DayOverride[];
+  /** The moment being looked at, on whichever chart. */
+  hoverAt: number | undefined;
+  onHover: (at: number | undefined) => void;
+  /** Shown in the details where the chart has nothing at the moment looked at. */
+  emptyDetails: string;
+}
+
+export function DayChart({
+  name,
+  title,
+  subtitle,
+  timeline,
+  buckets,
+  scaleW,
+  now,
+  solarNotFetchedFrom,
+  switches,
+  overrides,
+  hoverAt,
+  onHover,
+  emptyDetails,
+}: DayChartProps) {
   const { ref, width } = useWidth<HTMLDivElement>(360);
-  const buckets = timeline.buckets.map(realChartBucket);
   const totals = realChartTotals(buckets);
+  const headingId = `${name}-chart-heading`;
+  const hatchId = `${name}-solar-not-fetched-hatch`;
 
   const dayStart = Date.parse(timeline.start);
   const dayEnd = Date.parse(timeline.end);
@@ -92,10 +171,8 @@ export function RealChart({
   const x = (at: number) =>
     pad.left + ((at - dayStart) / (dayEnd - dayStart)) * (plotRight - pad.left);
   const middleOf = (bucket: RealChartBucket) =>
-    x(Date.parse(bucket.start) + dayTimelineBucketMs / 2);
+    x((Date.parse(bucket.start) + Date.parse(bucket.end)) / 2);
 
-  const peakW = Math.max(0, ...buckets.map(stackedTotalW));
-  const scaleW = Math.max(smallestScaleW, Math.ceil(peakW / 1000) * 1000);
   const y = (watts: number) =>
     pad.top + plotHeight - (watts / scaleW) * plotHeight;
   const gridLinesW = Array.from(
@@ -113,13 +190,50 @@ export function RealChart({
   });
 
   const shownUntil = Math.min(now, dayEnd);
-  const notFetchedFrom = solarNotFetchedFrom(timeline.buckets);
-  const solarFetchedUntil =
-    notFetchedFrom === undefined ? dayEnd : Date.parse(notFetchedFrom);
   const notFetched =
-    solarFetchedUntil < shownUntil
-      ? { from: x(solarFetchedUntil), to: x(shownUntil) }
+    solarNotFetchedFrom !== undefined && solarNotFetchedFrom < shownUntil
+      ? { from: x(solarNotFetchedFrom), to: x(shownUntil) }
       : undefined;
+
+  const labels = [
+    ...overrides.map((override) => ({
+      key: `override-${override.id}`,
+      at: Date.parse(override.sentAt),
+      text: overrideLabel(override),
+      glyph: overrideFlag,
+      className: "chart-flag",
+    })),
+    ...switches.map((shadowSwitch) => ({
+      key: `${shadowSwitch.kind}-${shadowSwitch.at}`,
+      at: Date.parse(shadowSwitch.at),
+      text: switchLabel(shadowSwitch),
+      glyph: switchArrows[shadowSwitch.kind],
+      className: `chart-marker chart-marker-${shadowSwitch.kind}`,
+    })),
+  ].sort((a, b) => a.at - b.at);
+  const rows = labelRows(
+    labels.map(({ at, text }) => ({
+      x: x(at),
+      width: (text.length + 1) * labelCharWidth,
+    })),
+    labelRowCount
+  );
+
+  const hovered = hoverAt === undefined ? undefined : pointAt(buckets, hoverAt);
+  const hoveredLabels = hovered
+    ? labels.filter(({ at }) => covers(hovered, at))
+    : [];
+
+  function hoverFrom(event: PointerEvent<SVGSVGElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    const svgX = ((event.clientX - box.left) / box.width) * width;
+    const share = (svgX - pad.left) / (plotRight - pad.left);
+    onHover(
+      share < 0 || share > 1
+        ? undefined
+        : dayStart + share * (dayEnd - dayStart)
+    );
+  }
 
   function fetchedAreas(run: SolarFetchedBucket[], runIndex: number) {
     const xs = run.map(middleOf);
@@ -169,15 +283,18 @@ export function RealChart({
   }
 
   return (
-    <article className="card real-chart" aria-labelledby="real-chart-heading">
-      <header className="real-chart-head">
-        <h3 id="real-chart-heading">
-          Real <span className="real-chart-subtitle">what happened</span>
+    <article
+      className={`card day-chart ${name}-chart`}
+      aria-labelledby={headingId}
+    >
+      <header className="day-chart-head">
+        <h3 id={headingId}>
+          {title} <span className="day-chart-subtitle">{subtitle}</span>
         </h3>
-        <dl className="real-chart-totals">
+        <dl className="day-chart-totals">
           <div>
             <dt>Car</dt>
-            <dd>{kwhFormat.format(totals.carKwh)} kWh</dd>
+            <dd>{oneDecimal.format(totals.carKwh)} kWh</dd>
           </div>
           {totals.carSolarShare !== null && (
             <div>
@@ -190,28 +307,31 @@ export function RealChart({
           <div>
             <dt>From grid</dt>
             <dd className="total-from-grid">
-              {kwhFormat.format(totals.fromGridKwh)} kWh
+              {oneDecimal.format(totals.fromGridKwh)} kWh
             </dd>
           </div>
           <div>
             <dt>To grid</dt>
             <dd className="total-to-grid">
-              {kwhFormat.format(totals.toGridKwh)} kWh
+              {oneDecimal.format(totals.toGridKwh)} kWh
             </dd>
           </div>
         </dl>
       </header>
-      <div ref={ref} className="real-chart-plot">
+      <div ref={ref} className="day-chart-plot">
         <svg
           role="img"
-          aria-label="Real chart: House and Car by source, and To grid, through the day"
+          aria-label={`${title} chart: House and Car by source, and To grid, through the day`}
           viewBox={`0 0 ${width} ${pad.top + plotHeight + pad.bottom}`}
           width={width}
           height={pad.top + plotHeight + pad.bottom}
+          onPointerMove={hoverFrom}
+          onPointerDown={hoverFrom}
+          onPointerLeave={() => onHover(undefined)}
         >
           <defs>
             <pattern
-              id="solar-not-fetched-hatch"
+              id={hatchId}
               width="6"
               height="6"
               patternUnits="userSpaceOnUse"
@@ -241,7 +361,7 @@ export function RealChart({
               y={pad.top}
               width={notFetched.to - notFetched.from}
               height={plotHeight}
-              fill="url(#solar-not-fetched-hatch)"
+              fill={`url(#${hatchId})`}
             />
           )}
           {runsOf(buckets, "solar-fetched").map(fetchedAreas)}
@@ -268,6 +388,35 @@ export function RealChart({
               y2={pad.top + plotHeight}
             />
           )}
+          {labels.map(({ key, at, text, glyph, className }, index) => {
+            const row = rows[index];
+            // Without room for the whole label, only its arrow or flag shows, on the bottom row.
+            const labelY =
+              4 + ((row ?? labelRowCount - 1) + 1) * labelRowHeight - 3;
+            return (
+              <g key={key} className={className}>
+                <line
+                  className="chart-label-pole"
+                  x1={x(at)}
+                  x2={x(at)}
+                  y1={labelY - 9}
+                  y2={pad.top + plotHeight}
+                />
+                <text className="chart-label-text" x={x(at) + 3} y={labelY}>
+                  {row === undefined ? glyph : text}
+                </text>
+              </g>
+            );
+          })}
+          {hoverAt !== undefined && (
+            <line
+              className="chart-hover"
+              x1={x(hoverAt)}
+              x2={x(hoverAt)}
+              y1={pad.top}
+              y2={pad.top + plotHeight}
+            />
+          )}
           {hourTicks.map(({ at, label }) => (
             <text
               key={at}
@@ -281,6 +430,15 @@ export function RealChart({
           ))}
         </svg>
       </div>
+      {hoverAt !== undefined && (
+        <p className="day-chart-details" aria-live="polite">
+          <b>{amsterdamClockTime.format(hoverAt)}</b>{" "}
+          {[
+            ...hoveredLabels.map(({ text }) => text),
+            ...describeBucket(hovered, emptyDetails),
+          ].join(" · ")}
+        </p>
+      )}
     </article>
   );
 }

@@ -3,6 +3,9 @@ import {
   type DayTimeline,
   dayTimeline,
   dayTimelinePath,
+  manualOverride,
+  type OverrideCommand,
+  overridesPath,
   solarRefreshPath,
 } from "@charge-on-solar/shared";
 import { afterEach, describe, expect, it } from "vitest";
@@ -35,6 +38,19 @@ async function timeline(testServer: TestServer, day: string) {
 
 function bucketAt(day: DayTimeline, start: string) {
   return day.buckets.find((bucket) => bucket.start === start);
+}
+
+async function sendOverride(testServer: TestServer, command: OverrideCommand) {
+  const response = await testServer.requestSignedIn(overridesPath, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      [csrfHeader.name]: csrfHeader.value,
+    },
+    body: JSON.stringify({ command }),
+  });
+  expect(response.status).toBe(200);
+  return manualOverride.parse(await response.json());
 }
 
 async function refreshSolar(testServer: TestServer) {
@@ -80,18 +96,21 @@ describe("GET /api/day-timeline", () => {
       solarProductionW: 0,
       netPowerW: null,
       chargerPowerW: null,
+      shadowChargerPowerW: null,
     });
     expect(bucketAt(day, "2026-06-01T08:00:00.000Z")).toEqual({
       start: "2026-06-01T08:00:00.000Z",
       solarProductionW: 1200,
       netPowerW: 250,
       chargerPowerW: 3000,
+      shadowChargerPowerW: null,
     });
     expect(bucketAt(day, "2026-06-01T08:05:00.000Z")).toEqual({
       start: "2026-06-01T08:05:00.000Z",
       solarProductionW: 1500,
       netPowerW: 2000,
       chargerPowerW: 3000,
+      shadowChargerPowerW: null,
     });
     expect(bucketAt(day, "2026-06-01T08:10:00.000Z")).toMatchObject({
       solarProductionW: null,
@@ -116,6 +135,7 @@ describe("GET /api/day-timeline", () => {
       solarProductionW: null,
       netPowerW: 400,
       chargerPowerW: 2000,
+      shadowChargerPowerW: null,
     });
   });
 
@@ -225,5 +245,121 @@ describe("GET /api/day-timeline", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("GET /api/day-timeline: the Shadow and the Manual overrides", () => {
+  /** A Go 2 on 1 phase, up to 16 A, with a car plugged in and asking for charge. */
+  const carPluggedIn = {
+    operationMode: 2,
+    chargerPowerW: 0,
+    phaseSetting: 1,
+    maxCurrentA: 16,
+    phaseCurrentsA: { l1: 0, l2: 0, l3: 0 },
+    availableCurrentMode: 2,
+  } as const;
+
+  function exporting(watts: number) {
+    return {
+      netPowerW: -watts,
+      phases: { l1: { powerW: -watts, currentA: watts / 230, voltageV: 230 } },
+    };
+  }
+
+  function importing(watts: number) {
+    return {
+      netPowerW: watts,
+      phases: { l1: { powerW: watts, currentA: watts / 230, voltageV: 230 } },
+    };
+  }
+
+  /** Starts at 12:01 on 14 A, drops to 10 A at 12:16 and stops at 12:20. */
+  async function sunnyThenCloudy() {
+    const testServer = await start({
+      now: new Date("2026-06-01T12:00:00.000Z"),
+      charger: carPluggedIn,
+    });
+    const { p1, advance } = testServer;
+    p1.send(exporting(3300));
+    await advance(minute);
+    p1.send(exporting(2300));
+    await advance(15 * minute);
+    p1.send(importing(500));
+    await advance(9 * minute);
+    return testServer;
+  }
+
+  it("models Charger power per bucket from the Shadow Charging current and Phase setting", async () => {
+    const testServer = await sunnyThenCloudy();
+
+    const day = await timeline(testServer, "2026-06-01");
+
+    expect(bucketAt(day, "2026-06-01T11:55:00.000Z")?.shadowChargerPowerW).toBe(
+      null
+    );
+    // 12:01 to 12:04, each on 14 A × 230 V × 1 phase.
+    expect(bucketAt(day, "2026-06-01T12:00:00.000Z")?.shadowChargerPowerW).toBe(
+      3220
+    );
+    // 12:15 on 14 A, then four minutes on 10 A.
+    expect(
+      bucketAt(day, "2026-06-01T12:15:00.000Z")?.shadowChargerPowerW
+    ).toBeCloseTo(((14 + 4 * 10) / 5) * 230);
+    expect(bucketAt(day, "2026-06-01T12:20:00.000Z")?.shadowChargerPowerW).toBe(
+      0
+    );
+    expect(bucketAt(day, "2026-06-01T12:30:00.000Z")?.shadowChargerPowerW).toBe(
+      null
+    );
+  });
+
+  it("lists the Shadow starts and stops, with the Charging current started or stopped at", async () => {
+    const testServer = await sunnyThenCloudy();
+
+    const day = await timeline(testServer, "2026-06-01");
+
+    expect(day.shadowSwitches).toEqual([
+      { at: "2026-06-01T12:01:00.000Z", kind: "start", currentA: 14 },
+      { at: "2026-06-01T12:20:00.000Z", kind: "stop", currentA: 10 },
+    ]);
+  });
+
+  it("lists the day's Manual overrides with the User who sent each", async () => {
+    const testServer = await start({
+      now: new Date("2026-06-01T12:00:00.000Z"),
+      charger: { operationMode: 3, chargerPowerW: 3000 },
+    });
+    const { zaptec, pollZaptec } = testServer;
+    const pause = await sendOverride(testServer, "pause");
+    zaptec.set({ operationMode: 5, finalStopActive: true });
+    await pollZaptec();
+    await testServer.advance(10 * minute);
+    zaptec.commandResult = {
+      accepted: false,
+      code: 528,
+      reason: "Charger can't resume in its current state",
+    };
+    const resume = await sendOverride(testServer, "resume");
+
+    const day = await timeline(testServer, "2026-06-01");
+    const yesterday = await timeline(testServer, "2026-05-31");
+
+    expect(day.overrides).toEqual([
+      {
+        id: pause.id,
+        command: "pause",
+        status: "confirmed",
+        sentAt: "2026-06-01T12:00:00.000Z",
+        userName: "Test User",
+      },
+      {
+        id: resume.id,
+        command: "resume",
+        status: "rejected",
+        sentAt: "2026-06-01T12:10:30.000Z",
+        userName: "Test User",
+      },
+    ]);
+    expect(yesterday.overrides).toEqual([]);
   });
 });

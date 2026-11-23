@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { overrideAvailability, switchBudget } from "./override.ts";
+import { phaseSetting } from "./phase-setting.ts";
 import { shadowDecisionRecord } from "./shadow.ts";
 import { liveSolar } from "./solar.ts";
 
@@ -42,10 +43,6 @@ export function liveDevice<T extends z.ZodType>(reading: T) {
     reading,
   });
 }
-
-/** Whether the charger charges on 1 phase or on 3. */
-export const phaseSetting = z.union([z.literal(1), z.literal(3)]);
-export type PhaseSetting = z.infer<typeof phaseSetting>;
 
 /** What the charger is doing, from Zaptec's operation mode and FinalStopActive. */
 export const chargerState = z.enum([

@@ -200,6 +200,8 @@ export const shadowDecisions = sqliteTable(
     decision: text("decision").notNull(),
     /** The simulated charger after the decision, as JSON. */
     simulated: text("simulated").notNull(),
+    /** The Phase setting the decision was made for; null on rows from before it was kept. */
+    phaseSetting: integer("phase_setting"),
     surplusW: real("surplus_w"),
     netPowerW: real("net_power_w"),
     solarProductionW: real("solar_production_w"),

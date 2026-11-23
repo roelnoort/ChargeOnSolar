@@ -1,0 +1,1 @@
+ALTER TABLE `shadow_decisions` ADD `phase_setting` integer;

@@ -1,8 +1,10 @@
 import {
+  decisionEvent,
   type LiveSnapshot,
   liveStreamPath,
   type ManualOverride,
   overrideEvent,
+  type ShadowDecisionRecord,
   type SolarUpdated,
   snapshotEvent,
   solarUpdatedEvent,
@@ -48,6 +50,43 @@ const pauseAccepted: ManualOverride = {
   rejection: null,
 };
 
+const decisionStart: ShadowDecisionRecord = {
+  at: "2026-06-01T12:01:00.000Z",
+  decision: { kind: "start", currentAmps: 14, limitedBy: "surplus" },
+  chargingCurrentA: 14,
+  phaseSetting: 1,
+  inputs: {
+    surplusW: 3300,
+    netPowerW: -3300,
+    solarProductionW: null,
+    chargerPowerW: 0,
+    fuseHeadroomA: 12,
+    startWindowSurplusW: 3300,
+    stopWindowSurplusW: 3300,
+    dataAgeMs: { p1: 1000, charger: 20_000, solar: null },
+  },
+  zaptec: {
+    availableCurrentMode: 2,
+    enabledFeatures: null,
+    surplusModeActive: false,
+    chargeCurrentSetA: 16,
+  },
+  rulesVersion: 1,
+  settings: {
+    solarMode: "solar-only",
+    startWindowMinutes: 5,
+    stopWindowMinutes: 10,
+    minimumOnTimeMinutes: 15,
+    minimumOffTimeMinutes: 15,
+    currentHoldMinutes: 15,
+    deadBandAmps: 1,
+    voltage: 230,
+    mainFuseAmps: 25,
+    minimumSolarWatts: 0,
+    tickIntervalSeconds: 60,
+  },
+};
+
 class FakeEventSource implements EventSourceLike {
   readyState = 0;
   closed = false;
@@ -84,6 +123,8 @@ function harness() {
   const timers: { ms: number; run: () => void }[] = [];
   const states: LiveStreamState[] = [];
   const solarUpdates: SolarUpdated[] = [];
+  const decisions: ShadowDecisionRecord[] = [];
+  const overrides: ManualOverride[] = [];
   let time = 1_000_000;
   const stream = connectLiveStream({
     createEventSource: (url) => {
@@ -99,10 +140,14 @@ function harness() {
     now: () => time,
     onChange: (state) => states.push(state),
     onSolarUpdated: (update) => solarUpdates.push(update),
+    onDecision: (decision) => decisions.push(decision),
+    onOverride: (override) => overrides.push(override),
   });
   return {
     stream,
     solarUpdates,
+    decisions,
+    overrides,
     sources,
     timers,
     latest: () => states.at(-1),
@@ -219,5 +264,25 @@ describe("the live stream", () => {
     sources[0]?.emit(solarUpdatedEvent, JSON.stringify({ solar: "lots" }));
 
     expect(solarUpdates).toEqual([update]);
+  });
+
+  it("passes on each Shadow decision the server sends", () => {
+    const { sources, decisions } = harness();
+    sources[0]?.open();
+
+    sources[0]?.emit(decisionEvent, JSON.stringify(decisionStart));
+    sources[0]?.emit(decisionEvent, JSON.stringify({ at: "noon" }));
+
+    expect(decisions).toEqual([decisionStart]);
+  });
+
+  it("passes on each step of a Manual override", () => {
+    const { sources, overrides } = harness();
+    sources[0]?.open();
+
+    sources[0]?.emit(overrideEvent, JSON.stringify(pauseAccepted));
+    sources[0]?.emit(overrideEvent, JSON.stringify({ status: "done" }));
+
+    expect(overrides).toEqual([pauseAccepted]);
   });
 });
