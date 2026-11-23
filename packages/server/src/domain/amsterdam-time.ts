@@ -89,3 +89,22 @@ export function amsterdamDaysLeftInMonth(at: Date): number {
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return daysInMonth - day + 1;
 }
+
+/** The Amsterdam calendar day `at` falls in, as YYYY-MM-DD. */
+export function amsterdamDate(at: Date): string {
+  const { year, month, day } = wallClock(at);
+  const twoDigits = (value: number) => String(value).padStart(2, "0");
+  return `${year}-${twoDigits(month)}-${twoDigits(day)}`;
+}
+
+/**
+ * When the Amsterdam day `date` (YYYY-MM-DD) begins and ends: 24 hours apart,
+ * or 23 and 25 on the days summer time starts and ends.
+ */
+export function amsterdamDayBounds(date: string): { start: Date; end: Date } {
+  const [year = 0, month = 0, day = 0] = date.split("-").map(Number);
+  return {
+    start: fromWallClock({ year, month, day, hour: 0, minute: 0 }),
+    end: fromWallClock({ year, month, day: day + 1, hour: 0, minute: 0 }),
+  };
+}

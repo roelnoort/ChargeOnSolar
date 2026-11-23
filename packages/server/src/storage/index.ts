@@ -12,6 +12,7 @@ import {
   eq,
   gt,
   gte,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -19,6 +20,7 @@ import {
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { Clock } from "../clock.ts";
 import {
   type ChargerReading,
@@ -26,6 +28,7 @@ import {
 } from "../domain/charger-reading.ts";
 import type { NewLoginCode } from "../domain/login-code.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
+import type { BucketWindow, PowerBucket } from "../domain/power-bucket.ts";
 import type {
   NewSignedInDevice,
   SignedInDevice,
@@ -46,8 +49,22 @@ export interface Storage {
   /** Charger Readings received in `[from, to)`, oldest first, at most `limit`. */
   listChargerReadings(window: ReadingWindow): Promise<ChargerReading[]>;
 
-  /** Stores Enphase's intervals, updating those it has revised, in one step. */
-  upsertSolarIntervals(intervals: SolarInterval[]): Promise<void>;
+  /** Average Net power of the P1 Readings in each bucket that has any. */
+  averageNetPowerPerBucket(window: BucketWindow): Promise<PowerBucket[]>;
+  /** Average Charger power of the charger Readings in each bucket that has any. */
+  averageChargerPowerPerBucket(window: BucketWindow): Promise<PowerBucket[]>;
+
+  /**
+   * Stores one fetch of a day from Enphase in one step: its intervals,
+   * updating those Enphase has revised, and when the day was fetched.
+   */
+  saveSolarFetch(fetch: {
+    dayStart: Date;
+    fetchedAt: Date;
+    intervals: SolarInterval[];
+  }): Promise<void>;
+  /** When Enphase was last asked for the day starting at `dayStart`. */
+  solarFetchedAt(dayStart: Date): Promise<Date | undefined>;
   /** Intervals that ended in `(from, to]`, oldest first, at most `limit`. */
   listSolarIntervals(window: ReadingWindow): Promise<SolarInterval[]>;
   latestSolarInterval(): Promise<SolarInterval | undefined>;
@@ -189,20 +206,56 @@ function storageOn(
         .map(fromChargerRow);
     },
 
-    async upsertSolarIntervals(intervals) {
-      if (intervals.length === 0) return;
+    async averageNetPowerPerBucket(window) {
+      return averagePerBucket(
+        db,
+        schema.p1Readings,
+        schema.p1Readings.receivedAt,
+        schema.p1Readings.netPowerW,
+        window
+      );
+    },
+    async averageChargerPowerPerBucket(window) {
+      return averagePerBucket(
+        db,
+        schema.chargerReadings,
+        schema.chargerReadings.receivedAt,
+        schema.chargerReadings.chargerPowerW,
+        window
+      );
+    },
+
+    async saveSolarFetch({ dayStart, fetchedAt, intervals }) {
       const excluded = (column: string) => sql.raw(`excluded.${column}`);
-      db.insert(schema.solarIntervals)
-        .values(intervals)
-        .onConflictDoUpdate({
-          target: schema.solarIntervals.endAt,
-          set: {
-            solarProductionW: excluded("solar_production_w"),
-            energyWh: excluded("energy_wh"),
-            devicesReporting: excluded("devices_reporting"),
-          },
-        })
-        .run();
+      db.transaction((tx) => {
+        if (intervals.length > 0) {
+          tx.insert(schema.solarIntervals)
+            .values(intervals)
+            .onConflictDoUpdate({
+              target: schema.solarIntervals.endAt,
+              set: {
+                solarProductionW: excluded("solar_production_w"),
+                energyWh: excluded("energy_wh"),
+                devicesReporting: excluded("devices_reporting"),
+              },
+            })
+            .run();
+        }
+        tx.insert(schema.solarFetches)
+          .values({ dayStart, fetchedAt })
+          .onConflictDoUpdate({
+            target: schema.solarFetches.dayStart,
+            set: { fetchedAt },
+          })
+          .run();
+      });
+    },
+    async solarFetchedAt(dayStart) {
+      return db
+        .select({ fetchedAt: schema.solarFetches.fetchedAt })
+        .from(schema.solarFetches)
+        .where(eq(schema.solarFetches.dayStart, dayStart))
+        .get()?.fetchedAt;
     },
     async listSolarIntervals({ from, to, limit }) {
       const endAt = schema.solarIntervals.endAt;
@@ -420,6 +473,28 @@ function storageOn(
 }
 
 const enphaseRefreshTokenKey = "enphase_refresh_token";
+
+/** One row per bucket that has Readings, however many Readings it holds. */
+function averagePerBucket(
+  db: ReturnType<typeof drizzle<typeof schema>>,
+  table: typeof schema.p1Readings | typeof schema.chargerReadings,
+  receivedAt: SQLiteColumn,
+  power: SQLiteColumn,
+  { from, to, bucketMs }: BucketWindow
+): PowerBucket[] {
+  const bucket = sql<number>`cast((${receivedAt} - ${from.getTime()}) / ${bucketMs} as integer)`;
+  return db
+    .select({ bucket, averageW: sql<number>`avg(${power})` })
+    .from(table)
+    .where(and(gte(receivedAt, from), lt(receivedAt, to), isNotNull(power)))
+    .groupBy(bucket)
+    .orderBy(bucket)
+    .all()
+    .map((row) => ({
+      start: new Date(from.getTime() + row.bucket * bucketMs),
+      averageW: row.averageW,
+    }));
+}
 
 const userColumns = {
   id: schema.users.id,
