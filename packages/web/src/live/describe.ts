@@ -121,8 +121,6 @@ export function dataAgeMs({
 
 // The meter pushes about once a second; this much silence means trouble.
 export const p1StaleAfterMs = 10_000;
-// The server reads Zaptec every 30 s; three missed reads mean trouble.
-export const chargerStaleAfterMs = 90_000;
 
 export function describeDataAge(ageMs: number, staleAfterMs = p1StaleAfterMs) {
   const seconds = Math.floor(ageMs / 1000);

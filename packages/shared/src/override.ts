@@ -9,6 +9,12 @@ export const overrideCommands = ["pause", "resume"] as const;
 export const overrideCommand = z.enum(overrideCommands);
 export type OverrideCommand = z.infer<typeof overrideCommand>;
 
+/** How each command reads, on the button and in a refusal. */
+export const overrideCommandLabels: Record<OverrideCommand, string> = {
+  pause: "Pause",
+  resume: "Resume",
+};
+
 export const overrideRequest = z.object({ command: overrideCommand });
 export type OverrideRequest = z.infer<typeof overrideRequest>;
 

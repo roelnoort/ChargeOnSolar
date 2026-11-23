@@ -1,11 +1,12 @@
-import type { ChargerReading } from "./charger-reading.ts";
+import {
+  type ChargerReading,
+  chargerOperationModes,
+} from "./charger-reading.ts";
 
 /** How many interruptions the charger allows in one charge session. */
 export const switchesPerChargeSession = 20;
 
-// Zaptec's ChargerOperationMode (state 710).
-const disconnected = 1;
-const charging = 3;
+const { disconnected, charging } = chargerOperationModes;
 
 /**
  * Interruptions seen in the real charger state since the car was plugged in:

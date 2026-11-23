@@ -8,6 +8,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 import {
+  commandResults,
   confirmationOutcomes,
   pauseEndings,
   pauseSources,
@@ -133,7 +134,7 @@ export const manualOverrides = sqliteTable(
     userName: text("user_name").notNull(),
     command: text("command", { enum: overrideCommands }).notNull(),
     /** Null until Zaptec has answered. */
-    commandResult: text("command_result", { enum: ["accepted", "rejected"] }),
+    commandResult: text("command_result", { enum: commandResults }),
     rejectionCode: integer("rejection_code"),
     rejectionReason: text("rejection_reason"),
     /** Null until the charger confirmed the command or the wait ran out. */

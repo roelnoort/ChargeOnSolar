@@ -1,9 +1,11 @@
-import type { LiveSnapshot } from "@charge-on-solar/shared";
+import {
+  chargerStaleAfterMs,
+  type LiveSnapshot,
+} from "@charge-on-solar/shared";
 import { useEffect, useState } from "react";
 import type { ApiClient } from "../api/client.ts";
 import type { Clock } from "../clock.ts";
 import {
-  chargerStaleAfterMs,
   dataAgeMs,
   describeApmWarning,
   describeChargerState,

@@ -10,7 +10,10 @@ import {
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  chargerOperationModes,
+} from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import { switchesPerChargeSession } from "../domain/switch-budget.ts";
@@ -25,19 +28,18 @@ export interface LiveRouteDependencies {
   mainFuseA: number;
 }
 
-// Zaptec's ChargerOperationMode (state 710).
 function toChargerState({
   operationMode,
   finalStopActive,
 }: ChargerReading): ChargerState {
   switch (operationMode) {
-    case 1:
+    case chargerOperationModes.disconnected:
       return "disconnected";
-    case 2:
+    case chargerOperationModes.connected:
       return "connected";
-    case 3:
+    case chargerOperationModes.charging:
       return "charging";
-    case 5:
+    case chargerOperationModes.stopped:
       return finalStopActive ? "paused" : "finished";
     default:
       return "unknown";

@@ -4,6 +4,14 @@ import {
   phaseSetting,
 } from "@charge-on-solar/shared";
 
+/** Zaptec's ChargerOperationMode (state 710). */
+export const chargerOperationModes = {
+  disconnected: 1,
+  connected: 2,
+  charging: 3,
+  stopped: 5,
+} as const;
+
 /** A Reading of the charger and its installation, from the Zaptec cloud. */
 export interface ChargerReading {
   /** When the server received it. */

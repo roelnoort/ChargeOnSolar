@@ -1,5 +1,6 @@
 import {
   type ManualOverride,
+  overrideCommandLabels,
   overrideRequest,
   overridesPath,
   overrideUnavailableLabels,
@@ -37,7 +38,7 @@ export function addOverrideRoutes(
       throw new HTTPException(409, {
         message: error.reason
           ? overrideUnavailableLabels[error.reason]
-          : `${command === "pause" ? "Pause" : "Resume"} is not available`,
+          : `${overrideCommandLabels[command]} is not available`,
       });
     }
   });

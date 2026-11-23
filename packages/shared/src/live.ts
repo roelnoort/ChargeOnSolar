@@ -6,6 +6,9 @@ export const liveStreamPath = "/api/live/stream";
 /** The SSE event name `GET /api/live/stream` sends the snapshot under. */
 export const snapshotEvent = "snapshot";
 
+/** The server reads Zaptec every 30 s; three missed reads mean the charger is offline. */
+export const chargerStaleAfterMs = 90_000;
+
 /** The grid's three phases, as the P1 meter and the charger name them. */
 export const p1Phases = ["l1", "l2", "l3"] as const;
 export const p1PhaseName = z.enum(p1Phases);

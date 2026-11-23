@@ -3,14 +3,10 @@ import {
   type OverrideAvailability,
   type OverrideCommand,
   type OverrideStatus,
+  overrideCommandLabels,
   overrideUnavailableLabels,
   type SwitchBudget,
 } from "@charge-on-solar/shared";
-
-const commandLabels: Record<OverrideCommand, string> = {
-  pause: "Pause",
-  resume: "Resume",
-};
 
 /** What the Pause/Resume button shows, and why it is greyed out if it is. */
 export function describeOverrideButton({
@@ -31,7 +27,7 @@ export function describeOverrideButton({
       : availability.unavailableReason;
   return {
     command: availability.command,
-    label: commandLabels[availability.command],
+    label: overrideCommandLabels[availability.command],
     disabledBecause: reason === null ? null : overrideUnavailableLabels[reason],
   };
 }
@@ -66,7 +62,7 @@ const failedStatuses = new Set<OverrideStatus>(["rejected", "unconfirmed"]);
 export function describeOverride(override: ManualOverride) {
   return {
     text: statusText(override),
-    by: `${commandLabels[override.command]} by ${override.user.name}`,
+    by: `${overrideCommandLabels[override.command]} by ${override.user.name}`,
     failed: failedStatuses.has(override.status),
   };
 }

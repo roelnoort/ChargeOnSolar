@@ -1,16 +1,12 @@
-import type {
-  OverrideAvailability,
-  OverrideCommand,
+import {
+  chargerStaleAfterMs,
+  type OverrideAvailability,
+  type OverrideCommand,
 } from "@charge-on-solar/shared";
-import type { ChargerReading } from "./charger-reading.ts";
-
-/** Zaptec's ChargerOperationMode (state 710). */
-const operationModes = {
-  disconnected: 1,
-  connected: 2,
-  charging: 3,
-  stopped: 5,
-} as const;
+import {
+  type ChargerReading,
+  chargerOperationModes as operationModes,
+} from "./charger-reading.ts";
 
 /** Who made a pause: ChargeOnSolar's own Manual override, or someone outside it. */
 export const pauseSources = ["chargeonsolar", "external"] as const;
@@ -29,6 +25,8 @@ export interface OpenPause {
   source: PauseSource;
   startedAt: Date;
 }
+
+export const commandResults = ["accepted", "rejected"] as const;
 
 /** What Zaptec answered to a command. */
 export type CommandResult =
@@ -61,9 +59,6 @@ export interface PauseRecord extends OpenPause {
   endedAt: Date | null;
   ending: PauseEnding | null;
 }
-
-/** A Zaptec reading older than this means the charger is offline: three missed polls. */
-export const chargerOfflineAfterMs = 90_000;
 
 /**
  * The one place that decides whether a final-stop pause may be resumed. Every
@@ -103,7 +98,7 @@ export function overrideAvailability({
   ) => ({ command, unavailableReason });
   if (
     !reading ||
-    now.getTime() - reading.receivedAt.getTime() > chargerOfflineAfterMs
+    now.getTime() - reading.receivedAt.getTime() > chargerStaleAfterMs
   ) {
     return unavailable("charger-offline");
   }
