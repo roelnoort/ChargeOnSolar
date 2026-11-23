@@ -3,7 +3,9 @@ import {
   liveStreamPath,
   type ManualOverride,
   overrideEvent,
+  type SolarUpdated,
   snapshotEvent,
+  solarUpdatedEvent,
 } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
 import {
@@ -81,6 +83,7 @@ function harness() {
   const sources: FakeEventSource[] = [];
   const timers: { ms: number; run: () => void }[] = [];
   const states: LiveStreamState[] = [];
+  const solarUpdates: SolarUpdated[] = [];
   let time = 1_000_000;
   const stream = connectLiveStream({
     createEventSource: (url) => {
@@ -95,9 +98,11 @@ function harness() {
     },
     now: () => time,
     onChange: (state) => states.push(state),
+    onSolarUpdated: (update) => solarUpdates.push(update),
   });
   return {
     stream,
+    solarUpdates,
     sources,
     timers,
     latest: () => states.at(-1),
@@ -200,5 +205,19 @@ describe("the live stream", () => {
 
     expect(sources[0]?.closed).toBe(true);
     expect(timers).toEqual([]);
+  });
+
+  it("passes on each fetch from Enphase the server announces", () => {
+    const { sources, solarUpdates } = harness();
+    sources[0]?.open();
+    const update: SolarUpdated = {
+      fetchedAt: "2026-06-01T12:00:00.000Z",
+      solar: { asOf: "2026-06-01T11:55:00.000Z", solarProductionW: 3100 },
+    };
+
+    sources[0]?.emit(solarUpdatedEvent, JSON.stringify(update));
+    sources[0]?.emit(solarUpdatedEvent, JSON.stringify({ solar: "lots" }));
+
+    expect(solarUpdates).toEqual([update]);
   });
 });

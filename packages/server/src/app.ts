@@ -4,6 +4,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { authRoutes } from "./api/auth.ts";
+import { addDayTimelineRoutes } from "./api/day-timeline.ts";
 import { toHealth } from "./api/health.ts";
 import { addLiveRoutes } from "./api/live.ts";
 import { addOverrideRoutes } from "./api/overrides.ts";
@@ -72,6 +73,7 @@ export function createApp({
   addShadowRoutes(app, { storage });
   addSettingsRoutes(app, { store: settings });
   addSolarRoutes(app, { solar, storage, clock });
+  addDayTimelineRoutes(app, { storage });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

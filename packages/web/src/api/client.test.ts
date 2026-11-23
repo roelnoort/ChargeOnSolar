@@ -1,5 +1,6 @@
 import {
   csrfHeader,
+  type DayTimeline,
   type Health,
   loginCodePath,
   type Settings,
@@ -236,5 +237,32 @@ describe("the API client's Solar calls", () => {
     const client = createApiClient(answering(200, budget));
 
     expect(await client.solarBudget()).toEqual(budget);
+  });
+});
+
+describe("the API client's day timeline", () => {
+  it("asks for one Europe/Amsterdam day and parses its buckets", async () => {
+    const requested: string[] = [];
+    const answer: DayTimeline = {
+      day: "2026-06-01",
+      start: "2026-05-31T22:00:00.000Z",
+      end: "2026-06-01T22:00:00.000Z",
+      solarFetchedAt: null,
+      buckets: [
+        {
+          start: "2026-05-31T22:00:00.000Z",
+          solarProductionW: null,
+          netPowerW: 350,
+          chargerPowerW: 0,
+        },
+      ],
+    };
+    const client = createApiClient(async (input) => {
+      requested.push(String(input));
+      return Response.json(answer);
+    });
+
+    expect(await client.dayTimeline("2026-06-01")).toEqual(answer);
+    expect(requested).toEqual(["/api/day-timeline?day=2026-06-01"]);
   });
 });

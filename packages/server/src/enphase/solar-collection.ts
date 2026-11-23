@@ -72,9 +72,10 @@ export function createSolarCollection({
 
   async function fetchAndStore(dayStart: Date) {
     const intervals = await client.productionIntervals(dayStart);
-    await storage.upsertSolarIntervals(intervals);
+    const fetchedAt = clock.now();
+    await storage.saveSolarFetch({ dayStart, fetchedAt, intervals });
     const latest = await storage.latestSolarInterval();
-    live.recordSolarFetch({ fetchedAt: clock.now(), latest });
+    live.recordSolarFetch({ fetchedAt, latest });
     return latest;
   }
 

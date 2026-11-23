@@ -2,6 +2,7 @@ import type { Health, Session } from "@charge-on-solar/shared";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createApiClient, NotSignedInError } from "./api/client.ts";
 import type { Clock } from "./clock.ts";
+import { DayView } from "./day/DayView.tsx";
 import { LoginScreen } from "./LoginScreen.tsx";
 import { NowView } from "./live/NowView.tsx";
 import { messageOf } from "./message-of.ts";
@@ -130,10 +131,13 @@ function Shell({
   children,
   user,
   tabBar,
+  wide = false,
 }: {
   children: ReactNode;
   user?: string;
   tabBar?: ReactNode;
+  /** Lets the content use a laptop's width, e.g. for a chart. */
+  wide?: boolean;
 }) {
   return (
     <div className="shell">
@@ -141,7 +145,9 @@ function Shell({
         <h1>ChargeOnSolar</h1>
         {user && <span className="signed-in-as">{user}</span>}
       </header>
-      <main className="content">{children}</main>
+      <main className={wide ? "content content-wide" : "content"}>
+        {children}
+      </main>
       {tabBar}
     </div>
   );
@@ -176,7 +182,7 @@ function SignedInApp({
   );
 
   return (
-    <Shell user={session.user.name} tabBar={tabBar}>
+    <Shell user={session.user.name} tabBar={tabBar} wide={tab === "day"}>
       {tab === "now" && (
         <section aria-labelledby="now-heading">
           <h2 id="now-heading">Now</h2>
@@ -186,9 +192,7 @@ function SignedInApp({
       {tab === "day" && (
         <section aria-labelledby="day-heading">
           <h2 id="day-heading">Day</h2>
-          <p className="placeholder">
-            The day's Readings and Shadow decisions will show here.
-          </p>
+          <DayView clock={clock} api={api} />
         </section>
       )}
       {tab === "settings" && (

@@ -3,9 +3,13 @@ import {
   type CallBudget,
   callBudget,
   csrfHeader,
+  type DayTimeline,
+  dayTimeline,
+  dayTimelinePath,
   type Health,
   health,
   healthPath,
+  type LocalDay,
   type LoginRequest,
   loginCodePath,
   loginPath,
@@ -102,6 +106,12 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
       call("GET", solarBudgetPath, callBudget),
     refreshSolar: (): Promise<SolarRefreshResponse> =>
       call("POST", solarRefreshPath, solarRefreshResponse),
+    dayTimeline: (day: LocalDay): Promise<DayTimeline> =>
+      call(
+        "GET",
+        `${dayTimelinePath}?${new URLSearchParams({ day })}`,
+        dayTimeline
+      ),
   };
 }
 

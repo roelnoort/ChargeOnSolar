@@ -130,6 +130,13 @@ export const solarIntervals = sqliteTable("solar_intervals", {
   devicesReporting: integer("devices_reporting"),
 });
 
+/** When Enphase was last asked for each Amsterdam day's intervals. */
+export const solarFetches = sqliteTable("solar_fetches", {
+  /** When the day began, in UTC. */
+  dayStart: integer("day_start", { mode: "timestamp_ms" }).primaryKey(),
+  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 /** How many calls ChargeOnSolar made to Enphase in each calendar month. */
 export const enphaseCalls = sqliteTable("enphase_calls", {
   /** YYYY-MM, Europe/Amsterdam. */
