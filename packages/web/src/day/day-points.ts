@@ -51,11 +51,22 @@ export function dayPoints(
   return [...loaded, ...live];
 }
 
-/** The point `at` falls in, if any. */
-export function pointAt(points: DayPoint[], at: number): DayPoint | undefined {
-  return points.find(
-    (point) => Date.parse(point.start) <= at && at < Date.parse(point.end)
-  );
+interface Stretch {
+  start: string;
+  end: string;
+}
+
+/** Whether `at` falls in the point or bucket. */
+export function covers({ start, end }: Stretch, at: number): boolean {
+  return Date.parse(start) <= at && at < Date.parse(end);
+}
+
+/** The point or bucket `at` falls in, if any. */
+export function pointAt<T extends Stretch>(
+  points: T[],
+  at: number
+): T | undefined {
+  return points.find((point) => covers(point, at));
 }
 
 /** The loaded Shadow starts and stops, then those of the decisions made since. */

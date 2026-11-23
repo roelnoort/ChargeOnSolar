@@ -6,6 +6,7 @@ import {
 } from "@charge-on-solar/shared";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { amsterdamClockTime } from "../amsterdam-clock.ts";
+import { covers, pointAt } from "./day-points.ts";
 import { labelRows } from "./label-rows.ts";
 import {
   type RealChartBucket,
@@ -218,19 +219,9 @@ export function DayChart({
     labelRowCount
   );
 
-  const hovered =
-    hoverAt === undefined
-      ? undefined
-      : buckets.find(
-          (bucket) =>
-            Date.parse(bucket.start) <= hoverAt &&
-            hoverAt < Date.parse(bucket.end)
-        );
+  const hovered = hoverAt === undefined ? undefined : pointAt(buckets, hoverAt);
   const hoveredLabels = hovered
-    ? labels.filter(
-        ({ at }) =>
-          Date.parse(hovered.start) <= at && at < Date.parse(hovered.end)
-      )
+    ? labels.filter(({ at }) => covers(hovered, at))
     : [];
 
   function hoverFrom(event: PointerEvent<SVGSVGElement>) {
