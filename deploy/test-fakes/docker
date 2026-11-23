@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# Fake docker for deploy.test.ts. Keeps its state in files in $FAKE_DIR:
+#   calls         every call, one per line (written here)
+#   builds        the commit checked out at each `compose up`, one per line
+#   head          the commit checked out (kept by the fake git)
+#   broken        commits whose build fails
+#   dying         commits whose container restarts soon after it starts
+#   exiting       commits whose container exits soon after it starts
+#   prune-fails   present when pruning fails
+#   up-delay      seconds `compose up` takes (optional)
+#   running       the commit the container runs, and how often it was inspected
+
+set -euo pipefail
+
+echo "docker $*" >>"$FAKE_DIR/calls"
+
+listed() { grep -qx "$1" "$FAKE_DIR/$2" 2>/dev/null; }
+
+case "$*" in
+  "compose up -d --build")
+    commit=$(cat "$FAKE_DIR/head")
+    echo "$commit" >>"$FAKE_DIR/builds"
+    if [[ -f "$FAKE_DIR/up-delay" ]]; then sleep "$(cat "$FAKE_DIR/up-delay")"; fi
+    if listed "$commit" broken; then
+      echo "fake docker: build of $commit failed" >&2
+      exit 1
+    fi
+    echo "$commit 0" >"$FAKE_DIR/running"
+    ;;
+  "compose ps -q "*)
+    # Like Compose, lists only a running container.
+    read -r commit inspections <"$FAKE_DIR/running"
+    if ! listed "$commit" exiting || ((inspections == 0)); then
+      echo "fake-container"
+    fi
+    ;;
+  "inspect --format {{.State.Running}} {{.RestartCount}} fake-container")
+    read -r commit inspections <"$FAKE_DIR/running"
+    inspections=$((inspections + 1))
+    echo "$commit $inspections" >"$FAKE_DIR/running"
+    if listed "$commit" dying && ((inspections > 1)); then
+      echo "true 1"
+    else
+      echo "true 0"
+    fi
+    ;;
+  "image prune --force" | "builder prune --force")
+    [[ ! -f "$FAKE_DIR/prune-fails" ]]
+    ;;
+  *)
+    echo "fake docker: unexpected call: docker $*" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# Fake git for deploy.test.ts. Keeps its state in files in $FAKE_DIR:
+#   calls   every call, one per line (written here)
+#   head    the commit checked out
+#   main    the commits on origin/main, oldest first; the last is its head
+#   other   commits that exist but aren't on main
+
+set -euo pipefail
+
+echo "git $*" >>"$FAKE_DIR/calls"
+
+known_commits() { cat "$FAKE_DIR/main" "$FAKE_DIR/other" 2>/dev/null || true; }
+
+resolve() {
+  local ref=$1
+  if [[ "$ref" == origin/main ]]; then
+    tail -n 1 "$FAKE_DIR/main"
+    return
+  fi
+  local matches
+  matches=$(known_commits | grep "^$ref" || true)
+  [[ -n "$matches" && $(wc -l <<<"$matches") -eq 1 ]] || exit 1
+  echo "$matches"
+}
+
+case "$*" in
+  "fetch --quiet origin") ;;
+  "rev-parse HEAD") cat "$FAKE_DIR/head" ;;
+  "rev-parse --verify --quiet "*"^{commit}")
+    ref=${4%"^{commit}"}
+    resolve "$ref"
+    ;;
+  "merge-base --is-ancestor "*" origin/main") grep -qx "$3" "$FAKE_DIR/main" ;;
+  "checkout --quiet --detach "*) echo "$4" >"$FAKE_DIR/head" ;;
+  *)
+    echo "fake git: unexpected call: git $*" >&2
+    exit 2
+    ;;
+esac
