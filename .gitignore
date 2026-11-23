@@ -149,3 +149,6 @@ vite.config.ts.timestamp-*
 packages/server/data/
 # The container's data folder (compose.yaml)
 /data/
+
+# The shared proxy's TransIP API key (deploy/proxy)
+transip.key

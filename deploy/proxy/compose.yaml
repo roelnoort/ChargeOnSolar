@@ -1,0 +1,40 @@
+# The shared HTTPS proxy for every project on the NUC, and the only stack that
+# publishes ports. Projects join the external `proxy` network and get a site
+# block in the Caddyfile. Why: docs/adr/0003-shared-proxy-for-the-home-server.md
+#
+# Before the first start, next to this file:
+#   - .env with DOMAIN, ACME_EMAIL and TRANSIP_LOGIN (see .env.example), chmod 600
+#   - transip.key: the TransIP API private key, chmod 600
+#   - the network: `docker network create proxy`
+
+name: proxy
+
+services:
+  caddy:
+    build: .
+    image: home-proxy
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./transip.key:/etc/caddy/transip.key:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+
+volumes:
+  # Certificates and the ACME account: keep them, or every start asks Let's
+  # Encrypt for a new certificate and soon hits its rate limits.
+  caddy_data:
+  caddy_config:
+
+networks:
+  proxy:
+    external: true

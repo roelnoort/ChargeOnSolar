@@ -1,0 +1,41 @@
+# The shared HTTPS proxy for every project on the NUC: see
+# docs/adr/0003-shared-proxy-for-the-home-server.md. {$DOMAIN}, {$ACME_EMAIL}
+# and {$TRANSIP_LOGIN} come from this stack's .env; the TransIP plugin takes
+# its API private key as a file path, so the key is transip.key next to it.
+{
+	email {$ACME_EMAIL}
+}
+
+# One wildcard certificate covers every project. Caddy redirects plain HTTP
+# to HTTPS by itself.
+*.{$DOMAIN} {
+	tls {
+		issuer acme {
+			dns transip {
+				login {$TRANSIP_LOGIN}
+				private_key /etc/caddy/transip.key
+			}
+			disable_http_challenge
+			disable_tlsalpn_challenge
+		}
+	}
+
+	# The service name and port from ChargeOnSolar's compose.yaml and Dockerfile.
+	@chargeonsolar host charge.{$DOMAIN}
+	handle @chargeonsolar {
+		reverse_proxy chargeonsolar:3000
+	}
+
+	# To add a project, add a host matcher and a handle block that points at
+	# its container on the `proxy` network:
+	#
+	#	@myproject host myproject.{$DOMAIN}
+	#	handle @myproject {
+	#		reverse_proxy myproject:8080
+	#	}
+
+	# Names without a block of their own: close the connection without a reply.
+	handle {
+		abort
+	}
+}
