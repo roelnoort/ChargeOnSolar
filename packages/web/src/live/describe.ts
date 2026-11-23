@@ -1,4 +1,5 @@
 import type {
+  CallBudget,
   ChargerState,
   PhaseSetting,
   ZaptecMode,
@@ -135,4 +136,23 @@ export function describeDataAge(ageMs: number, staleAfterMs = p1StaleAfterMs) {
           ? `${Math.floor(seconds / 60)} min old`
           : `${Math.floor(seconds / 3600)} h old`;
   return { text, stale: ageMs > staleAfterMs };
+}
+
+// The household's clock: Enphase intervals end on its 5-minute marks.
+const clockTime = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Amsterdam",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** When Solar production was last reported, as "as of hh:mm". */
+export function describeAsOf(asOf: string): string {
+  return `as of ${clockTime.format(new Date(asOf))}`;
+}
+
+const callCount = new Intl.NumberFormat("en-GB");
+
+export function describeCallBudget({ remaining, limit }: CallBudget): string {
+  return `${callCount.format(remaining)} of ${callCount.format(limit)} Enphase calls left this month`;
 }

@@ -134,3 +134,44 @@ describe("the API client's session calls", () => {
     expect(await client.signedInDevices()).toEqual(devices.devices);
   });
 });
+
+describe("the API client's Solar calls", () => {
+  const budget = { month: "2026-06", limit: 1000, used: 2, remaining: 998 };
+
+  it("asks for a refresh with the CSRF header and answers the result", async () => {
+    const requests: { url: string; init: RequestInit | undefined }[] = [];
+    const answer = {
+      solar: { asOf: "2026-06-01T10:00:00.000Z", solarProductionW: 4200 },
+      budget,
+    };
+    const client = createApiClient(async (input, init) => {
+      requests.push({ url: String(input), init });
+      return Response.json(answer);
+    });
+
+    expect(await client.refreshSolar()).toEqual(answer);
+    expect(requests[0]?.url).toBe("/api/solar/refresh");
+    expect(requests[0]?.init?.method).toBe("POST");
+    expect(new Headers(requests[0]?.init?.headers).get(csrfHeader.name)).toBe(
+      csrfHeader.value
+    );
+  });
+
+  it("rejects a refused refresh with the server's reason", async () => {
+    const client = createApiClient(
+      answering(429, {
+        error: { status: 429, message: "Only 61 of this month's calls…" },
+      })
+    );
+
+    await expect(client.refreshSolar()).rejects.toThrow(
+      "Only 61 of this month's calls…"
+    );
+  });
+
+  it("reads the Enphase call budget", async () => {
+    const client = createApiClient(answering(200, budget));
+
+    expect(await client.solarBudget()).toEqual(budget);
+  });
+});

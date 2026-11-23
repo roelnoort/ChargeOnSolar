@@ -178,7 +178,7 @@ function SignedInApp({
       {tab === "now" && (
         <section aria-labelledby="now-heading">
           <h2 id="now-heading">Now</h2>
-          <NowView clock={clock} />
+          <NowView clock={clock} api={api} />
         </section>
       )}
       {tab === "day" && (

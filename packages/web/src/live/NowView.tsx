@@ -1,10 +1,14 @@
-import type { LiveSnapshot } from "@charge-on-solar/shared";
-import { useEffect, useState } from "react";
+import type { CallBudget, LiveSnapshot } from "@charge-on-solar/shared";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import type { ApiClient } from "../api/client.ts";
 import type { Clock } from "../clock.ts";
+import { messageOf } from "../message-of.ts";
 import {
   chargerStaleAfterMs,
   dataAgeMs,
   describeApmWarning,
+  describeAsOf,
+  describeCallBudget,
   describeChargerState,
   describeDataAge,
   describeGrid,
@@ -89,29 +93,97 @@ function ApmOffBanner({ charger }: { charger: LiveSnapshot["charger"] }) {
   );
 }
 
+type RefreshState =
+  | { kind: "idle" }
+  | { kind: "refreshing" }
+  | { kind: "failed"; message: string };
+
+/** Refreshes Solar production on request, and follows the Enphase call budget. */
+function useSolarRefresh(api: ApiClient) {
+  const [state, setState] = useState<RefreshState>({ kind: "idle" });
+  const [budget, setBudget] = useState<CallBudget>();
+  useEffect(() => {
+    let current = true;
+    api.solarBudget().then(
+      (loaded) => current && setBudget(loaded),
+      () => {}
+    );
+    return () => {
+      current = false;
+    };
+  }, [api]);
+  const refresh = useCallback(() => {
+    setState({ kind: "refreshing" });
+    api.refreshSolar().then(
+      (answer) => {
+        setBudget(answer.budget);
+        setState({ kind: "idle" });
+      },
+      (error: unknown) =>
+        setState({ kind: "failed", message: messageOf(error) })
+    );
+  }, [api]);
+  return { state, budget, refresh };
+}
+
 function FlowCircle({
   label,
   power,
   kind,
+  children,
 }: {
   label: string;
   power: string | undefined;
   kind: string;
+  children?: ReactNode;
 }) {
   return (
     <figure className={`flow flow-${kind}`}>
       <div className="flow-circle">{power ?? "–"}</div>
       <figcaption>{label}</figcaption>
+      {children}
     </figure>
   );
 }
 
-function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
+function PowerFlows({
+  snapshot,
+  api,
+}: {
+  snapshot: LiveSnapshot | undefined;
+  api: ApiClient;
+}) {
   const netPowerW = snapshot?.p1?.reading.netPowerW;
   const grid = netPowerW === undefined ? undefined : describeGrid(netPowerW);
   const surplusW = snapshot?.surplusW;
+  const solar = snapshot?.solar;
+  const houseConsumptionW = snapshot?.houseConsumptionW;
+  const { state, budget, refresh } = useSolarRefresh(api);
+  const refreshing = state.kind === "refreshing";
   return (
     <section className="flows" aria-label="Power flows">
+      <FlowCircle
+        label="Solar"
+        power={solar ? formatPower(solar.solarProductionW) : undefined}
+        kind="solar"
+      >
+        {solar && <p className="flow-note">{describeAsOf(solar.asOf)}</p>}
+        <button
+          type="button"
+          className="flow-refresh"
+          onClick={refresh}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+      </FlowCircle>
+      <FlowCircle
+        label="House"
+        power={
+          houseConsumptionW == null ? undefined : formatPower(houseConsumptionW)
+        }
+        kind="house"
+      />
       <FlowCircle
         label="Surplus"
         power={surplusW == null ? undefined : formatSignedPower(surplusW)}
@@ -131,11 +203,18 @@ function PowerFlows({ snapshot }: { snapshot: LiveSnapshot | undefined }) {
         power={grid?.power}
         kind={grid?.direction === "importing" ? "import" : "export"}
       />
+      {state.kind === "failed" ? (
+        <p className="flows-note flows-note-refused" role="alert">
+          {state.message}
+        </p>
+      ) : (
+        budget && <p className="flows-note">{describeCallBudget(budget)}</p>
+      )}
     </section>
   );
 }
 
-export function NowView({ clock }: { clock: Clock }) {
+export function NowView({ clock, api }: { clock: Clock; api: ApiClient }) {
   const { status, latest } = useLiveStream(clock);
   const now = useNow(clock);
   const snapshot = latest?.snapshot;
@@ -154,7 +233,7 @@ export function NowView({ clock }: { clock: Clock }) {
         {statusLabels[status]}
       </p>
 
-      <PowerFlows snapshot={snapshot} />
+      <PowerFlows snapshot={snapshot} api={api} />
 
       <article className="card" aria-labelledby="net-power-heading">
         <h3 id="net-power-heading">Net power</h3>
