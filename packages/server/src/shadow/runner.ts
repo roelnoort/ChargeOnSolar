@@ -93,6 +93,7 @@ export async function startShadowRunner({
       at: now,
       decision,
       simulated: next,
+      phaseSetting: snapshot.phases,
       inputs,
       zaptec: {
         availableCurrentMode: charger.availableCurrentMode,

@@ -14,6 +14,7 @@ function bucket(power: Partial<DayTimelineBucket>): DayTimelineBucket {
     solarProductionW: null,
     netPowerW: null,
     chargerPowerW: null,
+    shadowChargerPowerW: null,
     ...power,
   };
 }

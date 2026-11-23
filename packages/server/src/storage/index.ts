@@ -161,6 +161,10 @@ export interface Storage {
   recordUnconfirmed(overrideId: number): Promise<void>;
   /** The most recent Manual overrides, newest first. */
   listManualOverrides(limit: number): Promise<ManualOverrideRecord[]>;
+  /** Manual overrides sent in `[from, to)`, oldest first, at most `limit`. */
+  listManualOverridesSent(
+    window: ReadingWindow
+  ): Promise<ManualOverrideRecord[]>;
 
   openExternalPause(at: Date): Promise<OpenPause>;
   closePause(pauseId: number, at: Date, ending: PauseEnding): Promise<void>;
@@ -639,6 +643,17 @@ function storageOn(
         .all()
         .map(fromManualOverrideRow);
     },
+    async listManualOverridesSent({ from, to, limit }) {
+      const sentAt = schema.manualOverrides.sentAt;
+      return db
+        .select()
+        .from(schema.manualOverrides)
+        .where(and(gte(sentAt, from), lt(sentAt, to)))
+        .orderBy(asc(sentAt), asc(schema.manualOverrides.id))
+        .limit(limit)
+        .all()
+        .map(fromManualOverrideRow);
+    },
 
     async openExternalPause(at) {
       return db
@@ -829,6 +844,7 @@ function toShadowDecisionRow({
   at,
   decision,
   simulated,
+  phaseSetting,
   inputs: { dataAgeMs, ...inputs },
   zaptec,
   stamp,
@@ -837,6 +853,7 @@ function toShadowDecisionRow({
     at,
     decision: JSON.stringify(decision),
     simulated: JSON.stringify(simulated),
+    phaseSetting,
     ...inputs,
     p1AgeMs: dataAgeMs.p1,
     chargerAgeMs: dataAgeMs.charger,
@@ -873,6 +890,7 @@ function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
     at: row.at,
     decision: shadowDecision.parse(JSON.parse(row.decision)),
     simulated: storedSimulatedCharger.parse(JSON.parse(row.simulated)),
+    phaseSetting: toPhaseSetting(row.phaseSetting),
     inputs: {
       surplusW: row.surplusW,
       netPowerW: row.netPowerW,

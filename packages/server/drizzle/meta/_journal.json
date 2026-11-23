@@ -64,6 +64,13 @@
       "when": 1795431543547,
       "tag": "0008_solar_fetches",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1795431931822,
+      "tag": "0009_shadow_decision_phase_setting",
+      "breakpoints": true
     }
   ]
 }

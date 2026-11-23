@@ -3,6 +3,7 @@ import {
   type LiveSnapshot,
   liveSnapshot,
   liveStreamPath,
+  shadowChargerPowerW,
   shadowDecisionRecord,
   snapshotEvent,
 } from "@charge-on-solar/shared";
@@ -162,6 +163,26 @@ describe("Shadow decisions on GET /api/live/stream", () => {
       netPowerW: -3300,
       startWindowSurplusW: 3300,
     });
+  });
+
+  it("sends in each decision event all a Day tab needs to add a point to the Real and Shadow charts", async () => {
+    const { p1, advance } = await startWithCar();
+    p1.send(exporting(3300));
+    const reader = await openStream();
+    await nextSnapshot(reader);
+
+    await advance(60_000);
+
+    const event = await nextOf(reader, decisionEvent);
+    const decision = shadowDecisionRecord.parse(JSON.parse(event?.data ?? ""));
+    expect(decision).toMatchObject({
+      at: "2026-06-01T12:01:00.000Z",
+      chargingCurrentA: 14,
+      phaseSetting: 1,
+      inputs: { netPowerW: -3300, chargerPowerW: 0, solarProductionW: null },
+      settings: { voltage: 230, tickIntervalSeconds: 60 },
+    });
+    expect(shadowChargerPowerW(decision)).toBe(14 * 230);
   });
 
   it("includes the current Shadow decision in the snapshot", async () => {
