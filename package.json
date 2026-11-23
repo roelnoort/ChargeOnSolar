@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "format": "biome format --write .",
     "lint": "biome check .",
+    "lint:shell": "bash scripts/lint-shell.sh",
     "check": "biome check . && pnpm typecheck:all && vitest run && pnpm db:drift",
     "db:drift": "pnpm --filter @charge-on-solar/server run db:drift"
   },
