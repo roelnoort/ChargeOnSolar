@@ -2,7 +2,10 @@ import {
   type LiveSnapshot,
   liveSnapshot,
   liveStreamPath,
+  type SolarUpdated,
   snapshotEvent,
+  solarUpdated,
+  solarUpdatedEvent,
 } from "@charge-on-solar/shared";
 
 export const streamStatuses = [
@@ -33,6 +36,8 @@ export interface LiveStreamOptions {
   after: (milliseconds: number, callback: () => void) => () => void;
   now: () => number;
   onChange: (state: LiveStreamState) => void;
+  /** Called after each fetch from Enphase the server announces. */
+  onSolarUpdated?: (update: SolarUpdated) => void;
 }
 
 const eventSourceClosed = 2;
@@ -47,6 +52,7 @@ export function connectLiveStream({
   after,
   now,
   onChange,
+  onSolarUpdated,
 }: LiveStreamOptions): { close(): void } {
   let state: LiveStreamState = { status: "connecting" };
   let source: EventSourceLike | undefined;
@@ -74,6 +80,11 @@ export function connectLiveStream({
       if (parsed.success) {
         update({ latest: { snapshot: parsed.data, receivedAt: now() } });
       }
+    });
+    current.addEventListener(solarUpdatedEvent, (event) => {
+      if (typeof event.data !== "string") return;
+      const parsed = solarUpdated.safeParse(parseJson(event.data));
+      if (parsed.success) onSolarUpdated?.(parsed.data);
     });
   }
 
