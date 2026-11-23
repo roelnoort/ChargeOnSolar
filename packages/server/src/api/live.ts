@@ -3,15 +3,22 @@ import {
   type LiveSnapshot,
   livePath,
   liveStreamPath,
+  type SolarUpdated,
   snapshotEvent,
+  solarUpdatedEvent,
   type ZaptecMode,
 } from "@charge-on-solar/shared";
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
-import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
-import type { LiveState } from "../domain/live-state.ts";
+import {
+  fuseHeadroomA,
+  houseConsumptionW,
+  surplusW,
+} from "../domain/energy.ts";
+import type { LiveState, SolarFetch } from "../domain/live-state.ts";
+import type { SolarInterval } from "../domain/solar-interval.ts";
 import type { SessionEnv } from "./session.ts";
 
 export interface LiveRouteDependencies {
@@ -52,6 +59,19 @@ function toZaptecMode({ availableCurrentMode }: ChargerReading): ZaptecMode {
     : (zaptecModes[availableCurrentMode] ?? "unknown");
 }
 
+export function toLiveSolar(latest: SolarInterval | undefined) {
+  return latest
+    ? {
+        asOf: latest.endAt.toISOString(),
+        solarProductionW: latest.solarProductionW,
+      }
+    : null;
+}
+
+function toSolarUpdated({ fetchedAt, latest }: SolarFetch): SolarUpdated {
+  return { fetchedAt: fetchedAt.toISOString(), solar: toLiveSolar(latest) };
+}
+
 export function toLiveSnapshot(
   live: LiveState,
   now: Date,
@@ -59,6 +79,7 @@ export function toLiveSnapshot(
 ): LiveSnapshot {
   const p1 = live.p1();
   const charger = live.charger();
+  const solar = live.solar();
   return {
     at: now.toISOString(),
     p1: p1
@@ -91,6 +112,8 @@ export function toLiveSnapshot(
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
+    solar: toLiveSolar(solar),
+    houseConsumptionW: houseConsumptionW(p1, solar, charger),
   };
 }
 
@@ -130,8 +153,15 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
+      const stopListeningForSolar = live.onSolarFetch((fetch) => {
+        void stream.writeSSE({
+          event: solarUpdatedEvent,
+          data: JSON.stringify(toSolarUpdated(fetch)),
+        });
+      });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
+      stopListeningForSolar();
       pending?.();
     })
   );

@@ -112,3 +112,25 @@ export const chargerReadings = sqliteTable(
   },
   (table) => [index("charger_readings_received_at").on(table.receivedAt)]
 );
+
+/** Enphase's 5-minute production intervals, updated in place when revised. */
+export const solarIntervals = sqliteTable("solar_intervals", {
+  /** When the interval ended, in UTC. */
+  endAt: integer("end_at", { mode: "timestamp_ms" }).primaryKey(),
+  solarProductionW: real("solar_production_w").notNull(),
+  energyWh: real("energy_wh").notNull(),
+  devicesReporting: integer("devices_reporting"),
+});
+
+/** How many calls ChargeOnSolar made to Enphase in each calendar month. */
+export const enphaseCalls = sqliteTable("enphase_calls", {
+  /** YYYY-MM, Europe/Amsterdam. */
+  month: text("month").primaryKey(),
+  calls: integer("calls").notNull(),
+});
+
+/** Single values the server keeps between restarts, by key. */
+export const appState = sqliteTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});

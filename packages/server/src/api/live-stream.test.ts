@@ -63,6 +63,8 @@ describe("GET /api/live/stream", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      solar: null,
+      houseConsumptionW: null,
     });
   });
 

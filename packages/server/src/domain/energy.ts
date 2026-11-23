@@ -5,6 +5,7 @@ import {
 } from "@charge-on-solar/shared";
 import type { ChargerReading } from "./charger-reading.ts";
 import type { P1Reading } from "./p1-reading.ts";
+import type { SolarInterval } from "./solar-interval.ts";
 
 /** Surplus in watts: Charger power minus Net power, totalled over all phases. */
 export function surplusW(
@@ -45,4 +46,18 @@ export function fuseHeadroomA(
   );
   if (houseCurrents.length === 0) return null;
   return mainFuseA - Math.max(...houseCurrents);
+}
+
+/**
+ * House consumption in watts: Net power plus Solar production minus Charger
+ * power. Null without all three. The Solar production is Enphase's latest
+ * 5-minute average, so this is for display only.
+ */
+export function houseConsumptionW(
+  p1: P1Reading | undefined,
+  solar: SolarInterval | undefined,
+  charger: ChargerReading | undefined
+): number | null {
+  if (!p1 || !solar || charger?.chargerPowerW == null) return null;
+  return p1.netPowerW + solar.solarProductionW - charger.chargerPowerW;
 }

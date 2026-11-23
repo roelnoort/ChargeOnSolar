@@ -11,9 +11,11 @@ import {
   requireSession,
   type SessionEnv,
 } from "./api/session.ts";
+import { addSolarRoutes } from "./api/solar.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
+import type { SolarCollection } from "./enphase/solar-collection.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
@@ -23,6 +25,8 @@ export interface AppDependencies {
   clock: Clock;
   /** The main fuse rating, in amperes. */
   mainFuseA: number;
+  /** Fetches from Enphase. Undefined while Enphase is not set up. */
+  solar?: SolarCollection;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
@@ -33,6 +37,7 @@ export function createApp({
   live,
   clock,
   mainFuseA,
+  solar,
   webRoot,
 }: AppDependencies): Hono<SessionEnv> {
   const app = new Hono<SessionEnv>();
@@ -57,6 +62,7 @@ export function createApp({
   });
 
   addLiveRoutes(app, { live, clock, mainFuseA });
+  addSolarRoutes(app, { solar, storage, clock });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

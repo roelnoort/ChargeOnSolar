@@ -28,6 +28,8 @@ const snapshot: LiveSnapshot = {
   surplusW: null,
   mainFuseA: 25,
   fuseHeadroomA: null,
+  solar: null,
+  houseConsumptionW: null,
 };
 
 class FakeEventSource implements EventSourceLike {
