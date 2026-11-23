@@ -113,3 +113,23 @@ export function solarNotFetchedFrom(
 ): string | undefined {
   return buckets.find((bucket) => bucket.solarProductionW === null)?.start;
 }
+
+/** The top edge of each band, in watts, where solar is not fetched yet. */
+export interface SolarNotFetchedStack {
+  carTopW: number;
+  fromGridTopW: number;
+  toGridTopW: number;
+}
+
+/**
+ * Stacks the car, then the import beyond it, then To grid. Net power already
+ * includes the car, so only an import beyond the car is the house's.
+ */
+export function solarNotFetchedStack({
+  carW,
+  fromGridW,
+  toGridW,
+}: SolarNotFetchedBucket): SolarNotFetchedStack {
+  const fromGridTopW = Math.max(carW, fromGridW);
+  return { carTopW: carW, fromGridTopW, toGridTopW: fromGridTopW + toGridW };
+}

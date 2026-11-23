@@ -7,6 +7,7 @@ import {
   type SolarFetchedBucket,
   type SolarNotFetchedBucket,
   solarNotFetchedFrom,
+  solarNotFetchedStack,
 } from "./real-chart.ts";
 
 export const realChartAreas = [
@@ -89,7 +90,7 @@ function stackedTotalW(bucket: RealChartBucket): number {
     case "solar-fetched":
       return realChartAreas.reduce((sum, { key }) => sum + bucket[key], 0);
     case "solar-not-fetched":
-      return Math.max(bucket.carW, bucket.fromGridW, bucket.toGridW);
+      return solarNotFetchedStack(bucket).toGridTopW;
     case "no-readings":
       return 0;
   }
@@ -177,13 +178,11 @@ export function RealChart({
 
   function notFetchedAreas(run: SolarNotFetchedBucket[], runIndex: number) {
     const xs = run.map(middleOf);
+    const stacks = run.map(solarNotFetchedStack);
     const floor = run.map(() => y(0));
-    const car = run.map((bucket) => y(bucket.carW));
-    // Net power already includes the car: only an import beyond it is the house's.
-    const fromGrid = run.map((bucket) =>
-      y(Math.max(bucket.carW, bucket.fromGridW))
-    );
-    const toGrid = run.map((bucket) => y(bucket.toGridW));
+    const car = stacks.map((stack) => y(stack.carTopW));
+    const fromGrid = stacks.map((stack) => y(stack.fromGridTopW));
+    const toGrid = stacks.map((stack) => y(stack.toGridTopW));
     return [
       <path
         key={`${runIndex}-car`}
@@ -198,7 +197,7 @@ export function RealChart({
       <path
         key={`${runIndex}-to-grid`}
         className="area area-to-grid area-faint"
-        d={band(xs, toGrid, floor)}
+        d={band(xs, toGrid, fromGrid)}
       />,
     ];
   }

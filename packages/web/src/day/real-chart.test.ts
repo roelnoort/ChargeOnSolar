@@ -5,6 +5,7 @@ import {
   realChartBucket,
   realChartTotals,
   solarNotFetchedFrom,
+  solarNotFetchedStack,
 } from "./real-chart.ts";
 
 function bucket(power: Partial<DayTimelineBucket>): DayTimelineBucket {
@@ -211,5 +212,34 @@ describe("where the Real chart hatches solar as not fetched yet", () => {
         bucket({ start: at(5), solarProductionW: 0 }),
       ])
     ).toBeUndefined();
+  });
+});
+
+describe("stacking the Real chart where solar is not fetched yet", () => {
+  const notFetched = (power: {
+    carW: number;
+    fromGridW: number;
+    toGridW: number;
+  }) =>
+    ({
+      kind: "solar-not-fetched",
+      start: "2026-06-01T10:00:00.000Z",
+      ...power,
+    }) as const;
+
+  it("stacks To grid on top of the car", () => {
+    expect(
+      solarNotFetchedStack(
+        notFetched({ carW: 2000, fromGridW: 0, toGridW: 800 })
+      )
+    ).toEqual({ carTopW: 2000, fromGridTopW: 2000, toGridTopW: 2800 });
+  });
+
+  it("shows only the import beyond the car above it", () => {
+    expect(
+      solarNotFetchedStack(
+        notFetched({ carW: 2000, fromGridW: 2600, toGridW: 0 })
+      )
+    ).toEqual({ carTopW: 2000, fromGridTopW: 2600, toGridTopW: 2600 });
   });
 });
