@@ -69,6 +69,21 @@ export function pointAt<T extends Stretch>(
   return points.find((point) => covers(point, at));
 }
 
+/**
+ * The Shadow decisions with `record` among them, each once, oldest first. The
+ * live snapshot's latest decision comes in this way too, as the one before
+ * those made since.
+ */
+export function withDecision(
+  decisions: ShadowDecisionRecord[],
+  record: ShadowDecisionRecord
+): ShadowDecisionRecord[] {
+  if (decisions.some(({ at }) => at === record.at)) return decisions;
+  return [...decisions, record].sort(
+    (a, b) => Date.parse(a.at) - Date.parse(b.at)
+  );
+}
+
 /** The loaded Shadow starts and stops, then those of the decisions made since. */
 export function dayShadowSwitches(
   timeline: DayTimeline,

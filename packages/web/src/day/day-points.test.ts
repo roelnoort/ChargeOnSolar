@@ -11,6 +11,7 @@ import {
   dayPoints,
   dayShadowSwitches,
   pointAt,
+  withDecision,
 } from "./day-points.ts";
 
 const minute = 60_000;
@@ -200,6 +201,31 @@ describe("the Shadow starts and stops of a Day tab", () => {
       { at: at(8), kind: "start", currentA: 6 },
       { at: at(10), kind: "stop", currentA: 8 },
     ]);
+  });
+});
+
+describe("the Shadow decisions a Day tab follows", () => {
+  it("take the latest from the live snapshot, so a stop just after loading knows the Charging current it stopped from", () => {
+    const fromSnapshot = decision(6, holding, 8);
+    const decisions = [
+      fromSnapshot,
+      decision(8, stop, null),
+      fromSnapshot,
+    ].reduce(withDecision, []);
+
+    expect(
+      dayShadowSwitches(timeline(), dayStart + 7 * minute, decisions)
+    ).toEqual([{ at: at(8), kind: "stop", currentA: 8 }]);
+  });
+
+  it("hold each decision once, oldest first", () => {
+    const decisions = [
+      decision(8, holding, 6),
+      decision(6, start6A, 6),
+      decision(8, holding, 6),
+    ].reduce(withDecision, []);
+
+    expect(decisions.map((record) => record.at)).toEqual([at(6), at(8)]);
   });
 });
 

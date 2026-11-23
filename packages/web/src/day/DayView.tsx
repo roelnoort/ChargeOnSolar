@@ -12,7 +12,12 @@ import type { Clock } from "../clock.ts";
 import { connectLiveStream } from "../live/live-stream.ts";
 import { messageOf } from "../message-of.ts";
 import { chartScaleW, DayChart, realChartAreas } from "./DayChart.tsx";
-import { dayOverrides, dayPoints, dayShadowSwitches } from "./day-points.ts";
+import {
+  dayOverrides,
+  dayPoints,
+  dayShadowSwitches,
+  withDecision,
+} from "./day-points.ts";
 import {
   amsterdamToday,
   describeDay,
@@ -72,17 +77,23 @@ function useLiveDay(
   useEffect(() => {
     setLive(noLiveDay);
     if (!following) return;
+    const addDecision = (decision: ShadowDecisionRecord) =>
+      setLive((current) => {
+        const decisions = withDecision(current.decisions, decision);
+        return decisions === current.decisions
+          ? current
+          : { ...current, decisions };
+      });
     const stream = connectLiveStream({
       createEventSource: (url) => new EventSource(url),
       after: clock.after,
       now: clock.now,
-      onChange: () => {},
+      onChange: ({ latest }) => {
+        const decision = latest?.snapshot.shadowDecision;
+        if (decision) addDecision(decision);
+      },
       onSolarUpdated,
-      onDecision: (decision: ShadowDecisionRecord) =>
-        setLive((current) => ({
-          ...current,
-          decisions: [...current.decisions, decision],
-        })),
+      onDecision: addDecision,
       onOverride: (override: ManualOverride) =>
         setLive((current) => ({
           ...current,
