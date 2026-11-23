@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { shadowDecisionRecord } from "./shadow.ts";
 
 export const livePath = "/api/live";
 export const liveStreamPath = "/api/live/stream";
@@ -95,5 +96,7 @@ export const liveSnapshot = z.object({
   mainFuseA: z.number(),
   /** Fuse headroom in amperes. Null without per-phase currents from both. */
   fuseHeadroomA: z.number().nullable(),
+  /** The latest Shadow decision. Null until the first one is made. */
+  shadowDecision: shadowDecisionRecord.nullable(),
 });
 export type LiveSnapshot = z.infer<typeof liveSnapshot>;

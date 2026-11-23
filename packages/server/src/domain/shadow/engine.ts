@@ -1,7 +1,26 @@
 // The Shadow engine: what Automatic control would do, given one moment's
 // live state. Pure: no I/O and no clock of its own; the time comes in with
 // the snapshot.
-import type { SolarMode } from "@charge-on-solar/shared";
+import {
+  type CarDecision,
+  type ChargeDecision,
+  type CurrentLimit,
+  type HoldReason,
+  minimumCurrentAmps,
+  type ShadowDecision,
+  type ShadowSettings,
+  type StopReason,
+} from "@charge-on-solar/shared";
+
+export type {
+  CarDecision,
+  ChargeDecision,
+  CurrentLimit,
+  HoldReason,
+  ShadowDecision,
+  ShadowSettings,
+  StopReason,
+} from "@charge-on-solar/shared";
 
 /** Bumped whenever a rule changes; stamped together with the settings. */
 export const shadowRulesVersion = 1;
@@ -11,20 +30,6 @@ export type PhaseSetting = (typeof phaseSettings)[number];
 
 export const carStates = ["none", "not-accepting", "accepting"] as const;
 export type CarState = (typeof carStates)[number];
-
-export interface ShadowSettings {
-  startWindowMinutes: number;
-  stopWindowMinutes: number;
-  minimumOnTimeMinutes: number;
-  minimumOffTimeMinutes: number;
-  currentHoldMinutes: number;
-  deadBandAmps: number;
-  /** Per-phase voltage, fixed by the grid. */
-  voltage: number;
-  mainFuseAmps: number;
-  minimumSolarWatts: number;
-  solarMode: SolarMode;
-}
 
 export const defaultShadowSettings: ShadowSettings = {
   startWindowMinutes: 5,
@@ -85,38 +90,6 @@ export const noCar: SimulatedCharger = {
   switchCount: 0,
 };
 
-export type CurrentLimit =
-  | "surplus"
-  | "minimum-current"
-  | "charger-maximum"
-  | "fuse-headroom";
-
-export type HoldReason =
-  | "surplus-too-low"
-  | "minimum-off-time"
-  | "switch-budget"
-  | "fuse-headroom"
-  | "minimum-on-time"
-  | "within-dead-band"
-  | "current-hold";
-
-export type StopReason = "surplus-too-low" | "fuse-headroom";
-
-export type ChargeDecision =
-  | { kind: "start"; currentAmps: number; limitedBy: CurrentLimit }
-  | { kind: "stop"; reason: StopReason }
-  | { kind: "change-current"; currentAmps: number; limitedBy: CurrentLimit }
-  | { kind: "hold"; reason: HoldReason };
-
-/** What the engine decides once a car is plugged in, before any pause. */
-export type CarDecision = ChargeDecision | { kind: "car-not-accepting" };
-
-export type ShadowDecision =
-  | CarDecision
-  | { kind: "no-car" }
-  /** A final-stop pause wins; underlying is what the engine would do without it. */
-  | { kind: "paused"; underlying: CarDecision };
-
 export interface ShadowOutcome {
   decision: ShadowDecision;
   next: SimulatedCharger;
@@ -127,7 +100,6 @@ interface ChargeOutcome {
   next: SimulatedCharger;
 }
 
-const minimumCurrentAmps = 6;
 const minute = 60_000;
 
 const switchBudget = 20;

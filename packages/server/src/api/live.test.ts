@@ -27,6 +27,7 @@ describe("GET /api/live", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      shadowDecision: null,
     });
   });
 
@@ -64,6 +65,7 @@ describe("GET /api/live", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      shadowDecision: null,
     });
   });
 

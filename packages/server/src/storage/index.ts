@@ -3,10 +3,12 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { shadowDecision, shadowSettings } from "@charge-on-solar/shared";
 import Database from "better-sqlite3";
 import { and, asc, count, desc, eq, gt, gte, isNull, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { z } from "zod";
 import type { Clock } from "../clock.ts";
 import {
   type ChargerReading,
@@ -14,6 +16,8 @@ import {
 } from "../domain/charger-reading.ts";
 import type { NewLoginCode } from "../domain/login-code.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
+import type { SimulatedCharger } from "../domain/shadow/engine.ts";
+import type { RecordedShadowDecision } from "../domain/shadow/recorded-decision.ts";
 import type {
   NewSignedInDevice,
   SignedInDevice,
@@ -32,6 +36,11 @@ export interface Storage {
   recordChargerReading(reading: ChargerReading): Promise<void>;
   /** Charger Readings received in `[from, to)`, oldest first, at most `limit`. */
   listChargerReadings(window: ReadingWindow): Promise<ChargerReading[]>;
+  recordShadowDecision(decision: RecordedShadowDecision): Promise<void>;
+  /** The most recent Shadow decision, if one was ever recorded. */
+  latestShadowDecision(): Promise<RecordedShadowDecision | undefined>;
+  /** Shadow decisions made in `[from, to)`, oldest first, at most `limit`. */
+  listShadowDecisions(window: ReadingWindow): Promise<RecordedShadowDecision[]>;
 
   /** Adds a User, or answers undefined when one already has this email. */
   addUser(user: NewUser & { at: Date }): Promise<User | undefined>;
@@ -162,6 +171,34 @@ function storageOn(
         .limit(limit)
         .all()
         .map(fromChargerRow);
+    },
+    async recordShadowDecision(decision) {
+      db.insert(schema.shadowDecisions)
+        .values(toShadowDecisionRow(decision))
+        .run();
+    },
+    async latestShadowDecision() {
+      const row = db
+        .select()
+        .from(schema.shadowDecisions)
+        .orderBy(
+          desc(schema.shadowDecisions.at),
+          desc(schema.shadowDecisions.id)
+        )
+        .limit(1)
+        .get();
+      return row && fromShadowDecisionRow(row);
+    },
+    async listShadowDecisions({ from, to, limit }) {
+      const at = schema.shadowDecisions.at;
+      return db
+        .select()
+        .from(schema.shadowDecisions)
+        .where(and(gte(at, from), lt(at, to)))
+        .orderBy(asc(at), asc(schema.shadowDecisions.id))
+        .limit(limit)
+        .all()
+        .map(fromShadowDecisionRow);
     },
 
     async addUser({ name, email, at }) {
@@ -416,6 +453,71 @@ function fromChargerRow({
     ...row,
     phaseSetting: toPhaseSetting(storedPhaseSetting),
     phaseCurrentsA: { l1: currentL1A, l2: currentL2A, l3: currentL3A },
+  };
+}
+
+type ShadowDecisionRow = typeof schema.shadowDecisions.$inferSelect;
+
+function toShadowDecisionRow({
+  at,
+  decision,
+  simulated,
+  inputs: { dataAgeMs, ...inputs },
+  zaptec,
+  stamp,
+}: RecordedShadowDecision): Omit<ShadowDecisionRow, "id"> {
+  return {
+    at,
+    decision: JSON.stringify(decision),
+    simulated: JSON.stringify(simulated),
+    ...inputs,
+    p1AgeMs: dataAgeMs.p1,
+    chargerAgeMs: dataAgeMs.charger,
+    solarAgeMs: dataAgeMs.solar,
+    ...zaptec,
+    rulesVersion: stamp.rulesVersion,
+    settings: JSON.stringify(stamp.settings),
+  };
+}
+
+const storedDate = z.iso.datetime().transform((iso) => new Date(iso));
+const storedSimulatedCharger = z.object({
+  carConnected: z.boolean(),
+  currentAmps: z.number().nullable(),
+  currentChangedAt: storedDate.nullable(),
+  switchedAt: storedDate.nullable(),
+  switchCount: z.number(),
+}) satisfies z.ZodType<SimulatedCharger, unknown>;
+
+function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
+  return {
+    at: row.at,
+    decision: shadowDecision.parse(JSON.parse(row.decision)),
+    simulated: storedSimulatedCharger.parse(JSON.parse(row.simulated)),
+    inputs: {
+      surplusW: row.surplusW,
+      netPowerW: row.netPowerW,
+      solarProductionW: row.solarProductionW,
+      chargerPowerW: row.chargerPowerW,
+      fuseHeadroomA: row.fuseHeadroomA,
+      startWindowSurplusW: row.startWindowSurplusW,
+      stopWindowSurplusW: row.stopWindowSurplusW,
+      dataAgeMs: {
+        p1: row.p1AgeMs,
+        charger: row.chargerAgeMs,
+        solar: row.solarAgeMs,
+      },
+    },
+    zaptec: {
+      availableCurrentMode: row.availableCurrentMode,
+      enabledFeatures: row.enabledFeatures,
+      surplusModeActive: row.surplusModeActive,
+      chargeCurrentSetA: row.chargeCurrentSetA,
+    },
+    stamp: {
+      rulesVersion: row.rulesVersion,
+      settings: shadowSettings.parse(JSON.parse(row.settings)),
+    },
   };
 }
 

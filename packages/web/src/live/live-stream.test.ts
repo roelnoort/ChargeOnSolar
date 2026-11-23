@@ -28,6 +28,7 @@ const snapshot: LiveSnapshot = {
   surplusW: null,
   mainFuseA: 25,
   fuseHeadroomA: null,
+  shadowDecision: null,
 };
 
 class FakeEventSource implements EventSourceLike {
