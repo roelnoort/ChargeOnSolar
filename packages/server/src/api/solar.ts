@@ -6,8 +6,8 @@ import {
 import type { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { Clock } from "../clock.ts";
+import { CallBudgetRefusal } from "../domain/call-budget.ts";
 import {
-  CallBudgetRefusal,
   currentCallBudget,
   type SolarCollection,
 } from "../enphase/solar-collection.ts";

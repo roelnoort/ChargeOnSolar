@@ -20,6 +20,11 @@ export interface FakeEnphase {
   set(intervals: FakeSolarInterval[]): void;
   /** While true, every fetch fails. */
   unreachable: boolean;
+  /**
+   * Makes the next fetch's access token be rejected, as the real client sees
+   * a 401: it renews and asks again, so that fetch makes two more calls.
+   */
+  rejectNextAccessToken(): void;
   /** The day start of every fetch, in order. */
   readonly fetches: Date[];
   /** Resolves after the next fetch has answered. */
@@ -33,6 +38,7 @@ export function createFakeEnphase(): FakeEnphase {
   let intervals: SolarInterval[] = [];
   const fetches: Date[] = [];
   const fetchListeners: (() => void)[] = [];
+  let rejectingAccessToken = false;
 
   function answered() {
     for (const listener of fetchListeners.splice(0)) listener();
@@ -41,6 +47,9 @@ export function createFakeEnphase(): FakeEnphase {
   const fake: FakeEnphase = {
     unreachable: false,
     fetches,
+    rejectNextAccessToken() {
+      rejectingAccessToken = true;
+    },
     set(next) {
       intervals = next.map((interval) => ({
         endAt: new Date(interval.endAt),
@@ -56,7 +65,7 @@ export function createFakeEnphase(): FakeEnphase {
         async productionIntervals(dayStart) {
           fetches.push(dayStart);
           try {
-            if (clock.now().getTime() >= accessTokenUntil) {
+            async function renew() {
               await countCall();
               if (fake.unreachable)
                 throw new Error("fetch failed (fake Enphase)");
@@ -65,9 +74,15 @@ export function createFakeEnphase(): FakeEnphase {
               await refreshTokens.save(`fake-refresh-token-${renewals + 1}`);
               accessTokenUntil = clock.now().getTime() + accessTokenLifetimeMs;
             }
+            if (clock.now().getTime() >= accessTokenUntil) await renew();
             await countCall();
             if (fake.unreachable)
               throw new Error("fetch failed (fake Enphase)");
+            if (rejectingAccessToken) {
+              rejectingAccessToken = false;
+              await renew();
+              await countCall();
+            }
             const dayEnd = dayStart.getTime() + dayMs;
             return intervals
               .filter(

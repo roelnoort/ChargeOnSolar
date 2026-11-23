@@ -7,25 +7,30 @@ import { authRoutes } from "./api/auth.ts";
 import { addDayTimelineRoutes } from "./api/day-timeline.ts";
 import { toHealth } from "./api/health.ts";
 import { addLiveRoutes } from "./api/live.ts";
+import { addOverrideRoutes } from "./api/overrides.ts";
 import {
   requireCsrfHeader,
   requireSession,
   type SessionEnv,
 } from "./api/session.ts";
+import { addSettingsRoutes } from "./api/settings.ts";
+import { addShadowRoutes } from "./api/shadow.ts";
 import { addSolarRoutes } from "./api/solar.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
 import type { SolarCollection } from "./enphase/solar-collection.ts";
+import type { Overrides } from "./overrides.ts";
+import type { SettingsStore } from "./settings.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
   storage: Storage;
   auth: Auth;
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
-  /** The main fuse rating, in amperes. */
-  mainFuseA: number;
+  settings: SettingsStore;
   /** Fetches from Enphase. Undefined while Enphase is not set up. */
   solar?: SolarCollection;
   /** The built web app's directory. Without it, only `/api/` is served. */
@@ -36,8 +41,9 @@ export function createApp({
   storage,
   auth,
   live,
+  overrides,
   clock,
-  mainFuseA,
+  settings,
   solar,
   webRoot,
 }: AppDependencies): Hono<SessionEnv> {
@@ -62,7 +68,10 @@ export function createApp({
     return c.json(toHealth(startup));
   });
 
-  addLiveRoutes(app, { live, clock, mainFuseA });
+  addLiveRoutes(app, { live, overrides, clock, settings });
+  addOverrideRoutes(app, { overrides });
+  addShadowRoutes(app, { storage });
+  addSettingsRoutes(app, { store: settings });
   addSolarRoutes(app, { solar, storage, clock });
   addDayTimelineRoutes(app, { storage });
 

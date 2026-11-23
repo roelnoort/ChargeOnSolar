@@ -7,12 +7,14 @@ import { LoginScreen } from "./LoginScreen.tsx";
 import { NowView } from "./live/NowView.tsx";
 import { messageOf } from "./message-of.ts";
 import { SignedInDevicesScreen } from "./SignedInDevicesScreen.tsx";
+import { SettingsScreen } from "./settings/SettingsScreen.tsx";
 
 const api = createApiClient();
 
 const tabs = [
   { id: "now", label: "Now" },
   { id: "day", label: "Day" },
+  { id: "settings", label: "Settings" },
   { id: "devices", label: "Devices" },
 ] as const;
 type Tab = (typeof tabs)[number]["id"];
@@ -192,6 +194,9 @@ function SignedInApp({
           <h2 id="day-heading">Day</h2>
           <DayView clock={clock} api={api} />
         </section>
+      )}
+      {tab === "settings" && (
+        <SettingsScreen api={api} onSignedOut={onSignedOut} />
       )}
       {tab === "devices" && (
         <SignedInDevicesScreen api={api} onSignedOut={onSignedOut} />

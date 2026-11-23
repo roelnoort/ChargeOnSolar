@@ -1,7 +1,9 @@
 import {
+  decisionEvent,
   type LiveSnapshot,
   liveSnapshot,
   liveStreamPath,
+  shadowDecisionRecord,
   snapshotEvent,
 } from "@charge-on-solar/shared";
 import { afterEach, describe, expect, it } from "vitest";
@@ -65,6 +67,9 @@ describe("GET /api/live/stream", () => {
       fuseHeadroomA: null,
       solar: null,
       houseConsumptionW: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
+      shadowDecision: null,
     });
   });
 
@@ -107,5 +112,66 @@ describe("GET /api/live/stream", () => {
     clock.advance(10_000);
 
     expect(await reader.next(50)).toBeUndefined();
+  });
+});
+
+describe("Shadow decisions on GET /api/live/stream", () => {
+  const exporting = (watts: number) => ({
+    netPowerW: -watts,
+    phases: { l1: { powerW: -watts, currentA: watts / 230, voltageV: 230 } },
+  });
+
+  async function startWithCar() {
+    server = await startTestServer({
+      now: new Date("2026-06-01T12:00:00.000Z"),
+      charger: {
+        operationMode: 2,
+        phaseSetting: 1,
+        maxCurrentA: 16,
+        phaseCurrentsA: { l1: 0 },
+      },
+    });
+    return server;
+  }
+
+  async function nextOf(reader: SseReader, name: string) {
+    for (let event = await reader.next(); event; event = await reader.next()) {
+      if (event.event === name) return event;
+    }
+    return undefined;
+  }
+
+  it("sends each new Shadow decision as a decision event, with that minute's averages", async () => {
+    const { p1, advance } = await startWithCar();
+    p1.send(exporting(3300));
+    const reader = await openStream();
+    await nextSnapshot(reader);
+
+    await advance(60_000);
+
+    const event = await nextOf(reader, decisionEvent);
+    const decision = shadowDecisionRecord.parse(JSON.parse(event?.data ?? ""));
+    expect(decision.at).toBe("2026-06-01T12:01:00.000Z");
+    expect(decision.decision).toEqual({
+      kind: "start",
+      currentAmps: 14,
+      limitedBy: "surplus",
+    });
+    expect(decision.inputs).toMatchObject({
+      surplusW: 3300,
+      netPowerW: -3300,
+      startWindowSurplusW: 3300,
+    });
+  });
+
+  it("includes the current Shadow decision in the snapshot", async () => {
+    const { p1, advance } = await startWithCar();
+    p1.send(exporting(3300));
+    await advance(60_000);
+
+    const snapshot = await nextSnapshot(await openStream());
+
+    expect(snapshot.shadowDecision?.decision.kind).toBe("start");
+    expect(snapshot.shadowDecision?.chargingCurrentA).toBe(14);
   });
 });

@@ -2,13 +2,13 @@
 // read the Enphase system. After it, the server renews its tokens itself.
 import { z } from "zod";
 import type { Clock } from "./clock.ts";
-import { amsterdamMonth } from "./domain/amsterdam-time.ts";
 import {
   enphaseAuthorizeUrl,
   exchangeAuthorizationCode,
 } from "./enphase/cloud.ts";
 import type { EnphaseLoginSettings } from "./enphase/from-env.ts";
 import { createRefreshTokenStore } from "./enphase/refresh-token-store.ts";
+import { countEnphaseCall } from "./enphase/solar-collection.ts";
 import type { Storage } from "./storage/index.ts";
 import { messageOf } from "./supervision.ts";
 
@@ -71,8 +71,7 @@ export async function runEnphaseCommand(
         storage,
         key: login.refreshTokenKey,
       }),
-      countCall: () =>
-        storage.countEnphaseCalls(amsterdamMonth(clock.now()), 1),
+      countCall: () => countEnphaseCall(storage, clock),
       fetch: fetchFn,
     });
   } catch (error) {

@@ -187,6 +187,24 @@ describe("the daily fetch from Enphase", () => {
     );
   });
 
+  it("stops retrying before the retries eat into the calls kept for the daily fetches to come", async () => {
+    const testServer = await start({ enphaseUnreachable: true });
+    // 60 calls left: after the first attempt's one call, 59, while June's
+    // 29 daily fetches still to come keep 58 back.
+    await testServer.useEnphaseCalls(940);
+
+    await testServer.advanceUntilSolarFetch(11 * hour + 30 * minute);
+    testServer.clock.advance(2 * hour);
+    await testServer.settle();
+
+    expect(testServer.enphase.fetches).toHaveLength(1);
+    expect(testServer.logs).toContainEqual(
+      expect.stringMatching(
+        /Daily Enphase fetch skipped: .*58 are kept for the daily fetches/
+      )
+    );
+  });
+
   it("skips the daily fetch, without retrying, once the month's calls are spent", async () => {
     const testServer = await start();
     await testServer.useEnphaseCalls(999);
@@ -199,6 +217,21 @@ describe("the daily fetch from Enphase", () => {
     expect(testServer.enphase.fetches).toEqual([]);
     expect(testServer.logs).toContainEqual(
       expect.stringMatching(/Enphase call budget/)
+    );
+  });
+});
+
+describe("the Enphase call budget's limit", () => {
+  it("is never exceeded, even by a fetch that has to renew its token twice", async () => {
+    const testServer = await start();
+    await testServer.useEnphaseCalls(998);
+    testServer.enphase.rejectNextAccessToken();
+
+    await testServer.advanceUntilSolarFetch(11 * hour + 30 * minute);
+
+    expect((await budget(testServer)).used).toBe(1000);
+    expect(testServer.logs).toContainEqual(
+      expect.stringMatching(/Daily Enphase fetch skipped: .*spent/)
     );
   });
 });
@@ -354,6 +387,26 @@ describe("solar-updated on the live stream", () => {
     expect(solarUpdated.parse(JSON.parse(updated?.data ?? ""))).toEqual({
       fetchedAt: "2026-06-01T12:00:00.000Z",
       solar: { asOf: "2026-06-01T10:00:00.000Z", solarProductionW: 4200 },
+    });
+  });
+});
+
+describe("solar-updated after the daily fetch", () => {
+  it("is sent on the stream too", async () => {
+    const testServer = await start({
+      solar: [{ endAt: "2026-06-01T19:00:00.000Z", solarProductionW: 150 }],
+    });
+    const response = await testServer.requestSignedIn(liveStreamPath);
+    stream = readSse(response);
+    await stream.next();
+
+    await testServer.advanceUntilSolarFetch(9 * hour + 30 * minute);
+
+    const events = [await stream.next(), await stream.next()];
+    const updated = events.find((event) => event?.event === solarUpdatedEvent);
+    expect(solarUpdated.parse(JSON.parse(updated?.data ?? ""))).toEqual({
+      fetchedAt: "2026-06-01T21:30:00.000Z",
+      solar: { asOf: "2026-06-01T19:00:00.000Z", solarProductionW: 150 },
     });
   });
 });

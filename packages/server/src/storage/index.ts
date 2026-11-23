@@ -3,6 +3,12 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  type OverrideCommand,
+  type Settings,
+  settings,
+  shadowDecision,
+} from "@charge-on-solar/shared";
 import Database from "better-sqlite3";
 import {
   and,
@@ -21,14 +27,25 @@ import {
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import { z } from "zod";
 import type { Clock } from "../clock.ts";
 import {
   type ChargerReading,
   toPhaseSetting,
 } from "../domain/charger-reading.ts";
 import type { NewLoginCode } from "../domain/login-code.ts";
+import type {
+  CommandResult,
+  ManualOverrideRecord,
+  OpenPause,
+  OverrideSender,
+  PauseEnding,
+  PauseRecord,
+} from "../domain/override.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
 import type { BucketWindow, PowerBucket } from "../domain/power-bucket.ts";
+import type { SimulatedCharger } from "../domain/shadow/engine.ts";
+import type { RecordedShadowDecision } from "../domain/shadow/recorded-decision.ts";
 import type {
   NewSignedInDevice,
   SignedInDevice,
@@ -37,6 +54,7 @@ import type {
 import type { SolarInterval } from "../domain/solar-interval.ts";
 import type { Startup } from "../domain/startup.ts";
 import type { NewUser, User } from "../domain/user.ts";
+import { defaultTickIntervalSeconds } from "../settings.ts";
 import * as schema from "./schema.ts";
 
 export interface Storage {
@@ -48,6 +66,14 @@ export interface Storage {
   recordChargerReading(reading: ChargerReading): Promise<void>;
   /** Charger Readings received in `[from, to)`, oldest first, at most `limit`. */
   listChargerReadings(window: ReadingWindow): Promise<ChargerReading[]>;
+  recordShadowDecision(decision: RecordedShadowDecision): Promise<void>;
+  /** The most recent Shadow decision, if one was ever recorded. */
+  latestShadowDecision(): Promise<RecordedShadowDecision | undefined>;
+  /** Shadow decisions made in `[from, to)`, oldest first, at most `limit`. */
+  listShadowDecisions(window: ReadingWindow): Promise<RecordedShadowDecision[]>;
+  /** The Settings last saved, if they ever were. */
+  readSettings(): Promise<Settings | undefined>;
+  saveSettings(settings: Settings, at: Date): Promise<void>;
 
   /** Average Net power of the P1 Readings in each bucket that has any. */
   averageNetPowerPerBucket(window: BucketWindow): Promise<PowerBucket[]>;
@@ -68,7 +94,7 @@ export interface Storage {
   /** Intervals that ended in `(from, to]`, oldest first, at most `limit`. */
   listSolarIntervals(window: ReadingWindow): Promise<SolarInterval[]>;
   latestSolarInterval(): Promise<SolarInterval | undefined>;
-  /** Adds `calls` to the month's count of Enphase calls. */
+  /** `month` is YYYY-MM, Europe/Amsterdam. */
   countEnphaseCalls(month: string, calls: number): Promise<void>;
   enphaseCalls(month: string): Promise<number>;
   /** Keeps the Enphase refresh token, already encrypted by the caller. */
@@ -120,7 +146,35 @@ export interface Storage {
   /** Signs out one of the User's devices; false when they have no such device. */
   removeSignedInDevice(userId: number, id: number): Promise<boolean>;
   removeAllSignedInDevices(userId: number): Promise<void>;
+
+  /** Records a Manual override as it is sent, and answers its id. */
+  recordManualOverride(override: NewManualOverride): Promise<number>;
+  recordCommandResult(overrideId: number, result: CommandResult): Promise<void>;
+  /** Marks a Pause confirmed and opens the pause it made, in one step. */
+  confirmPause(overrideId: number, at: Date): Promise<OpenPause>;
+  /** Marks a Resume confirmed and ends the pause it answers, in one step. */
+  confirmResume(
+    overrideId: number,
+    pauseId: number | null,
+    at: Date
+  ): Promise<void>;
+  recordUnconfirmed(overrideId: number): Promise<void>;
+  /** The most recent Manual overrides, newest first. */
+  listManualOverrides(limit: number): Promise<ManualOverrideRecord[]>;
+
+  openExternalPause(at: Date): Promise<OpenPause>;
+  closePause(pauseId: number, at: Date, ending: PauseEnding): Promise<void>;
+  findOpenPause(): Promise<OpenPause | undefined>;
+  /** The most recent pauses, open or ended, newest first. */
+  listPauses(limit: number): Promise<PauseRecord[]>;
   close(): Promise<void>;
+}
+
+export interface NewManualOverride {
+  sentAt: Date;
+  user: OverrideSender;
+  command: OverrideCommand;
+  answersPauseId: number | null;
 }
 
 export interface ReadingWindow {
@@ -153,7 +207,7 @@ export async function openStorage(
     const before = appliedMigrationTimes(sqlite);
     migrate(db, { migrationsFolder });
     logAppliedMigrations(before, appliedMigrationTimes(sqlite), options.log);
-    return storageOn(db, sqlite);
+    return storageOn(db, sqlite, options.clock);
   } catch (error) {
     sqlite.close();
     throw error;
@@ -162,7 +216,8 @@ export async function openStorage(
 
 function storageOn(
   db: ReturnType<typeof drizzle<typeof schema>>,
-  sqlite: Database.Database
+  sqlite: Database.Database,
+  clock: Clock
 ): Storage {
   return {
     async recordStartup(startup) {
@@ -204,6 +259,52 @@ function storageOn(
         .limit(limit)
         .all()
         .map(fromChargerRow);
+    },
+    async recordShadowDecision(decision) {
+      db.insert(schema.shadowDecisions)
+        .values(toShadowDecisionRow(decision))
+        .run();
+    },
+    async latestShadowDecision() {
+      const row = db
+        .select()
+        .from(schema.shadowDecisions)
+        .orderBy(
+          desc(schema.shadowDecisions.at),
+          desc(schema.shadowDecisions.id)
+        )
+        .limit(1)
+        .get();
+      return row && fromShadowDecisionRow(row);
+    },
+    async listShadowDecisions({ from, to, limit }) {
+      const at = schema.shadowDecisions.at;
+      return db
+        .select()
+        .from(schema.shadowDecisions)
+        .where(and(gte(at, from), lt(at, to)))
+        .orderBy(asc(at), asc(schema.shadowDecisions.id))
+        .limit(limit)
+        .all()
+        .map(fromShadowDecisionRow);
+    },
+    async readSettings() {
+      const row = db
+        .select({ value: schema.appState.value })
+        .from(schema.appState)
+        .where(eq(schema.appState.key, settingsKey))
+        .get();
+      return row && settings.parse(JSON.parse(row.value));
+    },
+    async saveSettings(saved, at) {
+      const value = JSON.stringify(saved);
+      db.insert(schema.appState)
+        .values({ key: settingsKey, value, updatedAt: at })
+        .onConflictDoUpdate({
+          target: schema.appState.key,
+          set: { value, updatedAt: at },
+        })
+        .run();
     },
 
     async averageNetPowerPerBucket(window) {
@@ -293,11 +394,12 @@ function storageOn(
       return row?.calls ?? 0;
     },
     async saveSealedEnphaseRefreshToken(sealed) {
+      const updatedAt = clock.now();
       db.insert(schema.appState)
-        .values({ key: enphaseRefreshTokenKey, value: sealed })
+        .values({ key: enphaseRefreshTokenKey, value: sealed, updatedAt })
         .onConflictDoUpdate({
           target: schema.appState.key,
-          set: { value: sealed },
+          set: { value: sealed, updatedAt },
         })
         .run();
     },
@@ -466,6 +568,113 @@ function storageOn(
         .run();
     },
 
+    async recordManualOverride({ sentAt, user, command, answersPauseId }) {
+      const row = db
+        .insert(schema.manualOverrides)
+        .values({
+          sentAt,
+          userId: user.id,
+          userName: user.name,
+          command,
+          answersPauseId,
+        })
+        .returning({ id: schema.manualOverrides.id })
+        .get();
+      return row.id;
+    },
+    async recordCommandResult(overrideId, result) {
+      db.update(schema.manualOverrides)
+        .set(
+          result.accepted
+            ? { commandResult: "accepted" }
+            : {
+                commandResult: "rejected",
+                rejectionCode: result.code,
+                rejectionReason: result.reason,
+              }
+        )
+        .where(eq(schema.manualOverrides.id, overrideId))
+        .run();
+    },
+    async confirmPause(overrideId, at) {
+      return db.transaction((tx) => {
+        tx.update(schema.manualOverrides)
+          .set({ confirmation: "confirmed" })
+          .where(eq(schema.manualOverrides.id, overrideId))
+          .run();
+        return tx
+          .insert(schema.pauses)
+          .values({ source: "chargeonsolar", overrideId, startedAt: at })
+          .returning(openPauseColumns)
+          .get();
+      });
+    },
+    async confirmResume(overrideId, pauseId, at) {
+      db.transaction((tx) => {
+        tx.update(schema.manualOverrides)
+          .set({ confirmation: "confirmed" })
+          .where(eq(schema.manualOverrides.id, overrideId))
+          .run();
+        if (pauseId === null) return;
+        tx.update(schema.pauses)
+          .set({ endedAt: at, ending: "resumed-by-chargeonsolar" })
+          .where(
+            and(eq(schema.pauses.id, pauseId), isNull(schema.pauses.endedAt))
+          )
+          .run();
+      });
+    },
+    async recordUnconfirmed(overrideId) {
+      db.update(schema.manualOverrides)
+        .set({ confirmation: "unconfirmed" })
+        .where(eq(schema.manualOverrides.id, overrideId))
+        .run();
+    },
+    async listManualOverrides(limit) {
+      return db
+        .select()
+        .from(schema.manualOverrides)
+        .orderBy(desc(schema.manualOverrides.id))
+        .limit(limit)
+        .all()
+        .map(fromManualOverrideRow);
+    },
+
+    async openExternalPause(at) {
+      return db
+        .insert(schema.pauses)
+        .values({ source: "external", startedAt: at })
+        .returning(openPauseColumns)
+        .get();
+    },
+    async closePause(pauseId, at, ending) {
+      db.update(schema.pauses)
+        .set({ endedAt: at, ending })
+        .where(eq(schema.pauses.id, pauseId))
+        .run();
+    },
+    async findOpenPause() {
+      return db
+        .select(openPauseColumns)
+        .from(schema.pauses)
+        .where(isNull(schema.pauses.endedAt))
+        .orderBy(desc(schema.pauses.id))
+        .get();
+    },
+    async listPauses(limit) {
+      return db
+        .select({
+          ...openPauseColumns,
+          overrideId: schema.pauses.overrideId,
+          endedAt: schema.pauses.endedAt,
+          ending: schema.pauses.ending,
+        })
+        .from(schema.pauses)
+        .orderBy(desc(schema.pauses.id))
+        .limit(limit)
+        .all();
+    },
+
     async close() {
       sqlite.close();
     },
@@ -473,6 +682,32 @@ function storageOn(
 }
 
 const enphaseRefreshTokenKey = "enphase_refresh_token";
+const openPauseColumns = {
+  id: schema.pauses.id,
+  source: schema.pauses.source,
+  startedAt: schema.pauses.startedAt,
+};
+
+function fromManualOverrideRow({
+  commandResult,
+  rejectionCode,
+  rejectionReason,
+  ...row
+}: typeof schema.manualOverrides.$inferSelect): ManualOverrideRecord {
+  return {
+    ...row,
+    commandResult:
+      commandResult === null
+        ? null
+        : commandResult === "accepted"
+          ? { accepted: true }
+          : {
+              accepted: false,
+              code: rejectionCode,
+              reason: rejectionReason ?? "",
+            },
+  };
+}
 
 /** One row per bucket that has Readings, however many Readings it holds. */
 function averagePerBucket(
@@ -585,6 +820,83 @@ function fromChargerRow({
     ...row,
     phaseSetting: toPhaseSetting(storedPhaseSetting),
     phaseCurrentsA: { l1: currentL1A, l2: currentL2A, l3: currentL3A },
+  };
+}
+
+type ShadowDecisionRow = typeof schema.shadowDecisions.$inferSelect;
+
+function toShadowDecisionRow({
+  at,
+  decision,
+  simulated,
+  inputs: { dataAgeMs, ...inputs },
+  zaptec,
+  stamp,
+}: RecordedShadowDecision): Omit<ShadowDecisionRow, "id"> {
+  return {
+    at,
+    decision: JSON.stringify(decision),
+    simulated: JSON.stringify(simulated),
+    ...inputs,
+    p1AgeMs: dataAgeMs.p1,
+    chargerAgeMs: dataAgeMs.charger,
+    solarAgeMs: dataAgeMs.solar,
+    ...zaptec,
+    rulesVersion: stamp.rulesVersion,
+    settings: JSON.stringify(stamp.settings),
+  };
+}
+
+const storedDate = z.iso.datetime().transform((iso) => new Date(iso));
+const storedSimulatedCharger = z.object({
+  carConnected: z.boolean(),
+  currentAmps: z.number().nullable(),
+  currentChangedAt: storedDate.nullable(),
+  switchedAt: storedDate.nullable(),
+  switchCount: z.number(),
+  // Rows recorded before the holds were kept with the simulated charger.
+  switchHoldMinutes: z.number().nullable().default(null),
+  currentHoldMinutes: z.number().nullable().default(null),
+}) satisfies z.ZodType<SimulatedCharger, unknown>;
+
+const settingsKey = "settings";
+
+// Decisions recorded before the tick interval was a setting ticked at the default.
+const stampedSettings = settings.extend({
+  tickIntervalSeconds: settings.shape.tickIntervalSeconds.default(
+    defaultTickIntervalSeconds
+  ),
+});
+
+function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
+  return {
+    at: row.at,
+    decision: shadowDecision.parse(JSON.parse(row.decision)),
+    simulated: storedSimulatedCharger.parse(JSON.parse(row.simulated)),
+    inputs: {
+      surplusW: row.surplusW,
+      netPowerW: row.netPowerW,
+      solarProductionW: row.solarProductionW,
+      chargerPowerW: row.chargerPowerW,
+      fuseHeadroomA: row.fuseHeadroomA,
+      startWindowSurplusW: row.startWindowSurplusW,
+      stopWindowSurplusW: row.stopWindowSurplusW,
+      dataAgeMs: {
+        p1: row.p1AgeMs,
+        charger: row.chargerAgeMs,
+        solar: row.solarAgeMs,
+      },
+    },
+    zaptec: {
+      availableCurrentMode: row.availableCurrentMode,
+      enabledFeatures: row.enabledFeatures,
+      surplusModeActive: row.surplusModeActive,
+      chargeCurrentSetA: row.chargeCurrentSetA,
+    },
+    stamp: {
+      rulesVersion: row.rulesVersion,
+      settings: stampedSettings.parse(JSON.parse(row.settings)),
+    },
   };
 }
 

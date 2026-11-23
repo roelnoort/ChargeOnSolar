@@ -1,8 +1,3 @@
-CREATE TABLE `app_state` (
-	`key` text PRIMARY KEY NOT NULL,
-	`value` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `enphase_calls` (
 	`month` text PRIMARY KEY NOT NULL,
 	`calls` integer NOT NULL

@@ -3,8 +3,9 @@ import {
   amsterdamDayStart,
   nextAmsterdamTime,
 } from "../domain/amsterdam-time.ts";
+import { CallBudgetRefusal } from "../domain/call-budget.ts";
 import { type BackOff, backOffMs, messageOf } from "../supervision.ts";
-import { CallBudgetRefusal, type SolarCollection } from "./solar-collection.ts";
+import type { SolarCollection } from "./solar-collection.ts";
 
 export interface SolarCollectorOptions {
   solar: SolarCollection;
@@ -33,9 +34,13 @@ export function startSolarCollector({
   let stopped = false;
   let cancelNext: Cancel | undefined;
 
+  function nextDailyFetch(now: Date) {
+    return nextAmsterdamTime(now, dailyFetchAt.hour, dailyFetchAt.minute);
+  }
+
   function scheduleDaily() {
     const now = clock.now();
-    const next = nextAmsterdamTime(now, dailyFetchAt.hour, dailyFetchAt.minute);
+    const next = nextDailyFetch(now);
     cancelNext = clock.after(
       next.getTime() - now.getTime(),
       () => void attempt(amsterdamDayStart(next), 0)
@@ -45,7 +50,8 @@ export function startSolarCollector({
   async function attempt(dayStart: Date, failuresBefore: number) {
     cancelNext = undefined;
     try {
-      await solar.fetchDay(dayStart);
+      if (failuresBefore === 0) await solar.fetchDay(dayStart);
+      else await solar.retryDay(dayStart, nextDailyFetch(clock.now()));
       if (stopped) return;
       if (failuresBefore > 0) log("Enphase reachable again");
     } catch (error) {

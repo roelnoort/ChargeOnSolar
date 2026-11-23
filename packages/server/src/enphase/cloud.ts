@@ -1,6 +1,7 @@
 // The Enphase Cloud API v4 on the Watt plan (api.enphaseenergy.com).
 // Read-only, and display-only: its Solar production never goes into Surplus.
 import { z } from "zod";
+import { CallBudgetRefusal } from "../domain/call-budget.ts";
 import type { SolarInterval } from "../domain/solar-interval.ts";
 import type { EnphaseClient, EnphaseClientContext } from "./client.ts";
 
@@ -112,6 +113,7 @@ export function createEnphaseCloudClient({
         fetch: fetchFn,
       });
     } catch (error) {
+      if (error instanceof CallBudgetRefusal) throw error;
       throw new Error(
         `${error instanceof Error ? error.message : String(error)}; ${notAuthorized}`
       );

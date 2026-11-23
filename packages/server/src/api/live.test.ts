@@ -29,6 +29,9 @@ describe("GET /api/live", () => {
       fuseHeadroomA: null,
       solar: null,
       houseConsumptionW: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
+      shadowDecision: null,
     });
   });
 
@@ -68,6 +71,9 @@ describe("GET /api/live", () => {
       fuseHeadroomA: null,
       solar: null,
       houseConsumptionW: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
+      shadowDecision: null,
     });
   });
 

@@ -1,6 +1,8 @@
 import {
   type LiveSnapshot,
   liveStreamPath,
+  type ManualOverride,
+  overrideEvent,
   type SolarUpdated,
   snapshotEvent,
   solarUpdatedEvent,
@@ -32,6 +34,18 @@ const snapshot: LiveSnapshot = {
   fuseHeadroomA: null,
   solar: null,
   houseConsumptionW: null,
+  override: { command: "pause", unavailableReason: "charger-offline" },
+  switchBudget: null,
+  shadowDecision: null,
+};
+
+const pauseAccepted: ManualOverride = {
+  id: 7,
+  command: "pause",
+  status: "accepted",
+  sentAt: "2026-06-01T12:00:05.000Z",
+  user: { id: 1, name: "Sam" },
+  rejection: null,
 };
 
 class FakeEventSource implements EventSourceLike {
@@ -126,6 +140,31 @@ describe("the live stream", () => {
     sources[0]?.open();
 
     sources[0]?.emit(snapshotEvent, JSON.stringify({ at: "yesterday" }));
+
+    expect(latest()).toEqual({ status: "connected" });
+  });
+
+  it("keeps the latest Manual override from each override event", () => {
+    const { sources, latest } = harness();
+    sources[0]?.open();
+
+    sources[0]?.emit(overrideEvent, JSON.stringify(pauseAccepted));
+    sources[0]?.emit(
+      overrideEvent,
+      JSON.stringify({ ...pauseAccepted, status: "confirmed" })
+    );
+
+    expect(latest()).toEqual({
+      status: "connected",
+      override: { ...pauseAccepted, status: "confirmed" },
+    });
+  });
+
+  it("ignores an override event that breaks the contract", () => {
+    const { sources, latest } = harness();
+    sources[0]?.open();
+
+    sources[0]?.emit(overrideEvent, JSON.stringify({ status: "done" }));
 
     expect(latest()).toEqual({ status: "connected" });
   });
