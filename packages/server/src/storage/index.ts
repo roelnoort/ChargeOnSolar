@@ -51,7 +51,7 @@ export interface Storage {
   /** Intervals that ended in `(from, to]`, oldest first, at most `limit`. */
   listSolarIntervals(window: ReadingWindow): Promise<SolarInterval[]>;
   latestSolarInterval(): Promise<SolarInterval | undefined>;
-  /** Adds `calls` to the month's count of Enphase calls. */
+  /** `month` is YYYY-MM, Europe/Amsterdam. */
   countEnphaseCalls(month: string, calls: number): Promise<void>;
   enphaseCalls(month: string): Promise<number>;
   /** Keeps the Enphase refresh token, already encrypted by the caller. */
