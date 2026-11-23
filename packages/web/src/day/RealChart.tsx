@@ -10,6 +10,7 @@ import {
   solarNotFetchedFrom,
   solarNotFetchedStack,
 } from "./real-chart.ts";
+import { band } from "./smooth-band.ts";
 
 export const realChartAreas = [
   { key: "houseFromSolarW", label: "House from solar", kind: "house-solar" },
@@ -37,34 +38,6 @@ function useWidth<T extends Element>(fallback: number) {
     return () => observer.disconnect();
   }, []);
   return { ref, width };
-}
-
-type Point = [number, number];
-
-// A Catmull-Rom style curve through the points, as in the HomeWizard chart.
-function smoothLine(points: Point[]): string {
-  const [first] = points;
-  if (!first) return "";
-  let path = `M${first[0]},${first[1]}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i] as Point;
-    const p2 = points[i + 1] as Point;
-    const p0 = points[i - 1] ?? p1;
-    const p3 = points[i + 2] ?? p2;
-    const t = 0.18;
-    path += ` C${p1[0] + (p2[0] - p0[0]) * t},${p1[1] + (p2[1] - p0[1]) * t} ${p2[0] - (p3[0] - p1[0]) * t},${p2[1] - (p3[1] - p1[1]) * t} ${p2[0]},${p2[1]}`;
-  }
-  return path;
-}
-
-/** The area between two smoothed edges over the same x positions. */
-function band(xs: number[], top: number[], bottom: number[]): string {
-  const up = xs.map((x, i): Point => [x, top[i] ?? 0]);
-  const down = xs.map((x, i): Point => [x, bottom[i] ?? 0]).reverse();
-  const [downStart] = down;
-  if (!downStart || up.length < 2) return "";
-  const downPath = smoothLine(down).replace(/^M[^C]*/, "");
-  return `${smoothLine(up)} L${downStart[0]},${downStart[1]}${downPath} Z`;
 }
 
 /** Consecutive buckets of the same kind, so a gap in the Readings breaks the areas. */
