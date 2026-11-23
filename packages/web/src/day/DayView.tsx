@@ -4,7 +4,12 @@ import type { ApiClient } from "../api/client.ts";
 import type { Clock } from "../clock.ts";
 import { connectLiveStream } from "../live/live-stream.ts";
 import { messageOf } from "../message-of.ts";
-import { amsterdamToday, describeDay, shiftDay } from "./local-day.ts";
+import {
+  amsterdamToday,
+  describeDay,
+  nextAmsterdamDayAt,
+  shiftDay,
+} from "./local-day.ts";
 import { RealChart, realChartAreas } from "./RealChart.tsx";
 
 type TimelineState =
@@ -52,8 +57,21 @@ function useSolarUpdates(
   }, [clock, following, onSolarUpdated]);
 }
 
+/** Today's Europe/Amsterdam day, moving on at midnight. */
+function useAmsterdamToday(clock: Clock): LocalDay {
+  const [today, setToday] = useState(() => amsterdamToday(clock.now()));
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each new `today` waits for the next midnight.
+  useEffect(() => {
+    const now = clock.now();
+    return clock.after(nextAmsterdamDayAt(now) - now, () =>
+      setToday(amsterdamToday(clock.now()))
+    );
+  }, [clock, today]);
+  return today;
+}
+
 export function DayView({ clock, api }: { clock: Clock; api: ApiClient }) {
-  const today = amsterdamToday(clock.now());
+  const today = useAmsterdamToday(clock);
   const [day, setDay] = useState<LocalDay>(today);
   const { state, reload } = useDayTimeline(api, clock, day);
   const isToday = day === today;

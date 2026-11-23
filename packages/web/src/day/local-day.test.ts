@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { amsterdamToday, describeDay, shiftDay } from "./local-day.ts";
+import {
+  amsterdamToday,
+  describeDay,
+  nextAmsterdamDayAt,
+  shiftDay,
+} from "./local-day.ts";
 
 describe("the Europe/Amsterdam day", () => {
   it("starts at local midnight, not UTC midnight", () => {
@@ -23,5 +28,28 @@ describe("the Europe/Amsterdam day", () => {
     expect(describeDay("2026-06-01", "2026-06-01")).toBe("Today");
     expect(describeDay("2026-05-31", "2026-06-01")).toBe("Yesterday");
     expect(describeDay("2026-05-28", "2026-06-01")).toBe("Thu 28 May");
+  });
+});
+
+describe("when the next Europe/Amsterdam day begins", () => {
+  const nextDay = (now: string) =>
+    new Date(nextAmsterdamDayAt(Date.parse(now))).toISOString();
+
+  it("is the coming local midnight", () => {
+    expect(nextDay("2026-11-23T13:30:00.000Z")).toBe(
+      "2026-11-23T23:00:00.000Z"
+    );
+    expect(nextDay("2026-06-01T21:59:59.999Z")).toBe(
+      "2026-06-01T22:00:00.000Z"
+    );
+  });
+
+  it("follows the clocks going forward and back", () => {
+    expect(nextDay("2026-03-29T12:00:00.000Z")).toBe(
+      "2026-03-29T22:00:00.000Z"
+    );
+    expect(nextDay("2026-10-25T12:00:00.000Z")).toBe(
+      "2026-10-25T23:00:00.000Z"
+    );
   });
 });
