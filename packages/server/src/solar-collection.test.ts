@@ -203,6 +203,21 @@ describe("the daily fetch from Enphase", () => {
   });
 });
 
+describe("the Enphase call budget's limit", () => {
+  it("is never exceeded, even by a fetch that has to renew its token twice", async () => {
+    const testServer = await start();
+    await testServer.useEnphaseCalls(998);
+    testServer.enphase.rejectNextAccessToken();
+
+    await testServer.advanceUntilSolarFetch(11 * hour + 30 * minute);
+
+    expect((await budget(testServer)).used).toBe(1000);
+    expect(testServer.logs).toContainEqual(
+      expect.stringMatching(/Daily Enphase fetch skipped: .*spent/)
+    );
+  });
+});
+
 describe("POST /api/solar/refresh", () => {
   it("fetches today's latest data and answers it with the remaining budget", async () => {
     const testServer = await start({

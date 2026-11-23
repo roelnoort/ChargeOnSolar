@@ -2,17 +2,16 @@ import type { CallBudget } from "@charge-on-solar/shared";
 import type { Clock } from "../clock.ts";
 import { amsterdamDayStart, amsterdamMonth } from "../domain/amsterdam-time.ts";
 import {
+  CallBudgetRefusal,
   callBudget,
   dailyFetchRefusal,
   refreshRefusal,
+  spentRefusal,
 } from "../domain/call-budget.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import type { SolarInterval } from "../domain/solar-interval.ts";
 import type { Storage } from "../storage/index.ts";
 import type { EnphaseClient } from "./client.ts";
-
-/** A fetch was not made, so the month's Enphase calls do not run out. */
-export class CallBudgetRefusal extends Error {}
 
 export interface SolarCollection {
   /** Fetches today's intervals now, for a User. */
@@ -35,6 +34,21 @@ export async function currentCallBudget(
 ): Promise<CallBudget> {
   const now = clock.now();
   return callBudget(await storage.enphaseCalls(amsterdamMonth(now)), now);
+}
+
+/**
+ * Counts one call against this month's budget, or refuses it once the
+ * month's calls are spent, so the limit holds even for a fetch that makes
+ * more calls than budgeted.
+ */
+export async function countEnphaseCall(
+  storage: Storage,
+  clock: Clock
+): Promise<void> {
+  const budget = await currentCallBudget(storage, clock);
+  const reason = spentRefusal(budget);
+  if (reason) throw new CallBudgetRefusal(reason);
+  await storage.countEnphaseCalls(budget.month, 1);
 }
 
 /**

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { CallBudgetRefusal } from "../domain/call-budget.ts";
 import { createFakeClock, type FakeClock } from "../testing/fake-clock.ts";
 import type { RefreshTokenStore } from "./client.ts";
 import {
@@ -89,7 +90,11 @@ beforeEach(() => {
   calls = 0;
 });
 
-function client() {
+function client(
+  countCall = async () => {
+    calls++;
+  }
+) {
   return createEnphaseCloudClient({
     apiKey: "the-api-key",
     clientId: "the-client-id",
@@ -97,9 +102,7 @@ function client() {
     systemId,
     clock,
     refreshTokens: tokens.store,
-    countCall: async () => {
-      calls++;
-    },
+    countCall,
     fetch: enphase.fetchFn,
   });
 }
@@ -219,6 +222,16 @@ describe("the Enphase cloud client", () => {
     await expect(client().productionIntervals(dayStart)).rejects.toThrow(
       /refused.*401.*pnpm enphase login/i
     );
+  });
+
+  it("passes a refused token call on as the call budget's refusal", async () => {
+    const refusal = new CallBudgetRefusal("Enphase call budget spent");
+    const refusing = client(async () => {
+      throw refusal;
+    });
+
+    await expect(refusing.productionIntervals(dayStart)).rejects.toBe(refusal);
+    expect(enphase.sent).toHaveLength(0);
   });
 
   it("fails on a telemetry answer it does not recognise", async () => {

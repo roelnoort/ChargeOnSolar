@@ -3,8 +3,9 @@ import {
   amsterdamDayStart,
   nextAmsterdamTime,
 } from "../domain/amsterdam-time.ts";
+import { CallBudgetRefusal } from "../domain/call-budget.ts";
 import { type BackOff, backOffMs, messageOf } from "../supervision.ts";
-import { CallBudgetRefusal, type SolarCollection } from "./solar-collection.ts";
+import type { SolarCollection } from "./solar-collection.ts";
 
 export interface SolarCollectorOptions {
   solar: SolarCollection;

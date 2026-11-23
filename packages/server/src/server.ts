@@ -6,12 +6,14 @@ import type { SessionEnv } from "./api/session.ts";
 import { createApp } from "./app.ts";
 import { createAuth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
-import { amsterdamMonth } from "./domain/amsterdam-time.ts";
 import { createLiveState } from "./domain/live-state.ts";
 import type { EnphaseClientFactory } from "./enphase/client.ts";
 import { startSolarCollector } from "./enphase/collector.ts";
 import { createRefreshTokenStore } from "./enphase/refresh-token-store.ts";
-import { createSolarCollection } from "./enphase/solar-collection.ts";
+import {
+  countEnphaseCall,
+  createSolarCollection,
+} from "./enphase/solar-collection.ts";
 import type { Mailer } from "./mailer.ts";
 import type { P1Client } from "./p1/client.ts";
 import { startP1Collector } from "./p1/collector.ts";
@@ -120,8 +122,7 @@ export async function assembleServer(
             storage,
             key: enphase.refreshTokenKey,
           }),
-          countCall: () =>
-            storage.countEnphaseCalls(amsterdamMonth(clock.now()), 1),
+          countCall: () => countEnphaseCall(storage, clock),
         }),
         storage,
         live,

@@ -3,8 +3,11 @@
 import type { CallBudget } from "@charge-on-solar/shared";
 import { amsterdamDaysLeftInMonth, amsterdamMonth } from "./amsterdam-time.ts";
 
+/** A call to Enphase was not made, so the month's calls do not run out. */
+export class CallBudgetRefusal extends Error {}
+
 export const enphaseMonthlyCallLimit = 1000;
-/** The most calls one fetch makes: a token renewal and the telemetry call. */
+/** The calls a normal fetch makes at most: a token renewal and the telemetry call. */
 export const callsPerFetch = 2;
 
 export function callBudget(used: number, now: Date): CallBudget {
@@ -40,5 +43,15 @@ export function refreshRefusal(
 /** Why the daily fetch may not run now, or undefined when it may. */
 export function dailyFetchRefusal(budget: CallBudget): string | undefined {
   if (budget.remaining >= callsPerFetch) return undefined;
-  return `Enphase call budget for ${budget.month} spent (${budget.used} of ${budget.limit} calls)`;
+  return budgetSpent(budget);
+}
+
+/** Why no further call may be made this month, or undefined when it may. */
+export function spentRefusal(budget: CallBudget): string | undefined {
+  if (budget.remaining > 0) return undefined;
+  return budgetSpent(budget);
+}
+
+function budgetSpent({ month, used, limit }: CallBudget): string {
+  return `Enphase call budget for ${month} spent (${used} of ${limit} calls)`;
 }
