@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { overrideAvailability, switchBudget } from "./override.ts";
 import { shadowDecisionRecord } from "./shadow.ts";
+import { liveSolar } from "./solar.ts";
 
 export const livePath = "/api/live";
 export const liveStreamPath = "/api/live/stream";
@@ -100,6 +101,13 @@ export const liveSnapshot = z.object({
   mainFuseA: z.number(),
   /** Fuse headroom in amperes. Null without per-phase currents from both. */
   fuseHeadroomA: z.number().nullable(),
+  /** Null until Enphase has reported any Solar production. */
+  solar: liveSolar.nullable(),
+  /**
+   * House consumption in watts: Net power plus Solar production minus
+   * Charger power. Null without all three.
+   */
+  houseConsumptionW: z.number().nullable(),
   /** What the Pause/Resume button does now. */
   override: overrideAvailability,
   /** Null while no car is connected. */

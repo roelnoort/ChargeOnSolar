@@ -10,7 +10,19 @@ import {
   shadowDecision,
 } from "@charge-on-solar/shared";
 import Database from "better-sqlite3";
-import { and, asc, count, desc, eq, gt, gte, isNull, lt } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  isNull,
+  lt,
+  lte,
+  sql,
+} from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { z } from "zod";
@@ -36,6 +48,7 @@ import type {
   SignedInDevice,
   SignedInDeviceOfUser,
 } from "../domain/signed-in-device.ts";
+import type { SolarInterval } from "../domain/solar-interval.ts";
 import type { Startup } from "../domain/startup.ts";
 import type { NewUser, User } from "../domain/user.ts";
 import { defaultTickIntervalSeconds } from "../settings.ts";
@@ -58,6 +71,18 @@ export interface Storage {
   /** The Settings last saved, if they ever were. */
   readSettings(): Promise<Settings | undefined>;
   saveSettings(settings: Settings, at: Date): Promise<void>;
+
+  /** Stores Enphase's intervals, updating those it has revised, in one step. */
+  upsertSolarIntervals(intervals: SolarInterval[]): Promise<void>;
+  /** Intervals that ended in `(from, to]`, oldest first, at most `limit`. */
+  listSolarIntervals(window: ReadingWindow): Promise<SolarInterval[]>;
+  latestSolarInterval(): Promise<SolarInterval | undefined>;
+  /** `month` is YYYY-MM, Europe/Amsterdam. */
+  countEnphaseCalls(month: string, calls: number): Promise<void>;
+  enphaseCalls(month: string): Promise<number>;
+  /** Keeps the Enphase refresh token, already encrypted by the caller. */
+  saveSealedEnphaseRefreshToken(sealed: string): Promise<void>;
+  sealedEnphaseRefreshToken(): Promise<string | undefined>;
 
   /** Adds a User, or answers undefined when one already has this email. */
   addUser(user: NewUser & { at: Date }): Promise<User | undefined>;
@@ -165,7 +190,7 @@ export async function openStorage(
     const before = appliedMigrationTimes(sqlite);
     migrate(db, { migrationsFolder });
     logAppliedMigrations(before, appliedMigrationTimes(sqlite), options.log);
-    return storageOn(db, sqlite);
+    return storageOn(db, sqlite, options.clock);
   } catch (error) {
     sqlite.close();
     throw error;
@@ -174,7 +199,8 @@ export async function openStorage(
 
 function storageOn(
   db: ReturnType<typeof drizzle<typeof schema>>,
-  sqlite: Database.Database
+  sqlite: Database.Database,
+  clock: Clock
 ): Storage {
   return {
     async recordStartup(startup) {
@@ -262,6 +288,74 @@ function storageOn(
           set: { value, updatedAt: at },
         })
         .run();
+    },
+
+    async upsertSolarIntervals(intervals) {
+      if (intervals.length === 0) return;
+      const excluded = (column: string) => sql.raw(`excluded.${column}`);
+      db.insert(schema.solarIntervals)
+        .values(intervals)
+        .onConflictDoUpdate({
+          target: schema.solarIntervals.endAt,
+          set: {
+            solarProductionW: excluded("solar_production_w"),
+            energyWh: excluded("energy_wh"),
+            devicesReporting: excluded("devices_reporting"),
+          },
+        })
+        .run();
+    },
+    async listSolarIntervals({ from, to, limit }) {
+      const endAt = schema.solarIntervals.endAt;
+      return db
+        .select()
+        .from(schema.solarIntervals)
+        .where(and(gt(endAt, from), lte(endAt, to)))
+        .orderBy(asc(endAt))
+        .limit(limit)
+        .all();
+    },
+    async latestSolarInterval() {
+      return db
+        .select()
+        .from(schema.solarIntervals)
+        .orderBy(desc(schema.solarIntervals.endAt))
+        .limit(1)
+        .get();
+    },
+    async countEnphaseCalls(month, calls) {
+      db.insert(schema.enphaseCalls)
+        .values({ month, calls })
+        .onConflictDoUpdate({
+          target: schema.enphaseCalls.month,
+          set: { calls: sql`${schema.enphaseCalls.calls} + ${calls}` },
+        })
+        .run();
+    },
+    async enphaseCalls(month) {
+      const row = db
+        .select({ calls: schema.enphaseCalls.calls })
+        .from(schema.enphaseCalls)
+        .where(eq(schema.enphaseCalls.month, month))
+        .get();
+      return row?.calls ?? 0;
+    },
+    async saveSealedEnphaseRefreshToken(sealed) {
+      const updatedAt = clock.now();
+      db.insert(schema.appState)
+        .values({ key: enphaseRefreshTokenKey, value: sealed, updatedAt })
+        .onConflictDoUpdate({
+          target: schema.appState.key,
+          set: { value: sealed, updatedAt },
+        })
+        .run();
+    },
+    async sealedEnphaseRefreshToken() {
+      return db
+        .select({ value: schema.appState.value })
+        .from(schema.appState)
+        .where(eq(schema.appState.key, enphaseRefreshTokenKey))
+        .get()?.value;
     },
 
     async addUser({ name, email, at }) {
@@ -534,6 +628,7 @@ function storageOn(
   };
 }
 
+const enphaseRefreshTokenKey = "enphase_refresh_token";
 const openPauseColumns = {
   id: schema.pauses.id,
   source: schema.pauses.source,

@@ -10,6 +10,7 @@
   --border: #e3e0d6;
   --danger: #a3261b;
   --import: #9a5b00;
+  --solar: #c99700;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   background: var(--bg);
@@ -26,6 +27,7 @@
     --border: #2e333b;
     --danger: #ff8a80;
     --import: #f0b45c;
+    --solar: #f5d04a;
   }
 }
 
@@ -314,13 +316,14 @@ button.link {
 
 .flows {
   display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 1rem 0.5rem;
   margin-bottom: 1rem;
 }
 
 .flow {
-  flex: 1;
+  flex: 0 1 30%;
   margin: 0;
   text-align: center;
   font-size: 0.875rem;
@@ -354,6 +357,48 @@ button.link {
 
 .flow-car .flow-circle {
   border-color: var(--text);
+}
+
+.flow-solar .flow-circle {
+  border-color: var(--solar);
+}
+
+.flow-house .flow-circle {
+  border-color: var(--muted);
+}
+
+.flow-note {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+}
+
+.flow-refresh {
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.flow-refresh:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.flows-note {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.flows-note-refused {
+  color: var(--danger);
 }
 
 .figures {

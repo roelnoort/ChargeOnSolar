@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { systemClock } from "./clock.ts";
+import { enphaseSetupFromEnv } from "./enphase/from-env.ts";
 import { mailerFromEnv } from "./mailer.ts";
 import { p1ClientFromEnv } from "./p1/from-env.ts";
 import { assembleServer, dataDirFromEnv, dataFiles } from "./server.ts";
@@ -26,6 +27,7 @@ const server = await assembleServer({
   p1Client: p1ClientFromEnv(process.env, systemClock),
   zaptecClient: zaptecClientFromEnv(process.env, systemClock),
   mainFuseA: mainFuseFromEnv(process.env),
+  enphase: enphaseSetupFromEnv(process.env),
   shadowTickSeconds: shadowTickFromEnv(process.env),
   webRoot,
 });

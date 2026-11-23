@@ -7,6 +7,13 @@ import { createApp } from "./app.ts";
 import { createAuth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import { createLiveState } from "./domain/live-state.ts";
+import type { EnphaseClientFactory } from "./enphase/client.ts";
+import { startSolarCollector } from "./enphase/collector.ts";
+import { createRefreshTokenStore } from "./enphase/refresh-token-store.ts";
+import {
+  countEnphaseCall,
+  createSolarCollection,
+} from "./enphase/solar-collection.ts";
 import type { Mailer } from "./mailer.ts";
 import { createOverrides } from "./overrides.ts";
 import type { P1Client } from "./p1/client.ts";
@@ -27,9 +34,17 @@ export interface ServerDependencies extends DataFiles {
   zaptecClient?: ZaptecClient;
   /** The main fuse rating, in amperes, until a User changes it. 25 A unless given. */
   mainFuseA?: number;
+  /** The Enphase cloud. Without it, no Solar production comes in. */
+  enphase?: EnphaseSetup;
   /** How often the Shadow runner decides, in seconds, until a User changes it. 60 s unless given. */
   shadowTickSeconds?: number;
   webRoot?: string;
+}
+
+export interface EnphaseSetup {
+  client: EnphaseClientFactory;
+  /** The AES-256 key the stored refresh token is encrypted with. */
+  refreshTokenKey: Buffer;
 }
 
 export interface DataFiles {
@@ -63,7 +78,7 @@ export interface AssembledServer {
 export async function assembleServer(
   dependencies: ServerDependencies
 ): Promise<AssembledServer> {
-  const { clock, log, p1Client, zaptecClient } = dependencies;
+  const { clock, log, p1Client, zaptecClient, enphase } = dependencies;
   const storage = await openStorage(dependencies);
   await storage.recordStartup({
     at: clock.now(),
@@ -71,6 +86,7 @@ export async function assembleServer(
   });
   const auth = createAuth({ storage, ...dependencies });
   const live = createLiveState();
+  live.recordSolar(await storage.latestSolarInterval());
   const overrides = await createOverrides({
     client: zaptecClient,
     storage,
@@ -111,6 +127,25 @@ export async function assembleServer(
       })
     : undefined;
   if (!zaptecClient) log("No Zaptec account configured");
+  const solar = enphase
+    ? createSolarCollection({
+        client: enphase.client({
+          clock,
+          refreshTokens: createRefreshTokenStore({
+            storage,
+            key: enphase.refreshTokenKey,
+          }),
+          countCall: () => countEnphaseCall(storage, clock),
+        }),
+        storage,
+        live,
+        clock,
+      })
+    : undefined;
+  const solarCollector = solar
+    ? startSolarCollector({ solar, clock, log })
+    : undefined;
+  if (!enphase) log("No Enphase account configured");
   const settings = await loadSettings({
     storage,
     clock,
@@ -133,6 +168,7 @@ export async function assembleServer(
     overrides,
     clock,
     settings,
+    solar,
     webRoot: dependencies.webRoot,
   });
   return {
@@ -142,6 +178,7 @@ export async function assembleServer(
       shadowRunner.stop();
       collector?.stop();
       zaptecCollector?.stop();
+      solarCollector?.stop();
       await storage.close();
     },
   };

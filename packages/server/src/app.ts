@@ -14,9 +14,11 @@ import {
 } from "./api/session.ts";
 import { addSettingsRoutes } from "./api/settings.ts";
 import { addShadowRoutes } from "./api/shadow.ts";
+import { addSolarRoutes } from "./api/solar.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
+import type { SolarCollection } from "./enphase/solar-collection.ts";
 import type { Overrides } from "./overrides.ts";
 import type { SettingsStore } from "./settings.ts";
 import type { Storage } from "./storage/index.ts";
@@ -28,6 +30,8 @@ export interface AppDependencies {
   overrides: Overrides;
   clock: Clock;
   settings: SettingsStore;
+  /** Fetches from Enphase. Undefined while Enphase is not set up. */
+  solar?: SolarCollection;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
@@ -39,6 +43,7 @@ export function createApp({
   overrides,
   clock,
   settings,
+  solar,
   webRoot,
 }: AppDependencies): Hono<SessionEnv> {
   const app = new Hono<SessionEnv>();
@@ -66,6 +71,7 @@ export function createApp({
   addOverrideRoutes(app, { overrides });
   addShadowRoutes(app, { storage });
   addSettingsRoutes(app, { store: settings });
+  addSolarRoutes(app, { solar, storage, clock });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });

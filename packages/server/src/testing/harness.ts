@@ -3,6 +3,8 @@
 // The P1 meter, the Zaptec cloud and the mailer are fakes the test drives; the
 // fake mailer captures every Login code. Later slices plug the other fake
 // vendor clients in here.
+
+import { randomBytes } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,12 +14,24 @@ import {
   loginPath,
   loginResponse,
 } from "@charge-on-solar/shared";
+import { amsterdamMonth } from "../domain/amsterdam-time.ts";
 import type { NewUser, User } from "../domain/user.ts";
+import type { RefreshTokenStore } from "../enphase/client.ts";
+import { createRefreshTokenStore } from "../enphase/refresh-token-store.ts";
+import {
+  type EnphaseCommandResult,
+  runEnphaseCommand,
+} from "../enphase-command.ts";
 import { assembleServer, dataFiles } from "../server.ts";
 import type { Storage } from "../storage/index.ts";
 import { runUsersCommand, type UsersCommandResult } from "../users-command.ts";
 import { zaptecPollIntervalMs } from "../zaptec/collector.ts";
 import { createFakeClock, type FakeClock } from "./fake-clock.ts";
+import {
+  createFakeEnphase,
+  type FakeEnphase,
+  type FakeSolarInterval,
+} from "./fake-enphase-client.ts";
 import { createFakeMailer, type FakeMailer } from "./fake-mailer.ts";
 import { createFakeP1Client, type FakeP1Client } from "./fake-p1-client.ts";
 import {
@@ -39,6 +53,12 @@ export interface TestServerOptions {
   /** Start with the fake Zaptec cloud unreachable. */
   zaptecUnreachable?: boolean;
   mainFuseA?: number;
+  /** What the fake Enphase cloud reports. */
+  solar?: FakeSolarInterval[];
+  /** Start with the fake Enphase cloud unreachable. */
+  enphaseUnreachable?: boolean;
+  /** Start as if Enphase were not set up in `.env`. */
+  withoutEnphase?: boolean;
 }
 
 export interface TestServer {
@@ -68,6 +88,27 @@ export interface TestServer {
    * read that comes due to be handled.
    */
   pollZaptec(milliseconds?: number): Promise<void>;
+  /** The fake Enphase cloud the server fetches Solar production from. */
+  enphase: FakeEnphase;
+  /**
+   * Moves the clock on and waits for the Enphase fetch that comes due in
+   * that time to be handled.
+   */
+  advanceUntilSolarFetch(milliseconds: number): Promise<void>;
+  /** Counts this many Enphase calls against the current month's budget. */
+  useEnphaseCalls(calls: number): Promise<void>;
+  /**
+   * Runs `pnpm enphase` with these arguments against this server's database,
+   * with `fetch` standing in for Enphase.
+   */
+  enphaseCommand(
+    args: string[],
+    fetch: typeof globalThis.fetch
+  ): Promise<EnphaseCommandResult>;
+  /** The server's encrypted store of the Enphase refresh token. */
+  enphaseRefreshTokens: RefreshTokenStore;
+  /** Lets the promise callbacks already queued run, e.g. a collector's. */
+  settle(): Promise<void>;
   /**
    * Moves the clock on a second at a time, letting everything that comes
    * due (Zaptec reads, Shadow runner ticks) finish before the next second.
@@ -99,6 +140,10 @@ export async function startTestServer(
   const zaptec = createFakeZaptecClient(clock);
   zaptec.unreachable = options.zaptecUnreachable ?? false;
   if (options.charger) zaptec.set(options.charger);
+  const enphase = createFakeEnphase();
+  enphase.unreachable = options.enphaseUnreachable ?? false;
+  if (options.solar) enphase.set(options.solar);
+  const refreshTokenKey = randomBytes(32);
   const firstRead = zaptec.whenRead();
   const server = await assembleServer({
     clock,
@@ -109,6 +154,9 @@ export async function startTestServer(
     p1Client: p1,
     zaptecClient: zaptec,
     mainFuseA: options.mainFuseA,
+    enphase: options.withoutEnphase
+      ? undefined
+      : { client: enphase.factory, refreshTokenKey },
     webRoot: options.webRoot,
   });
   if (!p1.unreachable) await p1.whenConnected();
@@ -169,6 +217,35 @@ export async function startTestServer(
       await read;
       await settle();
     },
+    enphase,
+    async advanceUntilSolarFetch(milliseconds) {
+      const fetched = enphase.whenFetched();
+      clock.advance(milliseconds);
+      await fetched;
+      await settle();
+    },
+    async useEnphaseCalls(calls) {
+      await server.storage.countEnphaseCalls(
+        amsterdamMonth(clock.now()),
+        calls
+      );
+    },
+    enphaseCommand: (args, fetch) =>
+      runEnphaseCommand(args, {
+        storage: server.storage,
+        clock,
+        login: {
+          clientId: "test-client-id",
+          clientSecret: "test-client-secret",
+          refreshTokenKey,
+        },
+        fetch,
+      }),
+    enphaseRefreshTokens: createRefreshTokenStore({
+      storage: server.storage,
+      key: refreshTokenKey,
+    }),
+    settle,
     async advance(milliseconds) {
       for (let left = milliseconds; left > 0; left -= second) {
         clock.advance(Math.min(left, second));

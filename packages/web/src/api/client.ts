@@ -1,5 +1,7 @@
 import {
   apiError,
+  type CallBudget,
+  callBudget,
   csrfHeader,
   type Health,
   health,
@@ -16,6 +18,7 @@ import {
   type Session,
   type Settings,
   type SignedInDevice,
+  type SolarRefreshResponse,
   session,
   sessionPath,
   settings,
@@ -24,6 +27,9 @@ import {
   signedInDevices,
   signedInDevicesPath,
   signOutEverywherePath,
+  solarBudgetPath,
+  solarRefreshPath,
+  solarRefreshResponse,
 } from "@charge-on-solar/shared";
 import { z } from "zod";
 
@@ -92,6 +98,10 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
     settings: (): Promise<Settings> => call("GET", settingsPath, settings),
     saveSettings: (next: Settings): Promise<Settings> =>
       call("PUT", settingsPath, settings, next),
+    solarBudget: (): Promise<CallBudget> =>
+      call("GET", solarBudgetPath, callBudget),
+    refreshSolar: (): Promise<SolarRefreshResponse> =>
+      call("POST", solarRefreshPath, solarRefreshResponse),
   };
 }
 

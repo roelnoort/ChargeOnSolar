@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   dataAgeMs,
   describeApmWarning,
+  describeAsOf,
+  describeCallBudget,
   describeChargerState,
   describeDataAge,
   describeGrid,
@@ -156,5 +158,23 @@ describe("the APM warning", () => {
     expect(describeApmWarning("unknown")).toBe(
       "Zaptec did not report its mode, so ChargeOnSolar cannot tell whether load balancing (APM) guards the main fuse."
     );
+  });
+});
+
+describe("describing Solar production", () => {
+  it("gives the time it is as of, on the household's clock", () => {
+    expect(describeAsOf("2026-06-01T10:05:00.000Z")).toBe("as of 12:05");
+    expect(describeAsOf("2026-12-01T07:00:00.000Z")).toBe("as of 08:00");
+  });
+
+  it("tells how many Enphase calls are left this month", () => {
+    expect(
+      describeCallBudget({
+        month: "2026-06",
+        limit: 1000,
+        used: 2,
+        remaining: 998,
+      })
+    ).toBe("998 of 1,000 Enphase calls left this month");
   });
 });

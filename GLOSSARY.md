@@ -26,6 +26,10 @@ _Avoid_: Charging load, EV consumption
 The power used by the house apart from the charger.
 _Avoid_: Household load, base load
 
+**Call budget**:
+How many more calls ChargeOnSolar may make to the Enphase cloud this calendar month. The free plan allows 1,000; every call counts, token calls included.
+_Avoid_: Quota, rate limit, API limit
+
 **Reading**:
 A timestamped measurement taken from one device (charger, solar system, or P1 meter).
 _Avoid_: Sample, datapoint, metric

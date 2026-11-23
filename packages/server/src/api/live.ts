@@ -4,7 +4,9 @@ import {
   livePath,
   liveStreamPath,
   overrideEvent,
+  type SolarUpdated,
   snapshotEvent,
+  solarUpdatedEvent,
   type ZaptecMode,
 } from "@charge-on-solar/shared";
 import type { Hono } from "hono";
@@ -14,8 +16,13 @@ import {
   type ChargerReading,
   toChargerState,
 } from "../domain/charger-reading.ts";
-import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
-import type { LiveState } from "../domain/live-state.ts";
+import {
+  fuseHeadroomA,
+  houseConsumptionW,
+  surplusW,
+} from "../domain/energy.ts";
+import type { LiveState, SolarFetch } from "../domain/live-state.ts";
+import type { SolarInterval } from "../domain/solar-interval.ts";
 import { switchesPerChargeSession } from "../domain/switch-budget.ts";
 import type { Overrides } from "../overrides.ts";
 import type { SettingsStore } from "../settings.ts";
@@ -43,6 +50,19 @@ function toZaptecMode({ availableCurrentMode }: ChargerReading): ZaptecMode {
     : (zaptecModes[availableCurrentMode] ?? "unknown");
 }
 
+export function toLiveSolar(latest: SolarInterval | undefined) {
+  return latest
+    ? {
+        asOf: latest.endAt.toISOString(),
+        solarProductionW: latest.solarProductionW,
+      }
+    : null;
+}
+
+function toSolarUpdated({ fetchedAt, latest }: SolarFetch): SolarUpdated {
+  return { fetchedAt: fetchedAt.toISOString(), solar: toLiveSolar(latest) };
+}
+
 export function toLiveSnapshot({
   live,
   overrides,
@@ -55,6 +75,7 @@ export function toLiveSnapshot({
   const charger = live.charger();
   const interruptions = live.interruptions();
   const shadowDecision = live.shadowDecision();
+  const solar = live.solar();
   return {
     at: now.toISOString(),
     p1: p1
@@ -87,6 +108,8 @@ export function toLiveSnapshot({
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
+    solar: toLiveSolar(solar),
+    houseConsumptionW: houseConsumptionW(p1, solar, charger),
     override: overrides.availability(),
     switchBudget:
       interruptions === null
@@ -149,10 +172,17 @@ export function addLiveRoutes(
         });
         onChange();
       });
+      const stopListeningForSolar = live.onSolarFetch((fetch) => {
+        void stream.writeSSE({
+          event: solarUpdatedEvent,
+          data: JSON.stringify(toSolarUpdated(fetch)),
+        });
+      });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
       stopDecisions();
       stopFollowingOverrides();
+      stopListeningForSolar();
       pending?.();
     })
   );
