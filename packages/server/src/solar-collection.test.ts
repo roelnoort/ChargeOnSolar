@@ -391,6 +391,26 @@ describe("solar-updated on the live stream", () => {
   });
 });
 
+describe("solar-updated after the daily fetch", () => {
+  it("is sent on the stream too", async () => {
+    const testServer = await start({
+      solar: [{ endAt: "2026-06-01T19:00:00.000Z", solarProductionW: 150 }],
+    });
+    const response = await testServer.requestSignedIn(liveStreamPath);
+    stream = readSse(response);
+    await stream.next();
+
+    await testServer.advanceUntilSolarFetch(9 * hour + 30 * minute);
+
+    const events = [await stream.next(), await stream.next()];
+    const updated = events.find((event) => event?.event === solarUpdatedEvent);
+    expect(solarUpdated.parse(JSON.parse(updated?.data ?? ""))).toEqual({
+      fetchedAt: "2026-06-01T21:30:00.000Z",
+      solar: { asOf: "2026-06-01T19:00:00.000Z", solarProductionW: 150 },
+    });
+  });
+});
+
 describe("the stored Enphase refresh token", () => {
   it("is encrypted, never kept in plain text", async () => {
     const testServer = await start();
