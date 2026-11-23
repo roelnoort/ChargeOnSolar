@@ -106,3 +106,10 @@ export function realChartTotals(buckets: RealChartBucket[]): RealChartTotals {
     toGridKwh: kwh(toGridW),
   };
 }
+
+/** Where the stretch Enphase has not been asked for yet begins, if there is one. */
+export function solarNotFetchedFrom(
+  buckets: DayTimelineBucket[]
+): string | undefined {
+  return buckets.find((bucket) => bucket.solarProductionW === null)?.start;
+}

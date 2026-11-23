@@ -4,6 +4,7 @@ import {
   type RealChartBucket,
   realChartBucket,
   realChartTotals,
+  solarNotFetchedFrom,
 } from "./real-chart.ts";
 
 function bucket(power: Partial<DayTimelineBucket>): DayTimelineBucket {
@@ -183,5 +184,32 @@ describe("the Real chart's day totals", () => {
         })
       ).carSolarShare
     ).toBeNull();
+  });
+});
+
+describe("where the Real chart hatches solar as not fetched yet", () => {
+  const at = (minutes: number) =>
+    new Date(
+      Date.parse("2026-06-01T10:00:00.000Z") + minutes * 60_000
+    ).toISOString();
+
+  it("starts at the first bucket without Solar production", () => {
+    expect(
+      solarNotFetchedFrom([
+        bucket({ start: at(0), solarProductionW: 1200 }),
+        bucket({ start: at(5), solarProductionW: 0 }),
+        bucket({ start: at(10), solarProductionW: null }),
+        bucket({ start: at(15), solarProductionW: null }),
+      ])
+    ).toBe(at(10));
+  });
+
+  it("hatches nothing once the whole day has Solar production", () => {
+    expect(
+      solarNotFetchedFrom([
+        bucket({ start: at(0), solarProductionW: 1200 }),
+        bucket({ start: at(5), solarProductionW: 0 }),
+      ])
+    ).toBeUndefined();
   });
 });

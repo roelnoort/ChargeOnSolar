@@ -6,6 +6,7 @@ import {
   realChartTotals,
   type SolarFetchedBucket,
   type SolarNotFetchedBucket,
+  solarNotFetchedFrom,
 } from "./real-chart.ts";
 
 export const realChartAreas = [
@@ -145,9 +146,9 @@ export function RealChart({
   });
 
   const shownUntil = Math.min(now, dayEnd);
-  const solarFetchedUntil = timeline.solarFetchedAt
-    ? Math.max(dayStart, Date.parse(timeline.solarFetchedAt))
-    : dayStart;
+  const notFetchedFrom = solarNotFetchedFrom(timeline.buckets);
+  const solarFetchedUntil =
+    notFetchedFrom === undefined ? dayEnd : Date.parse(notFetchedFrom);
   const notFetched =
     solarFetchedUntil < shownUntil
       ? { from: x(solarFetchedUntil), to: x(shownUntil) }
