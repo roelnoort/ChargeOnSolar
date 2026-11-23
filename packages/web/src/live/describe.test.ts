@@ -1,6 +1,6 @@
+import { chargerStaleAfterMs } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
 import {
-  chargerStaleAfterMs,
   dataAgeMs,
   describeApmWarning,
   describeAsOf,

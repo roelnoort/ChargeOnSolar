@@ -7,6 +7,7 @@ import { enphaseSetupFromEnv } from "./enphase/from-env.ts";
 import { mailerFromEnv } from "./mailer.ts";
 import { p1ClientFromEnv } from "./p1/from-env.ts";
 import { assembleServer, dataDirFromEnv, dataFiles } from "./server.ts";
+import { shadowTickFromEnv } from "./shadow/from-env.ts";
 import { mainFuseFromEnv, zaptecClientFromEnv } from "./zaptec/from-env.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,7 @@ const server = await assembleServer({
   zaptecClient: zaptecClientFromEnv(process.env, systemClock),
   mainFuseA: mainFuseFromEnv(process.env),
   enphase: enphaseSetupFromEnv(process.env),
+  shadowTickSeconds: shadowTickFromEnv(process.env),
   webRoot,
 });
 

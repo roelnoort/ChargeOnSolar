@@ -1,10 +1,15 @@
 import { z } from "zod";
+import { overrideAvailability, switchBudget } from "./override.ts";
+import { shadowDecisionRecord } from "./shadow.ts";
 import { liveSolar } from "./solar.ts";
 
 export const livePath = "/api/live";
 export const liveStreamPath = "/api/live/stream";
 /** The SSE event name `GET /api/live/stream` sends the snapshot under. */
 export const snapshotEvent = "snapshot";
+
+/** The server reads Zaptec every 30 s; three missed reads mean the charger is offline. */
+export const chargerStaleAfterMs = 90_000;
 
 /** The grid's three phases, as the P1 meter and the charger name them. */
 export const p1Phases = ["l1", "l2", "l3"] as const;
@@ -103,5 +108,11 @@ export const liveSnapshot = z.object({
    * Charger power. Null without all three.
    */
   houseConsumptionW: z.number().nullable(),
+  /** What the Pause/Resume button does now. */
+  override: overrideAvailability,
+  /** Null while no car is connected. */
+  switchBudget: switchBudget.nullable(),
+  /** The latest Shadow decision. Null until the first one is made. */
+  shadowDecision: shadowDecisionRecord.nullable(),
 });
 export type LiveSnapshot = z.infer<typeof liveSnapshot>;

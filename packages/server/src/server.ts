@@ -15,8 +15,11 @@ import {
   createSolarCollection,
 } from "./enphase/solar-collection.ts";
 import type { Mailer } from "./mailer.ts";
+import { createOverrides } from "./overrides.ts";
 import type { P1Client } from "./p1/client.ts";
 import { startP1Collector } from "./p1/collector.ts";
+import { defaultSettings, loadSettings } from "./settings.ts";
+import { startShadowRunner } from "./shadow/runner.ts";
 import { openStorage, type Storage } from "./storage/index.ts";
 import type { ZaptecClient } from "./zaptec/client.ts";
 import { startZaptecCollector } from "./zaptec/collector.ts";
@@ -29,10 +32,12 @@ export interface ServerDependencies extends DataFiles {
   p1Client?: P1Client;
   /** The Zaptec cloud. Without it, no charger Readings come in. */
   zaptecClient?: ZaptecClient;
-  /** The main fuse rating, in amperes. 25 A unless given. */
+  /** The main fuse rating, in amperes, until a User changes it. 25 A unless given. */
   mainFuseA?: number;
   /** The Enphase cloud. Without it, no Solar production comes in. */
   enphase?: EnphaseSetup;
+  /** How often the Shadow runner decides, in seconds, until a User changes it. 60 s unless given. */
+  shadowTickSeconds?: number;
   webRoot?: string;
 }
 
@@ -82,6 +87,13 @@ export async function assembleServer(
   const auth = createAuth({ storage, ...dependencies });
   const live = createLiveState();
   live.recordSolar(await storage.latestSolarInterval());
+  const overrides = await createOverrides({
+    client: zaptecClient,
+    storage,
+    live,
+    clock,
+    log,
+  });
   const collector = p1Client
     ? startP1Collector({
         client: p1Client,
@@ -105,6 +117,7 @@ export async function assembleServer(
         log,
         onReading(reading) {
           live.recordCharger(reading);
+          void overrides.onChargerReading(reading);
           storage
             .recordChargerReading(reading)
             .catch((error: unknown) =>
@@ -133,12 +146,28 @@ export async function assembleServer(
     ? startSolarCollector({ solar, clock, log })
     : undefined;
   if (!enphase) log("No Enphase account configured");
+  const settings = await loadSettings({
+    storage,
+    clock,
+    defaults: defaultSettings(
+      dependencies.mainFuseA ?? defaultMainFuseA,
+      dependencies.shadowTickSeconds
+    ),
+  });
+  const shadowRunner = await startShadowRunner({
+    clock,
+    live,
+    storage,
+    log,
+    settings: settings.current,
+  });
   const app = createApp({
     storage,
     auth,
     live,
+    overrides,
     clock,
-    mainFuseA: dependencies.mainFuseA ?? defaultMainFuseA,
+    settings,
     solar,
     webRoot: dependencies.webRoot,
   });
@@ -146,6 +175,7 @@ export async function assembleServer(
     app,
     storage,
     async close() {
+      shadowRunner.stop();
       collector?.stop();
       zaptecCollector?.stop();
       solarCollector?.stop();

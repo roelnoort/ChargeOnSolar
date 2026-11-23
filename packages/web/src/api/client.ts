@@ -11,11 +11,18 @@ import {
   loginPath,
   loginResponse,
   logoutPath,
+  type ManualOverride,
+  manualOverride,
+  type OverrideCommand,
+  overridesPath,
   type Session,
+  type Settings,
   type SignedInDevice,
   type SolarRefreshResponse,
   session,
   sessionPath,
+  settings,
+  settingsPath,
   signedInDevicePath,
   signedInDevices,
   signedInDevicesPath,
@@ -86,6 +93,11 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
     signOutEverywhere: async (): Promise<void> => {
       await call("POST", signOutEverywherePath, noBody);
     },
+    sendOverride: (command: OverrideCommand): Promise<ManualOverride> =>
+      call("POST", overridesPath, manualOverride, { command }),
+    settings: (): Promise<Settings> => call("GET", settingsPath, settings),
+    saveSettings: (next: Settings): Promise<Settings> =>
+      call("PUT", settingsPath, settings, next),
     solarBudget: (): Promise<CallBudget> =>
       call("GET", solarBudgetPath, callBudget),
     refreshSolar: (): Promise<SolarRefreshResponse> =>

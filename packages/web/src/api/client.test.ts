@@ -2,6 +2,8 @@ import {
   csrfHeader,
   type Health,
   loginCodePath,
+  type Settings,
+  settingsPath,
 } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
 import { createApiClient, NotSignedInError } from "./client.ts";
@@ -105,6 +107,31 @@ describe("the API client's session calls", () => {
     await expect(client.session()).rejects.toBeInstanceOf(NotSignedInError);
   });
 
+  it("saves the Settings with a PUT and answers what the server kept", async () => {
+    const kept: Settings = {
+      solarMode: "all-solar",
+      startWindowMinutes: 5,
+      stopWindowMinutes: 10,
+      minimumOnTimeMinutes: 15,
+      minimumOffTimeMinutes: 15,
+      currentHoldMinutes: 15,
+      deadBandAmps: 1,
+      voltage: 230,
+      mainFuseAmps: 25,
+      minimumSolarWatts: 0,
+      tickIntervalSeconds: 60,
+    };
+    const { requests, client } = recording(200, kept);
+
+    expect(await client.saveSettings(kept)).toEqual(kept);
+    expect(requests[0]?.url).toBe(settingsPath);
+    expect(requests[0]?.init?.method).toBe("PUT");
+    expect(headersOf(requests[0]?.init).get(csrfHeader.name)).toBe(
+      csrfHeader.value
+    );
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual(kept);
+  });
+
   it("revokes a Signed-in device by its id", async () => {
     const { requests, client } = recording(204);
 
@@ -132,6 +159,42 @@ describe("the API client's session calls", () => {
     const { client } = recording(200, devices);
 
     expect(await client.signedInDevices()).toEqual(devices.devices);
+  });
+});
+
+describe("the API client's Manual override", () => {
+  it("posts the command with the CSRF header and answers the override", async () => {
+    const accepted = {
+      id: 3,
+      command: "pause",
+      status: "accepted",
+      sentAt: "2026-06-01T12:00:00.000Z",
+      user: { id: 1, name: "Sam" },
+      rejection: null,
+    };
+    const requests: { url: string; init: RequestInit | undefined }[] = [];
+    const client = createApiClient(async (input, init) => {
+      requests.push({ url: String(input), init });
+      return Response.json(accepted);
+    });
+
+    expect(await client.sendOverride("pause")).toEqual(accepted);
+    expect(requests[0]?.url).toBe("/api/overrides");
+    expect(requests[0]?.init?.method).toBe("POST");
+    expect(new Headers(requests[0]?.init?.headers).get(csrfHeader.name)).toBe(
+      csrfHeader.value
+    );
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
+      command: "pause",
+    });
+  });
+
+  it("rejects with the server's reason when the charger does not allow it", async () => {
+    const client = createApiClient(
+      answering(409, { error: { status: 409, message: "Not charging" } })
+    );
+
+    await expect(client.sendOverride("pause")).rejects.toThrow("Not charging");
   });
 });
 

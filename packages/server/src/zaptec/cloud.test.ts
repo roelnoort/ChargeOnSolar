@@ -3,6 +3,12 @@ import { createFakeClock, type FakeClock } from "../testing/fake-clock.ts";
 import { createZaptecCloudClient } from "./cloud.ts";
 import chargerState from "./fixtures/charger-state.json" with { type: "json" };
 import chargers from "./fixtures/chargers.json" with { type: "json" };
+import commandRejected528 from "./fixtures/command-rejected-528.json" with {
+  type: "json",
+};
+import commandRejectedUnknown from "./fixtures/command-rejected-unknown.json" with {
+  type: "json",
+};
 import installation from "./fixtures/installation.json" with { type: "json" };
 import token from "./fixtures/token.json" with { type: "json" };
 
@@ -48,6 +54,12 @@ function recordedZaptec() {
     }
     if (path === `/api/installation/${installationId}`) {
       return Response.json(installation);
+    }
+    if (
+      method === "POST" &&
+      /^\/api\/chargers\/[^/]+\/sendCommand\/\d+$/.test(path)
+    ) {
+      return new Response(null, { status: 200 });
     }
     return new Response("", { status: 404 });
   };
@@ -259,5 +271,99 @@ describe("the Zaptec cloud client", () => {
     for (const request of zaptec.sent) {
       expect(request.url).not.toContain("correct");
     }
+  });
+});
+
+describe("sending a command with the Zaptec cloud client", () => {
+  const commandPath = (id: number) =>
+    `/api/chargers/${chargerId}/sendCommand/${id}`;
+
+  it.each([
+    ["pause", 506],
+    ["resume", 507],
+  ] as const)("sends %s as command %i to the charger", async (command, id) => {
+    const result = await client().sendCommand(command);
+
+    expect(result).toEqual({ accepted: true });
+    const sent = zaptec.apiCalls().at(-1);
+    expect(sent?.method).toBe("POST");
+    expect(sent?.url).toBe(`https://api.zaptec.com${commandPath(id)}`);
+    expect(sent?.headers.get("authorization")).toBe(
+      "Bearer <scrubbed-access-token-1>"
+    );
+    expect(sent?.headers.get("user-agent")).toMatch(/^ChargeOnSolar\/\S+$/);
+  });
+
+  it("answers a rejection with Zaptec's code and a readable reason", async () => {
+    zaptec.answer(commandPath(507), () =>
+      Response.json(commandRejected528, { status: 500 })
+    );
+
+    expect(await client().sendCommand("resume")).toEqual({
+      accepted: false,
+      code: 528,
+      reason: "Charger can't resume in its current state",
+    });
+  });
+
+  it("explains code 528 for a pause in the same words", async () => {
+    zaptec.answer(commandPath(506), () =>
+      Response.json(commandRejected528, { status: 500 })
+    );
+
+    expect(await client().sendCommand("pause")).toMatchObject({
+      code: 528,
+      reason: "Charger can't pause in its current state",
+    });
+  });
+
+  it("passes on Zaptec's own message for a code it does not know", async () => {
+    zaptec.answer(commandPath(506), () =>
+      Response.json(commandRejectedUnknown, { status: 400 })
+    );
+
+    expect(await client().sendCommand("pause")).toEqual({
+      accepted: false,
+      code: 999,
+      reason: "Zaptec refused the command: Something unexpected",
+    });
+  });
+
+  it("answers a rejection without a code when Zaptec sends no error body", async () => {
+    zaptec.answer(commandPath(506), () => new Response("", { status: 503 }));
+
+    expect(await client().sendCommand("pause")).toEqual({
+      accepted: false,
+      code: null,
+      reason: "Zaptec refused the command (HTTP 503)",
+    });
+  });
+
+  it("answers a rejection when Zaptec cannot be reached", async () => {
+    const offline = createZaptecCloudClient({
+      username: "owner@example.com",
+      password: "correct horse",
+      clock,
+      fetch: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+
+    expect(await offline.sendCommand("pause")).toEqual({
+      accepted: false,
+      code: null,
+      reason: "Zaptec could not be reached",
+    });
+  });
+
+  it("logs in again once when Zaptec rejects the token for a command", async () => {
+    const zaptecClient = client();
+    await zaptecClient.read();
+    zaptec.revoke("<scrubbed-access-token-1>");
+
+    expect(await zaptecClient.sendCommand("pause")).toEqual({
+      accepted: true,
+    });
+    expect(zaptec.tokenCalls()).toHaveLength(2);
   });
 });

@@ -1,8 +1,9 @@
 import {
-  type ChargerState,
+  decisionEvent,
   type LiveSnapshot,
   livePath,
   liveStreamPath,
+  overrideEvent,
   type SolarUpdated,
   snapshotEvent,
   solarUpdatedEvent,
@@ -11,7 +12,10 @@ import {
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toChargerState,
+} from "../domain/charger-reading.ts";
 import {
   fuseHeadroomA,
   houseConsumptionW,
@@ -19,31 +23,18 @@ import {
 } from "../domain/energy.ts";
 import type { LiveState, SolarFetch } from "../domain/live-state.ts";
 import type { SolarInterval } from "../domain/solar-interval.ts";
+import { switchesPerChargeSession } from "../domain/switch-budget.ts";
+import type { Overrides } from "../overrides.ts";
+import type { SettingsStore } from "../settings.ts";
+import { toManualOverride } from "./overrides.ts";
 import type { SessionEnv } from "./session.ts";
+import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
-  mainFuseA: number;
-}
-
-// Zaptec's ChargerOperationMode (state 710).
-function toChargerState({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): ChargerState {
-  switch (operationMode) {
-    case 1:
-      return "disconnected";
-    case 2:
-      return "connected";
-    case 3:
-      return "charging";
-    case 5:
-      return finalStopActive ? "paused" : "finished";
-    default:
-      return "unknown";
-  }
+  settings: SettingsStore;
 }
 
 // Zaptec's availableCurrentMode.
@@ -72,13 +63,18 @@ function toSolarUpdated({ fetchedAt, latest }: SolarFetch): SolarUpdated {
   return { fetchedAt: fetchedAt.toISOString(), solar: toLiveSolar(latest) };
 }
 
-export function toLiveSnapshot(
-  live: LiveState,
-  now: Date,
-  mainFuseA: number
-): LiveSnapshot {
+export function toLiveSnapshot({
+  live,
+  overrides,
+  clock,
+  settings,
+}: LiveRouteDependencies): LiveSnapshot {
+  const now = clock.now();
+  const mainFuseA = settings.current().mainFuseAmps;
   const p1 = live.p1();
   const charger = live.charger();
+  const interruptions = live.interruptions();
+  const shadowDecision = live.shadowDecision();
   const solar = live.solar();
   return {
     at: now.toISOString(),
@@ -114,16 +110,26 @@ export function toLiveSnapshot(
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
     solar: toLiveSolar(solar),
     houseConsumptionW: houseConsumptionW(p1, solar, charger),
+    override: overrides.availability(),
+    switchBudget:
+      interruptions === null
+        ? null
+        : {
+            switchesLeft: Math.max(0, switchesPerChargeSession - interruptions),
+            switchesPerSession: switchesPerChargeSession,
+          },
+    shadowDecision: shadowDecision
+      ? toShadowDecisionRecord(shadowDecision)
+      : null,
   };
 }
 
 export function addLiveRoutes(
   app: Hono<SessionEnv>,
-  { live, clock, mainFuseA }: LiveRouteDependencies
+  dependencies: LiveRouteDependencies
 ) {
-  app.get(livePath, (c) =>
-    c.json(toLiveSnapshot(live, clock.now(), mainFuseA))
-  );
+  const { live, overrides, clock } = dependencies;
+  app.get(livePath, (c) => c.json(toLiveSnapshot(dependencies)));
 
   app.get(liveStreamPath, (c) =>
     streamSSE(c, async (stream) => {
@@ -133,7 +139,7 @@ export function addLiveRoutes(
 
       function sendIfChanged() {
         pending = undefined;
-        const snapshot = toLiveSnapshot(live, clock.now(), mainFuseA);
+        const snapshot = toLiveSnapshot(dependencies);
         const state = JSON.stringify({ ...snapshot, at: undefined });
         if (state === lastSentState) return;
         lastSentState = state;
@@ -153,6 +159,19 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
+      const stopDecisions = live.onShadowDecision((decision) => {
+        void stream.writeSSE({
+          event: decisionEvent,
+          data: JSON.stringify(toShadowDecisionRecord(decision)),
+        });
+      });
+      const stopFollowingOverrides = overrides.onChange((progress) => {
+        void stream.writeSSE({
+          event: overrideEvent,
+          data: JSON.stringify(toManualOverride(progress)),
+        });
+        onChange();
+      });
       const stopListeningForSolar = live.onSolarFetch((fetch) => {
         void stream.writeSSE({
           event: solarUpdatedEvent,
@@ -161,6 +180,8 @@ export function addLiveRoutes(
       });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
+      stopDecisions();
+      stopFollowingOverrides();
       stopListeningForSolar();
       pending?.();
     })

@@ -1,10 +1,13 @@
-import type { CallBudget, LiveSnapshot } from "@charge-on-solar/shared";
+import {
+  type CallBudget,
+  chargerStaleAfterMs,
+  type LiveSnapshot,
+} from "@charge-on-solar/shared";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import type { ApiClient } from "../api/client.ts";
 import type { Clock } from "../clock.ts";
 import { messageOf } from "../message-of.ts";
 import {
-  chargerStaleAfterMs,
   dataAgeMs,
   describeApmWarning,
   describeAsOf,
@@ -19,11 +22,13 @@ import {
   formatPower,
   formatSignedPower,
 } from "./describe.ts";
+import { describeShadowDecision } from "./describe-shadow.ts";
 import {
   connectLiveStream,
   type LiveStreamState,
   type StreamStatus,
 } from "./live-stream.ts";
+import { OverrideControl } from "./OverrideControl.tsx";
 
 function useLiveStream(clock: Clock): LiveStreamState {
   const [state, setState] = useState<LiveStreamState>({
@@ -214,8 +219,53 @@ function PowerFlows({
   );
 }
 
+function ShadowDecisionCard({
+  snapshot,
+}: {
+  snapshot: LiveSnapshot | undefined;
+}) {
+  const record = snapshot?.shadowDecision ?? null;
+  const described = record && describeShadowDecision(record);
+  const charger = snapshot?.charger?.reading;
+  return (
+    <article
+      className="card shadow-decision"
+      aria-labelledby="shadow-decision-heading"
+    >
+      <h3 id="shadow-decision-heading">Shadow decision</h3>
+      {described ? (
+        <>
+          <p className="shadow-sentence">{described.sentence}</p>
+          {described.withoutPause && (
+            <p className="shadow-underlying">
+              Without the pause: {described.withoutPause}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="placeholder">No Shadow decision yet.</p>
+      )}
+      {charger && (
+        <p className="shadow-charger">
+          The charger itself: {describeChargerState(charger.state)}
+          {charger.chargingCurrentSetA !== null &&
+            `, ${formatCurrent(charger.chargingCurrentSetA)} set by Zaptec`}
+        </p>
+      )}
+      <p className="data-age">
+        Never sent to the charger
+        {record &&
+          ` · decided at ${new Date(record.at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`}
+      </p>
+    </article>
+  );
+}
+
 export function NowView({ clock, api }: { clock: Clock; api: ApiClient }) {
-  const { status, latest } = useLiveStream(clock);
+  const { status, latest, override } = useLiveStream(clock);
   const now = useNow(clock);
   const snapshot = latest?.snapshot;
   const p1 = snapshot?.p1 ?? null;
@@ -233,7 +283,18 @@ export function NowView({ clock, api }: { clock: Clock; api: ApiClient }) {
         {statusLabels[status]}
       </p>
 
+      <ShadowDecisionCard snapshot={snapshot} />
+
       <PowerFlows snapshot={snapshot} api={api} />
+
+      {snapshot && (
+        <OverrideControl
+          api={api}
+          snapshot={snapshot}
+          streamOverride={override}
+          chargerStale={chargerAge?.stale ?? true}
+        />
+      )}
 
       <article className="card" aria-labelledby="net-power-heading">
         <h3 id="net-power-heading">Net power</h3>
