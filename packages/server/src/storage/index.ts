@@ -18,6 +18,7 @@ import type {
   CommandResult,
   ManualOverrideRecord,
   OpenPause,
+  OverrideSender,
   PauseEnding,
   PauseRecord,
 } from "../domain/override.ts";
@@ -112,7 +113,7 @@ export interface Storage {
 
 export interface NewManualOverride {
   sentAt: Date;
-  user: { id: number; name: string };
+  user: OverrideSender;
   command: OverrideCommand;
   answersPauseId: number | null;
 }

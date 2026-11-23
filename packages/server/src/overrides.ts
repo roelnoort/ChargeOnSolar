@@ -14,6 +14,7 @@ import {
   type CommandResult,
   confirms,
   type OpenPause,
+  type OverrideSender,
   overrideAvailability,
   pauseChange,
 } from "./domain/override.ts";
@@ -30,7 +31,7 @@ export interface OverrideProgress {
   command: OverrideCommand;
   status: OverrideStatus;
   sentAt: Date;
-  user: { id: number; name: string };
+  user: OverrideSender;
   rejection: { code: number | null; reason: string } | null;
 }
 
@@ -53,7 +54,7 @@ export interface Overrides {
    */
   send(
     command: OverrideCommand,
-    user: { id: number; name: string }
+    user: OverrideSender
   ): Promise<OverrideProgress>;
   /** Follows the charger: confirms a waiting command, opens and closes pauses. */
   onChargerReading(reading: ChargerReading): Promise<void>;

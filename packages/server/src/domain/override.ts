@@ -7,6 +7,10 @@ import {
   type ChargerReading,
   chargerOperationModes as operationModes,
 } from "./charger-reading.ts";
+import type { User } from "./user.ts";
+
+/** The User who sent a Manual override, as it records them. */
+export type OverrideSender = Pick<User, "id" | "name">;
 
 /** Who made a pause: ChargeOnSolar's own Manual override, or someone outside it. */
 export const pauseSources = ["chargeonsolar", "external"] as const;
