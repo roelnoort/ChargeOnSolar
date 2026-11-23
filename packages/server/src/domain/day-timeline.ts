@@ -14,6 +14,8 @@ export interface DayTimelineSources {
   window: BucketWindow;
   /** When Enphase was last asked for this day; undefined if never. */
   solarFetchedAt: Date | undefined;
+  /** A fetch from this moment on covers the whole day: the sun has set. */
+  solarCompleteAt: Date;
   /** Enphase's intervals that ended within the day. */
   solarIntervals: SolarInterval[];
   netPower: PowerBucket[];
@@ -28,6 +30,7 @@ export interface DayTimelineSources {
 export function toDayTimelineBuckets({
   window: { from, to, bucketMs },
   solarFetchedAt,
+  solarCompleteAt,
   solarIntervals,
   netPower,
   chargerPower,
@@ -41,7 +44,7 @@ export function toDayTimelineBuckets({
   );
   const netByStart = byTime(netPower);
   const chargerByStart = byTime(chargerPower);
-  const fetchedUntil = solarFetchedAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+  const fetchedUntil = solarKnownUntil(solarFetchedAt, solarCompleteAt);
   const buckets: DayTimelineBucket[] = [];
   for (let start = from.getTime(); start < to.getTime(); start += bucketMs) {
     const end = start + bucketMs;
@@ -53,6 +56,17 @@ export function toDayTimelineBuckets({
     });
   }
   return buckets;
+}
+
+function solarKnownUntil(
+  fetchedAt: Date | undefined,
+  completeAt: Date
+): number {
+  if (!fetchedAt) return Number.NEGATIVE_INFINITY;
+  if (fetchedAt.getTime() >= completeAt.getTime()) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return fetchedAt.getTime();
 }
 
 function byTime(buckets: PowerBucket[]): Map<number, number> {

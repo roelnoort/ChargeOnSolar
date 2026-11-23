@@ -5,8 +5,12 @@ import {
   dayTimelineQuery,
 } from "@charge-on-solar/shared";
 import type { Hono } from "hono";
-import { amsterdamDayBounds } from "../domain/amsterdam-time.ts";
+import {
+  amsterdamDayBounds,
+  nextAmsterdamTime,
+} from "../domain/amsterdam-time.ts";
 import { toDayTimelineBuckets } from "../domain/day-timeline.ts";
+import { dailyFetchAt } from "../enphase/collector.ts";
 import type { Storage } from "../storage/index.ts";
 import { parseOr400 } from "./parse.ts";
 import type { SessionEnv } from "./session.ts";
@@ -36,6 +40,11 @@ export function addDayTimelineRoutes(
     const buckets = toDayTimelineBuckets({
       window,
       solarFetchedAt,
+      solarCompleteAt: nextAmsterdamTime(
+        start,
+        dailyFetchAt.hour,
+        dailyFetchAt.minute
+      ),
       solarIntervals,
       netPower,
       chargerPower,

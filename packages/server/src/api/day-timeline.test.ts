@@ -153,9 +153,24 @@ describe("GET /api/day-timeline", () => {
       2500
     );
     expect(bucketAt(day, "2026-06-01T21:25:00.000Z")?.solarProductionW).toBe(0);
-    expect(bucketAt(day, "2026-06-01T21:30:00.000Z")?.solarProductionW).toBe(
+    // The sun has set by 23:30 (ADR 0002): the rest of the day had none.
+    expect(bucketAt(day, "2026-06-01T21:30:00.000Z")?.solarProductionW).toBe(0);
+    expect(day.buckets.at(-1)?.solarProductionW).toBe(0);
+  });
+
+  it("leaves the rest of today unknown after a refresh", async () => {
+    const testServer = await start({
+      now: new Date("2026-06-01T08:02:00.000Z"),
+    });
+    await refreshSolar(testServer);
+
+    const day = await timeline(testServer, "2026-06-01");
+
+    expect(bucketAt(day, "2026-06-01T07:55:00.000Z")?.solarProductionW).toBe(0);
+    expect(bucketAt(day, "2026-06-01T08:00:00.000Z")?.solarProductionW).toBe(
       null
     );
+    expect(day.buckets.at(-1)?.solarProductionW).toBeNull();
   });
 
   describe("on the days summer time starts and ends", () => {
