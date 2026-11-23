@@ -1,12 +1,11 @@
-import {
-  type DayTimelineBucket,
-  dayTimelineBucketMs,
-} from "@charge-on-solar/shared";
+import type { DayTimelineBucket } from "@charge-on-solar/shared";
+import type { DayPoint } from "./day-points.ts";
 
 /** The Real chart's five areas for one bucket, in watts. */
 export interface SolarFetchedBucket {
   kind: "solar-fetched";
   start: string;
+  end: string;
   houseFromSolarW: number;
   houseFromGridW: number;
   carFromSolarW: number;
@@ -18,6 +17,7 @@ export interface SolarFetchedBucket {
 export interface SolarNotFetchedBucket {
   kind: "solar-not-fetched";
   start: string;
+  end: string;
   carW: number;
   fromGridW: number;
   toGridW: number;
@@ -26,6 +26,7 @@ export interface SolarNotFetchedBucket {
 export interface NoReadingsBucket {
   kind: "no-readings";
   start: string;
+  end: string;
 }
 
 export type RealChartBucket =
@@ -40,16 +41,17 @@ export type RealChartBucket =
  */
 export function realChartBucket({
   start,
+  end,
   solarProductionW,
   netPowerW,
   chargerPowerW,
-}: DayTimelineBucket): RealChartBucket {
-  if (netPowerW === null) return { kind: "no-readings", start };
+}: DayPoint): RealChartBucket {
+  if (netPowerW === null) return { kind: "no-readings", start, end };
   const carW = chargerPowerW ?? 0;
   const fromGridW = Math.max(0, netPowerW);
   const toGridW = Math.max(0, -netPowerW);
   if (solarProductionW === null) {
-    return { kind: "solar-not-fetched", start, carW, fromGridW, toGridW };
+    return { kind: "solar-not-fetched", start, end, carW, fromGridW, toGridW };
   }
   const houseW = Math.max(0, netPowerW + solarProductionW - carW);
   const houseFromSolarW = Math.min(solarProductionW, houseW);
@@ -57,12 +59,30 @@ export function realChartBucket({
   return {
     kind: "solar-fetched",
     start,
+    end,
     houseFromSolarW,
     houseFromGridW: houseW - houseFromSolarW,
     carFromSolarW,
     carFromGridW: carW - carFromSolarW,
     toGridW: Math.max(0, solarProductionW - houseFromSolarW - carFromSolarW),
   };
+}
+
+/**
+ * The Shadow chart's areas: the house as it was, with the car drawing the
+ * Shadow Charger power instead. Swapping the car changes Net power by the
+ * difference, since the Surplus stays the same.
+ */
+export function shadowChartBucket(point: DayPoint): RealChartBucket {
+  const { netPowerW, chargerPowerW, shadowChargerPowerW } = point;
+  if (shadowChargerPowerW === null || netPowerW === null) {
+    return { kind: "no-readings", start: point.start, end: point.end };
+  }
+  return realChartBucket({
+    ...point,
+    netPowerW: netPowerW - (chargerPowerW ?? 0) + shadowChargerPowerW,
+    chargerPowerW: shadowChargerPowerW,
+  });
 }
 
 /** What the Real chart's header shows for the day. */
@@ -74,36 +94,35 @@ export interface RealChartTotals {
   toGridKwh: number;
 }
 
-const msPerHour = 3_600_000;
+const joulesPerKwh = 3_600_000;
 
 export function realChartTotals(buckets: RealChartBucket[]): RealChartTotals {
-  let carW = 0;
-  let carWhereSolarKnownW = 0;
-  let carFromSolarW = 0;
-  let fromGridW = 0;
-  let toGridW = 0;
+  let carJ = 0;
+  let carWhereSolarKnownJ = 0;
+  let carFromSolarJ = 0;
+  let fromGridJ = 0;
+  let toGridJ = 0;
   for (const bucket of buckets) {
+    const seconds = (Date.parse(bucket.end) - Date.parse(bucket.start)) / 1000;
     if (bucket.kind === "solar-fetched") {
-      const car = bucket.carFromSolarW + bucket.carFromGridW;
-      carW += car;
-      carWhereSolarKnownW += car;
-      carFromSolarW += bucket.carFromSolarW;
-      fromGridW += bucket.houseFromGridW + bucket.carFromGridW;
-      toGridW += bucket.toGridW;
+      const car = (bucket.carFromSolarW + bucket.carFromGridW) * seconds;
+      carJ += car;
+      carWhereSolarKnownJ += car;
+      carFromSolarJ += bucket.carFromSolarW * seconds;
+      fromGridJ += (bucket.houseFromGridW + bucket.carFromGridW) * seconds;
+      toGridJ += bucket.toGridW * seconds;
     } else if (bucket.kind === "solar-not-fetched") {
-      carW += bucket.carW;
-      fromGridW += bucket.fromGridW;
-      toGridW += bucket.toGridW;
+      carJ += bucket.carW * seconds;
+      fromGridJ += bucket.fromGridW * seconds;
+      toGridJ += bucket.toGridW * seconds;
     }
   }
-  const kwh = (watts: number) =>
-    (watts * dayTimelineBucketMs) / msPerHour / 1000;
   return {
-    carKwh: kwh(carW),
+    carKwh: carJ / joulesPerKwh,
     carSolarShare:
-      carWhereSolarKnownW > 0 ? carFromSolarW / carWhereSolarKnownW : null,
-    fromGridKwh: kwh(fromGridW),
-    toGridKwh: kwh(toGridW),
+      carWhereSolarKnownJ > 0 ? carFromSolarJ / carWhereSolarKnownJ : null,
+    fromGridKwh: fromGridJ / joulesPerKwh,
+    toGridKwh: toGridJ / joulesPerKwh,
   };
 }
 

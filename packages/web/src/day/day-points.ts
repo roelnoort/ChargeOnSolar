@@ -1,0 +1,111 @@
+import {
+  type DayOverride,
+  type DayTimeline,
+  type DayTimelineBucket,
+  dayTimelineBucketMs,
+  type ShadowDecisionRecord,
+  type ShadowSwitch,
+  shadowChargerPowerW,
+  shadowSwitchOf,
+} from "@charge-on-solar/shared";
+
+/**
+ * A stretch of the day both charts draw: a loaded bucket, or the tick
+ * before a Shadow decision that arrived since. Powers are averages in watts.
+ */
+export interface DayPoint extends DayTimelineBucket {
+  end: string;
+}
+
+/**
+ * The loaded buckets up to `loadedAt`, then a point for each Shadow decision
+ * made after it. The bucket `loadedAt` falls in only holds the Readings up
+ * to then, so it ends there.
+ */
+export function dayPoints(
+  timeline: DayTimeline,
+  loadedAt: number,
+  decisions: ShadowDecisionRecord[]
+): DayPoint[] {
+  const loaded = timeline.buckets.flatMap((bucket) => {
+    const start = Date.parse(bucket.start);
+    if (start >= loadedAt) return [];
+    const end = Math.min(start + dayTimelineBucketMs, loadedAt);
+    return [{ ...bucket, end: new Date(end).toISOString() }];
+  });
+  let previousEnd = Math.min(loadedAt, Date.parse(timeline.end));
+  const live = decisionsSince(timeline, loadedAt, decisions).map((record) => {
+    const end = Date.parse(record.at);
+    const tickMs = record.settings.tickIntervalSeconds * 1000;
+    const start = Math.max(previousEnd, end - tickMs);
+    previousEnd = end;
+    return {
+      start: new Date(start).toISOString(),
+      end: record.at,
+      solarProductionW: record.inputs.solarProductionW,
+      netPowerW: record.inputs.netPowerW,
+      chargerPowerW: record.inputs.chargerPowerW,
+      shadowChargerPowerW: shadowChargerPowerW(record),
+    };
+  });
+  return [...loaded, ...live];
+}
+
+/** The point `at` falls in, if any. */
+export function pointAt(points: DayPoint[], at: number): DayPoint | undefined {
+  return points.find(
+    (point) => Date.parse(point.start) <= at && at < Date.parse(point.end)
+  );
+}
+
+/** The loaded Shadow starts and stops, then those of the decisions made since. */
+export function dayShadowSwitches(
+  timeline: DayTimeline,
+  loadedAt: number,
+  decisions: ShadowDecisionRecord[]
+): ShadowSwitch[] {
+  const since = new Set(decisionsSince(timeline, loadedAt, decisions));
+  const live = decisions.flatMap((record, index) => {
+    if (!since.has(record)) return [];
+    const previousCurrentA = decisions[index - 1]?.chargingCurrentA ?? null;
+    const shadowSwitch = shadowSwitchOf(record.decision, previousCurrentA);
+    return shadowSwitch ? [{ ...shadowSwitch, at: record.at }] : [];
+  });
+  return [...timeline.shadowSwitches, ...live];
+}
+
+/**
+ * The day's Manual overrides as far as each has got, oldest first. A
+ * rejected one changed nothing, so it is not flagged.
+ */
+export function dayOverrides(
+  timeline: DayTimeline,
+  updates: DayOverride[]
+): DayOverride[] {
+  const byId = new Map(
+    [...timeline.overrides, ...updates].map((override) => [
+      override.id,
+      override,
+    ])
+  );
+  const start = Date.parse(timeline.start);
+  const end = Date.parse(timeline.end);
+  return [...byId.values()]
+    .filter((override) => {
+      const sentAt = Date.parse(override.sentAt);
+      return override.status !== "rejected" && start <= sentAt && sentAt < end;
+    })
+    .sort((a, b) => Date.parse(a.sentAt) - Date.parse(b.sentAt));
+}
+
+function decisionsSince(
+  timeline: DayTimeline,
+  loadedAt: number,
+  decisions: ShadowDecisionRecord[]
+): ShadowDecisionRecord[] {
+  const end = Date.parse(timeline.end);
+  return decisions.filter((record) => {
+    const at = Date.parse(record.at);
+    return at > loadedAt && at <= end;
+  });
+}

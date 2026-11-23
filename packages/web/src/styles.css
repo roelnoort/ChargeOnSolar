@@ -616,11 +616,11 @@ button.day-step {
   border-radius: 50%;
 }
 
-.real-chart {
+.day-chart {
   margin-bottom: 0;
 }
 
-.real-chart-head {
+.day-chart-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -629,19 +629,19 @@ button.day-step {
   margin-bottom: 0.5rem;
 }
 
-.real-chart-head h3 {
+.day-chart-head h3 {
   margin: 0;
   font-size: 1rem;
   color: var(--text);
 }
 
-.real-chart-subtitle {
+.day-chart-subtitle {
   font-size: 0.8125rem;
   font-weight: 400;
   color: var(--muted);
 }
 
-.real-chart-totals {
+.day-chart-totals {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
@@ -649,16 +649,16 @@ button.day-step {
   font-size: 0.8125rem;
 }
 
-.real-chart-totals div {
+.day-chart-totals div {
   display: flex;
   gap: 0.25rem;
 }
 
-.real-chart-totals dt {
+.day-chart-totals dt {
   color: var(--muted);
 }
 
-.real-chart-totals dd {
+.day-chart-totals dd {
   margin: 0;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -676,7 +676,7 @@ button.day-step {
   color: var(--to-grid);
 }
 
-.real-chart-plot svg {
+.day-chart-plot svg {
   display: block;
   width: 100%;
   height: auto;
@@ -731,6 +731,61 @@ button.day-step {
 .chart-now {
   stroke: var(--danger);
   stroke-dasharray: 3 3;
+}
+
+.chart-hover {
+  stroke: var(--text);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.chart-label-pole {
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.chart-label-text {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chart-flag .chart-label-pole {
+  stroke: var(--muted);
+}
+
+.chart-flag .chart-label-text {
+  fill: var(--text);
+}
+
+.chart-marker-start .chart-label-pole,
+.chart-marker-start .chart-label-text {
+  stroke: var(--accent);
+  fill: var(--accent);
+}
+
+.chart-marker-stop .chart-label-pole,
+.chart-marker-stop .chart-label-text {
+  stroke: var(--danger);
+  fill: var(--danger);
+}
+
+.chart-marker .chart-label-text {
+  stroke: none;
+}
+
+.day-chart-plot svg {
+  touch-action: pan-y;
+}
+
+.day-chart-details {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-chart-details b {
+  color: var(--text);
 }
 
 .hatch-line {

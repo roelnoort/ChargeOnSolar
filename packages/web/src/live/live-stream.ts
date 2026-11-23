@@ -1,11 +1,14 @@
 import {
+  decisionEvent,
   type LiveSnapshot,
   liveSnapshot,
   liveStreamPath,
   type ManualOverride,
   manualOverride,
   overrideEvent,
+  type ShadowDecisionRecord,
   type SolarUpdated,
+  shadowDecisionRecord,
   snapshotEvent,
   solarUpdated,
   solarUpdatedEvent,
@@ -43,6 +46,10 @@ export interface LiveStreamOptions {
   onChange: (state: LiveStreamState) => void;
   /** Called after each fetch from Enphase the server announces. */
   onSolarUpdated?: (update: SolarUpdated) => void;
+  /** Called with each new Shadow decision. */
+  onDecision?: (decision: ShadowDecisionRecord) => void;
+  /** Called at each step of each Manual override. */
+  onOverride?: (override: ManualOverride) => void;
 }
 
 const eventSourceClosed = 2;
@@ -58,6 +65,8 @@ export function connectLiveStream({
   now,
   onChange,
   onSolarUpdated,
+  onDecision,
+  onOverride,
 }: LiveStreamOptions): { close(): void } {
   let state: LiveStreamState = { status: "connecting" };
   let source: EventSourceLike | undefined;
@@ -89,7 +98,14 @@ export function connectLiveStream({
     current.addEventListener(overrideEvent, (event) => {
       if (typeof event.data !== "string") return;
       const parsed = manualOverride.safeParse(parseJson(event.data));
-      if (parsed.success) update({ override: parsed.data });
+      if (!parsed.success) return;
+      update({ override: parsed.data });
+      onOverride?.(parsed.data);
+    });
+    current.addEventListener(decisionEvent, (event) => {
+      if (typeof event.data !== "string") return;
+      const parsed = shadowDecisionRecord.safeParse(parseJson(event.data));
+      if (parsed.success) onDecision?.(parsed.data);
     });
     current.addEventListener(solarUpdatedEvent, (event) => {
       if (typeof event.data !== "string") return;

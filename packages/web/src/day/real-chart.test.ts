@@ -1,16 +1,18 @@
-import type { DayTimelineBucket } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
+import type { DayPoint } from "./day-points.ts";
 import {
   type RealChartBucket,
   realChartBucket,
   realChartTotals,
+  shadowChartBucket,
   solarNotFetchedFrom,
   solarNotFetchedStack,
 } from "./real-chart.ts";
 
-function bucket(power: Partial<DayTimelineBucket>): DayTimelineBucket {
+function bucket(power: Partial<DayPoint>): DayPoint {
   return {
     start: "2026-06-01T10:00:00.000Z",
+    end: "2026-06-01T10:05:00.000Z",
     solarProductionW: null,
     netPowerW: null,
     chargerPowerW: null,
@@ -33,6 +35,7 @@ describe("splitting a bucket into the Real chart's areas", () => {
     ).toEqual({
       kind: "solar-fetched",
       start: "2026-06-01T10:00:00.000Z",
+      end: "2026-06-01T10:05:00.000Z",
       houseFromSolarW: 1500,
       houseFromGridW: 0,
       carFromSolarW: 1500,
@@ -77,6 +80,7 @@ describe("splitting a bucket into the Real chart's areas", () => {
     ).toEqual({
       kind: "solar-not-fetched",
       start: "2026-06-01T10:00:00.000Z",
+      end: "2026-06-01T10:05:00.000Z",
       carW: 1400,
       fromGridW: 0,
       toGridW: 600,
@@ -86,7 +90,11 @@ describe("splitting a bucket into the Real chart's areas", () => {
   it("has nothing to show without a P1 Reading", () => {
     expect(
       realChartBucket(bucket({ solarProductionW: 900, chargerPowerW: 0 }))
-    ).toEqual({ kind: "no-readings", start: "2026-06-01T10:00:00.000Z" });
+    ).toEqual({
+      kind: "no-readings",
+      start: "2026-06-01T10:00:00.000Z",
+      end: "2026-06-01T10:05:00.000Z",
+    });
   });
 
   it("counts a bucket without a charger Reading as the car drawing nothing", () => {
@@ -101,8 +109,54 @@ describe("splitting a bucket into the Real chart's areas", () => {
   });
 });
 
+describe("splitting a bucket into the Shadow chart's areas", () => {
+  it("keeps the house as it was and puts the Shadow Charger power in the car's place", () => {
+    // House: -1000 + 4000 - 1000 = 2000 W, all from solar; 2000 W left for the car.
+    expect(
+      shadowChartBucket(
+        bucket({
+          solarProductionW: 4000,
+          netPowerW: -1000,
+          chargerPowerW: 1000,
+          shadowChargerPowerW: 3000,
+        })
+      )
+    ).toEqual({
+      kind: "solar-fetched",
+      start: "2026-06-01T10:00:00.000Z",
+      end: "2026-06-01T10:05:00.000Z",
+      houseFromSolarW: 2000,
+      houseFromGridW: 0,
+      carFromSolarW: 2000,
+      carFromGridW: 1000,
+      toGridW: 0,
+    });
+  });
+
+  it("works out the grid from the Surplus where solar is not fetched yet", () => {
+    // Surplus: 0 - (-600) = 600 W; the Shadow car would draw 1380 W of it and more.
+    expect(
+      shadowChartBucket(
+        bucket({ netPowerW: -600, chargerPowerW: 0, shadowChargerPowerW: 1380 })
+      )
+    ).toMatchObject({
+      kind: "solar-not-fetched",
+      carW: 1380,
+      fromGridW: 780,
+      toGridW: 0,
+    });
+  });
+
+  it("has nothing to show without a Shadow decision", () => {
+    expect(
+      shadowChartBucket(bucket({ netPowerW: -600, chargerPowerW: 0 })).kind
+    ).toBe("no-readings");
+  });
+});
+
 describe("the Real chart's day totals", () => {
   const start = "2026-06-01T10:00:00.000Z";
+  const end = "2026-06-01T10:05:00.000Z";
   // 12 buckets of 5 minutes make an hour: 12 × 1000 W is 1 kWh.
   const hourOf = (b: RealChartBucket) => Array.from({ length: 12 }, () => b);
 
@@ -111,6 +165,7 @@ describe("the Real chart's day totals", () => {
       ...hourOf({
         kind: "solar-fetched",
         start,
+        end,
         houseFromSolarW: 500,
         houseFromGridW: 0,
         carFromSolarW: 1500,
@@ -120,6 +175,7 @@ describe("the Real chart's day totals", () => {
       ...hourOf({
         kind: "solar-fetched",
         start,
+        end,
         houseFromSolarW: 0,
         houseFromGridW: 1000,
         carFromSolarW: 0,
@@ -129,13 +185,14 @@ describe("the Real chart's day totals", () => {
       ...hourOf({
         kind: "solar-fetched",
         start,
+        end,
         houseFromSolarW: 300,
         houseFromGridW: 0,
         carFromSolarW: 0,
         carFromGridW: 0,
         toGridW: 2000,
       }),
-      ...hourOf({ kind: "no-readings", start }),
+      ...hourOf({ kind: "no-readings", start, end }),
     ]);
 
     expect(totals).toEqual({
@@ -151,6 +208,7 @@ describe("the Real chart's day totals", () => {
       ...hourOf({
         kind: "solar-fetched",
         start,
+        end,
         houseFromSolarW: 0,
         houseFromGridW: 0,
         carFromSolarW: 1000,
@@ -160,6 +218,7 @@ describe("the Real chart's day totals", () => {
       ...hourOf({
         kind: "solar-not-fetched",
         start,
+        end,
         carW: 3000,
         fromGridW: 500,
         toGridW: 0,
@@ -174,12 +233,28 @@ describe("the Real chart's day totals", () => {
     });
   });
 
+  it("weighs a bucket cut short by how long it lasted", () => {
+    const totals = realChartTotals([
+      {
+        kind: "solar-not-fetched",
+        start,
+        end: "2026-06-01T10:01:00.000Z",
+        carW: 6000,
+        fromGridW: 0,
+        toGridW: 0,
+      },
+    ]);
+
+    expect(totals.carKwh).toBeCloseTo(0.1);
+  });
+
   it("has no solar share when the car drew nothing where solar is known", () => {
     expect(
       realChartTotals(
         hourOf({
           kind: "solar-not-fetched",
           start,
+          end,
           carW: 3000,
           fromGridW: 3000,
           toGridW: 0,
@@ -225,6 +300,7 @@ describe("stacking the Real chart where solar is not fetched yet", () => {
     ({
       kind: "solar-not-fetched",
       start: "2026-06-01T10:00:00.000Z",
+      end: "2026-06-01T10:05:00.000Z",
       ...power,
     }) as const;
 
