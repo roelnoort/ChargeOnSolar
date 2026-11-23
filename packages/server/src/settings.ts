@@ -12,11 +12,14 @@ export interface SettingsStore {
 
 export const defaultTickIntervalSeconds = 60;
 
-export function defaultSettings(mainFuseAmps: number): Settings {
+export function defaultSettings(
+  mainFuseAmps: number,
+  tickIntervalSeconds = defaultTickIntervalSeconds
+): Settings {
   return {
     ...defaultShadowSettings,
     mainFuseAmps,
-    tickIntervalSeconds: defaultTickIntervalSeconds,
+    tickIntervalSeconds,
   };
 }
 

@@ -26,6 +26,8 @@ export interface ServerDependencies extends DataFiles {
   zaptecClient?: ZaptecClient;
   /** The main fuse rating, in amperes, until a User changes it. 25 A unless given. */
   mainFuseA?: number;
+  /** How often the Shadow runner decides, in seconds, until a User changes it. 60 s unless given. */
+  shadowTickSeconds?: number;
   webRoot?: string;
 }
 
@@ -103,7 +105,10 @@ export async function assembleServer(
   const settings = await loadSettings({
     storage,
     clock,
-    defaults: defaultSettings(dependencies.mainFuseA ?? defaultMainFuseA),
+    defaults: defaultSettings(
+      dependencies.mainFuseA ?? defaultMainFuseA,
+      dependencies.shadowTickSeconds
+    ),
   });
   const shadowRunner = await startShadowRunner({
     clock,

@@ -2,6 +2,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  livePath,
+  liveSnapshot,
   type ShadowDecisionRecord,
   shadowDecisionList,
   shadowDecisionsPath,
@@ -209,6 +211,26 @@ describe("Shadow decisions", () => {
     const all = await decisions();
     expect(all.map(({ decision }) => decision.kind)).toEqual(["start", "hold"]);
     expect(all[1]?.chargingCurrentA).toBe(14);
+  });
+
+  it("show the last one in the live snapshot straight after a restart", async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), "shadow-restart-"));
+    onTestFinished(() => rm(dataDir, { recursive: true, force: true }));
+    const { p1, advance } = await start({ dataDir, charger: carPluggedIn });
+    p1.send(exporting(3300));
+    await advance(minute);
+    await server?.close();
+
+    server = await startTestServer({
+      now: new Date(t0.getTime() + 2 * minute),
+      dataDir,
+      charger: carPluggedIn,
+    });
+    const response = await server.requestSignedIn(livePath);
+    const snapshot = liveSnapshot.parse(await response.json());
+
+    expect(snapshot.shadowDecision?.at).toBe("2026-06-01T12:01:00.000Z");
+    expect(snapshot.shadowDecision?.decision.kind).toBe("start");
   });
 
   it("are rejected without a time window", async () => {
