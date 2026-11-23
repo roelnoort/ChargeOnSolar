@@ -32,6 +32,7 @@ const snapshot: LiveSnapshot = {
   fuseHeadroomA: null,
   override: { command: "pause", unavailableReason: "charger-offline" },
   switchBudget: null,
+  shadowDecision: null,
 };
 
 const pauseAccepted: ManualOverride = {

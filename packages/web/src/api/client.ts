@@ -14,9 +14,12 @@ import {
   type OverrideCommand,
   overridesPath,
   type Session,
+  type Settings,
   type SignedInDevice,
   session,
   sessionPath,
+  settings,
+  settingsPath,
   signedInDevicePath,
   signedInDevices,
   signedInDevicesPath,
@@ -86,6 +89,9 @@ export function createApiClient(fetchFn: typeof fetch = fetch) {
     },
     sendOverride: (command: OverrideCommand): Promise<ManualOverride> =>
       call("POST", overridesPath, manualOverride, { command }),
+    settings: (): Promise<Settings> => call("GET", settingsPath, settings),
+    saveSettings: (next: Settings): Promise<Settings> =>
+      call("PUT", settingsPath, settings, next),
   };
 }
 

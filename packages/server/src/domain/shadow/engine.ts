@@ -1,7 +1,17 @@
 // The Shadow engine: what Automatic control would do, given one moment's
 // live state. Pure: no I/O and no clock of its own; the time comes in with
 // the snapshot.
-import type { SolarMode } from "@charge-on-solar/shared";
+import {
+  type CarDecision,
+  type ChargeDecision,
+  type CurrentLimit,
+  type HoldReason,
+  minimumCurrentAmps,
+  type Settings,
+  type ShadowDecision,
+  type ShadowSettings,
+  type StopReason,
+} from "@charge-on-solar/shared";
 import { switchesPerChargeSession } from "../switch-budget.ts";
 
 /** Bumped whenever a rule changes; stamped together with the settings. */
@@ -12,20 +22,6 @@ export type PhaseSetting = (typeof phaseSettings)[number];
 
 export const carStates = ["none", "not-accepting", "accepting"] as const;
 export type CarState = (typeof carStates)[number];
-
-export interface ShadowSettings {
-  startWindowMinutes: number;
-  stopWindowMinutes: number;
-  minimumOnTimeMinutes: number;
-  minimumOffTimeMinutes: number;
-  currentHoldMinutes: number;
-  deadBandAmps: number;
-  /** Per-phase voltage, fixed by the grid. */
-  voltage: number;
-  mainFuseAmps: number;
-  minimumSolarWatts: number;
-  solarMode: SolarMode;
-}
 
 export const defaultShadowSettings: ShadowSettings = {
   startWindowMinutes: 5,
@@ -43,12 +39,10 @@ export const defaultShadowSettings: ShadowSettings = {
 /** Settings as recorded beside a Shadow decision: which rules read them. */
 export interface StampedShadowSettings {
   rulesVersion: number;
-  settings: ShadowSettings;
+  settings: Settings;
 }
 
-export function stampShadowSettings(
-  settings: ShadowSettings
-): StampedShadowSettings {
+export function stampShadowSettings(settings: Settings): StampedShadowSettings {
   return { rulesVersion: shadowRulesVersion, settings };
 }
 
@@ -76,6 +70,13 @@ export interface SimulatedCharger {
   switchedAt: Date | null;
   /** Simulated switches so far in this charge session. */
   switchCount: number;
+  /**
+   * The minimum on-time after a start, or off-time after a stop, as it was
+   * set at `switchedAt`: shortening it in the Settings does not cut it short.
+   */
+  switchHoldMinutes: number | null;
+  /** The current hold as it was set at `currentChangedAt`. */
+  currentHoldMinutes: number | null;
 }
 
 export const noCar: SimulatedCharger = {
@@ -84,39 +85,9 @@ export const noCar: SimulatedCharger = {
   currentChangedAt: null,
   switchedAt: null,
   switchCount: 0,
+  switchHoldMinutes: null,
+  currentHoldMinutes: null,
 };
-
-export type CurrentLimit =
-  | "surplus"
-  | "minimum-current"
-  | "charger-maximum"
-  | "fuse-headroom";
-
-export type HoldReason =
-  | "surplus-too-low"
-  | "minimum-off-time"
-  | "switch-budget"
-  | "fuse-headroom"
-  | "minimum-on-time"
-  | "within-dead-band"
-  | "current-hold";
-
-export type StopReason = "surplus-too-low" | "fuse-headroom";
-
-export type ChargeDecision =
-  | { kind: "start"; currentAmps: number; limitedBy: CurrentLimit }
-  | { kind: "stop"; reason: StopReason }
-  | { kind: "change-current"; currentAmps: number; limitedBy: CurrentLimit }
-  | { kind: "hold"; reason: HoldReason };
-
-/** What the engine decides once a car is plugged in, before any pause. */
-export type CarDecision = ChargeDecision | { kind: "car-not-accepting" };
-
-export type ShadowDecision =
-  | CarDecision
-  | { kind: "no-car" }
-  /** A final-stop pause wins; underlying is what the engine would do without it. */
-  | { kind: "paused"; underlying: CarDecision };
 
 export interface ShadowOutcome {
   decision: ShadowDecision;
@@ -128,7 +99,6 @@ interface ChargeOutcome {
   next: SimulatedCharger;
 }
 
-const minimumCurrentAmps = 6;
 const minute = 60_000;
 
 // Starting needs a switch left over for the stop that follows it.
@@ -149,7 +119,7 @@ export function decideShadow(
   if (snapshot.finalStopPause) {
     return {
       decision: { kind: "paused", underlying: underlying.decision },
-      next: stoppedWithoutSwitch(session, snapshot),
+      next: stoppedWithoutSwitch(session, snapshot, settings),
     };
   }
   return underlying;
@@ -163,7 +133,7 @@ function decideForCar(
   if (snapshot.car === "not-accepting") {
     return {
       decision: { kind: "car-not-accepting" },
-      next: stoppedWithoutSwitch(session, snapshot),
+      next: stoppedWithoutSwitch(session, snapshot, settings),
     };
   }
   return isCharging(session)
@@ -174,13 +144,15 @@ function decideForCar(
 /** Charging ended by something other than the engine: no switch is counted. */
 function stoppedWithoutSwitch(
   state: SimulatedCharger,
-  snapshot: ShadowSnapshot
+  snapshot: ShadowSnapshot,
+  settings: ShadowSettings
 ): SimulatedCharger {
   if (!isCharging(state)) return state;
   return {
     ...state,
     currentAmps: null,
     switchedAt: snapshot.at,
+    switchHoldMinutes: settings.minimumOffTimeMinutes,
   };
 }
 
@@ -196,6 +168,7 @@ function decideWhileCharging(
       currentAmps: null,
       switchedAt: snapshot.at,
       switchCount: state.switchCount + 1,
+      switchHoldMinutes: settings.minimumOffTimeMinutes,
     },
   });
   if (snapshot.fuseHeadroomAmps < minimumCurrentAmps) {
@@ -204,7 +177,12 @@ function decideWhileCharging(
   const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);
   const changeCurrent = (): ChargeOutcome => ({
     decision: { kind: "change-current", currentAmps, limitedBy },
-    next: { ...state, currentAmps, currentChangedAt: snapshot.at },
+    next: {
+      ...state,
+      currentAmps,
+      currentChangedAt: snapshot.at,
+      currentHoldMinutes: settings.currentHoldMinutes,
+    },
   });
   const surplusGone = !enoughSurplus(
     snapshot.stopWindowSurplusWatts,
@@ -214,7 +192,8 @@ function decideWhileCharging(
   const onFor = state.switchedAt
     ? elapsedMinutes(state.switchedAt, snapshot)
     : Number.POSITIVE_INFINITY;
-  const withinMinimumOnTime = onFor < settings.minimumOnTimeMinutes;
+  const withinMinimumOnTime =
+    onFor < heldFor(settings.minimumOnTimeMinutes, state.switchHoldMinutes);
   if (surplusGone && !withinMinimumOnTime) return stop("surplus-too-low");
   // The fuse cannot wait out the current hold or the minimum on-time.
   if ((state.currentAmps ?? 0) > Math.floor(snapshot.fuseHeadroomAmps)) {
@@ -229,7 +208,7 @@ function decideWhileCharging(
   if (
     state.currentChangedAt &&
     elapsedMinutes(state.currentChangedAt, snapshot) <
-      settings.currentHoldMinutes
+      heldFor(settings.currentHoldMinutes, state.currentHoldMinutes)
   ) {
     return hold("current-hold", state);
   }
@@ -248,7 +227,8 @@ function decideWhileStopped(
     return hold("surplus-too-low", state);
   if (
     state.switchedAt &&
-    elapsedMinutes(state.switchedAt, snapshot) < settings.minimumOffTimeMinutes
+    elapsedMinutes(state.switchedAt, snapshot) <
+      heldFor(settings.minimumOffTimeMinutes, state.switchHoldMinutes)
   ) {
     return hold("minimum-off-time", state);
   }
@@ -264,8 +244,15 @@ function decideWhileStopped(
       currentChangedAt: snapshot.at,
       switchedAt: snapshot.at,
       switchCount: state.switchCount + 1,
+      switchHoldMinutes: settings.minimumOnTimeMinutes,
+      currentHoldMinutes: settings.currentHoldMinutes,
     },
   };
+}
+
+/** A hold under way lasts as it was set, or longer if the Settings now say so. */
+function heldFor(setting: number, setWhenHoldBegan: number | null): number {
+  return Math.max(setting, setWhenHoldBegan ?? 0);
 }
 
 /** Solar only needs 6 A worth of Surplus; All solar more than the minimum solar. */

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { overrideAvailability, switchBudget } from "./override.ts";
+import { shadowDecisionRecord } from "./shadow.ts";
 
 export const livePath = "/api/live";
 export const liveStreamPath = "/api/live/stream";
@@ -103,5 +104,7 @@ export const liveSnapshot = z.object({
   override: overrideAvailability,
   /** Null while no car is connected. */
   switchBudget: switchBudget.nullable(),
+  /** The latest Shadow decision. Null until the first one is made. */
+  shadowDecision: shadowDecisionRecord.nullable(),
 });
 export type LiveSnapshot = z.infer<typeof liveSnapshot>;

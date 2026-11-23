@@ -1,5 +1,5 @@
 import {
-  type ChargerState,
+  decisionEvent,
   type LiveSnapshot,
   livePath,
   liveStreamPath,
@@ -12,38 +12,22 @@ import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
 import {
   type ChargerReading,
-  chargerOperationModes,
+  toChargerState,
 } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import { switchesPerChargeSession } from "../domain/switch-budget.ts";
 import type { Overrides } from "../overrides.ts";
+import type { SettingsStore } from "../settings.ts";
 import { toManualOverride } from "./overrides.ts";
 import type { SessionEnv } from "./session.ts";
+import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
   overrides: Overrides;
   clock: Clock;
-  mainFuseA: number;
-}
-
-function toChargerState({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): ChargerState {
-  switch (operationMode) {
-    case chargerOperationModes.disconnected:
-      return "disconnected";
-    case chargerOperationModes.connected:
-      return "connected";
-    case chargerOperationModes.charging:
-      return "charging";
-    case chargerOperationModes.stopped:
-      return finalStopActive ? "paused" : "finished";
-    default:
-      return "unknown";
-  }
+  settings: SettingsStore;
 }
 
 // Zaptec's availableCurrentMode.
@@ -63,12 +47,14 @@ export function toLiveSnapshot({
   live,
   overrides,
   clock,
-  mainFuseA,
+  settings,
 }: LiveRouteDependencies): LiveSnapshot {
   const now = clock.now();
+  const mainFuseA = settings.current().mainFuseAmps;
   const p1 = live.p1();
   const charger = live.charger();
   const interruptions = live.interruptions();
+  const shadowDecision = live.shadowDecision();
   return {
     at: now.toISOString(),
     p1: p1
@@ -109,6 +95,9 @@ export function toLiveSnapshot({
             switchesLeft: Math.max(0, switchesPerChargeSession - interruptions),
             switchesPerSession: switchesPerChargeSession,
           },
+    shadowDecision: shadowDecision
+      ? toShadowDecisionRecord(shadowDecision)
+      : null,
   };
 }
 
@@ -147,6 +136,12 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
+      const stopDecisions = live.onShadowDecision((decision) => {
+        void stream.writeSSE({
+          event: decisionEvent,
+          data: JSON.stringify(toShadowDecisionRecord(decision)),
+        });
+      });
       const stopFollowingOverrides = overrides.onChange((progress) => {
         void stream.writeSSE({
           event: overrideEvent,
@@ -156,6 +151,7 @@ export function addLiveRoutes(
       });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
+      stopDecisions();
       stopFollowingOverrides();
       pending?.();
     })

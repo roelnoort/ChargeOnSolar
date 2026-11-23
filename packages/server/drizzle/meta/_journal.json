@@ -33,8 +33,22 @@
     {
       "idx": 4,
       "version": "6",
-      "when": 1795376553936,
-      "tag": "0004_manual_overrides",
+      "when": 1795375278480,
+      "tag": "0004_shadow_decisions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795375887020,
+      "tag": "0005_app_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795431193347,
+      "tag": "0006_manual_overrides",
       "breakpoints": true
     }
   ]

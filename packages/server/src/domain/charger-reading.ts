@@ -1,4 +1,5 @@
 import {
+  type ChargerState,
   type P1PhaseName,
   type PhaseSetting,
   phaseSetting,
@@ -46,4 +47,23 @@ export interface ChargerReading {
 export function toPhaseSetting(maxPhases: number | null): PhaseSetting | null {
   const parsed = phaseSetting.safeParse(maxPhases);
   return parsed.success ? parsed.data : null;
+}
+
+// Zaptec's ChargerOperationMode (state 710) and FinalStopActive (state 718).
+export function toChargerState({
+  operationMode,
+  finalStopActive,
+}: ChargerReading): ChargerState {
+  switch (operationMode) {
+    case 1:
+      return "disconnected";
+    case 2:
+      return "connected";
+    case 3:
+      return "charging";
+    case 5:
+      return finalStopActive ? "paused" : "finished";
+    default:
+      return "unknown";
+  }
 }

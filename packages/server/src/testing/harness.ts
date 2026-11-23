@@ -55,7 +55,8 @@ export interface TestServer {
   signIn(email: string): Promise<{ authorization: string }>;
   /**
    * Requests `path` as a signed-in User, for tests about what a route answers
-   * rather than about sessions. Adds and signs in a User on first use.
+   * rather than about sessions. Signs a User in on first use, adding them
+   * when they are not there yet.
    */
   requestSignedIn(path: string, init?: RequestInit): Promise<Response>;
   /** The fake P1 meter the server collects from. */
@@ -67,6 +68,11 @@ export interface TestServer {
    * read that comes due to be handled.
    */
   pollZaptec(milliseconds?: number): Promise<void>;
+  /**
+   * Moves the clock on a second at a time, letting everything that comes
+   * due (Zaptec reads, Shadow runner ticks) finish before the next second.
+   */
+  advance(milliseconds: number): Promise<void>;
   storage: Storage;
   /** Every line the server logged. */
   logs: string[];
@@ -122,6 +128,14 @@ export async function startTestServer(
     });
 
   let signedIn: Promise<{ authorization: string }> | undefined;
+  const testUserEmail = "test-user@example.com";
+  // On a reused data directory the User is already there.
+  async function signInTestUser() {
+    if (!(await server.storage.findUserByEmail(testUserEmail))) {
+      await testServer.addUser({ name: "Test User", email: testUserEmail });
+    }
+    return testServer.signIn(testUserEmail);
+  }
   const testServer: TestServer = {
     request,
     clock,
@@ -142,9 +156,7 @@ export async function startTestServer(
       return { authorization: `Bearer ${token}` };
     },
     async requestSignedIn(path, init) {
-      signedIn ??= testServer
-        .addUser({ name: "Test User", email: "test-user@example.com" })
-        .then(() => testServer.signIn("test-user@example.com"));
+      signedIn ??= signInTestUser();
       const headers = new Headers(init?.headers);
       headers.set("authorization", (await signedIn).authorization);
       return request(path, { ...init, headers });
@@ -156,6 +168,12 @@ export async function startTestServer(
       clock.advance(milliseconds);
       await read;
       await settle();
+    },
+    async advance(milliseconds) {
+      for (let left = milliseconds; left > 0; left -= second) {
+        clock.advance(Math.min(left, second));
+        await settle();
+      }
     },
     storage: server.storage,
     logs,
@@ -170,6 +188,8 @@ export async function startTestServer(
   };
   return testServer;
 }
+
+const second = 1000;
 
 /** Lets the promise callbacks already queued run, e.g. a collector's. */
 function settle(): Promise<void> {

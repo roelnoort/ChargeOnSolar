@@ -11,6 +11,8 @@ import type { Mailer } from "./mailer.ts";
 import { createOverrides } from "./overrides.ts";
 import type { P1Client } from "./p1/client.ts";
 import { startP1Collector } from "./p1/collector.ts";
+import { defaultSettings, loadSettings } from "./settings.ts";
+import { startShadowRunner } from "./shadow/runner.ts";
 import { openStorage, type Storage } from "./storage/index.ts";
 import type { ZaptecClient } from "./zaptec/client.ts";
 import { startZaptecCollector } from "./zaptec/collector.ts";
@@ -23,8 +25,10 @@ export interface ServerDependencies extends DataFiles {
   p1Client?: P1Client;
   /** The Zaptec cloud. Without it, no charger Readings come in. */
   zaptecClient?: ZaptecClient;
-  /** The main fuse rating, in amperes. 25 A unless given. */
+  /** The main fuse rating, in amperes, until a User changes it. 25 A unless given. */
   mainFuseA?: number;
+  /** How often the Shadow runner decides, in seconds, until a User changes it. 60 s unless given. */
+  shadowTickSeconds?: number;
   webRoot?: string;
 }
 
@@ -107,19 +111,35 @@ export async function assembleServer(
       })
     : undefined;
   if (!zaptecClient) log("No Zaptec account configured");
+  const settings = await loadSettings({
+    storage,
+    clock,
+    defaults: defaultSettings(
+      dependencies.mainFuseA ?? defaultMainFuseA,
+      dependencies.shadowTickSeconds
+    ),
+  });
+  const shadowRunner = await startShadowRunner({
+    clock,
+    live,
+    storage,
+    log,
+    settings: settings.current,
+  });
   const app = createApp({
     storage,
     auth,
     live,
     overrides,
     clock,
-    mainFuseA: dependencies.mainFuseA ?? defaultMainFuseA,
+    settings,
     webRoot: dependencies.webRoot,
   });
   return {
     app,
     storage,
     async close() {
+      shadowRunner.stop();
       collector?.stop();
       zaptecCollector?.stop();
       await storage.close();

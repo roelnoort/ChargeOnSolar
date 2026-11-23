@@ -12,10 +12,13 @@ import {
   requireSession,
   type SessionEnv,
 } from "./api/session.ts";
+import { addSettingsRoutes } from "./api/settings.ts";
+import { addShadowRoutes } from "./api/shadow.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
 import type { Overrides } from "./overrides.ts";
+import type { SettingsStore } from "./settings.ts";
 import type { Storage } from "./storage/index.ts";
 
 export interface AppDependencies {
@@ -24,8 +27,7 @@ export interface AppDependencies {
   live: LiveState;
   overrides: Overrides;
   clock: Clock;
-  /** The main fuse rating, in amperes. */
-  mainFuseA: number;
+  settings: SettingsStore;
   /** The built web app's directory. Without it, only `/api/` is served. */
   webRoot?: string;
 }
@@ -36,7 +38,7 @@ export function createApp({
   live,
   overrides,
   clock,
-  mainFuseA,
+  settings,
   webRoot,
 }: AppDependencies): Hono<SessionEnv> {
   const app = new Hono<SessionEnv>();
@@ -60,8 +62,10 @@ export function createApp({
     return c.json(toHealth(startup));
   });
 
-  addLiveRoutes(app, { live, overrides, clock, mainFuseA });
+  addLiveRoutes(app, { live, overrides, clock, settings });
   addOverrideRoutes(app, { overrides });
+  addShadowRoutes(app, { storage });
+  addSettingsRoutes(app, { store: settings });
 
   app.all("/api/*", () => {
     throw new HTTPException(404, { message: "No such API route" });
