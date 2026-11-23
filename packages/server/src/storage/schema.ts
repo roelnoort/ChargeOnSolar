@@ -146,3 +146,13 @@ export const shadowDecisions = sqliteTable(
   },
   (table) => [index("shadow_decisions_at").on(table.at)]
 );
+
+/**
+ * What the server keeps between restarts that is not a record of the past:
+ * one row per key, its value as JSON.
+ */
+export const appState = sqliteTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});

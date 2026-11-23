@@ -38,6 +38,7 @@ function record(
       currentHoldMinutes: 15,
       deadBandAmps: 1,
       voltage: 230,
+      tickIntervalSeconds: 60,
       mainFuseAmps: 25,
       minimumSolarWatts: 0,
       solarMode: "solar-only",

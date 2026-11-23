@@ -1,5 +1,4 @@
 import {
-  type ChargerState,
   decisionEvent,
   type LiveSnapshot,
   livePath,
@@ -10,35 +9,20 @@ import {
 import type { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toChargerState,
+} from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
+import type { SettingsStore } from "../settings.ts";
 import type { SessionEnv } from "./session.ts";
 import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
   clock: Clock;
-  mainFuseA: number;
-}
-
-// Zaptec's ChargerOperationMode (state 710).
-function toChargerState({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): ChargerState {
-  switch (operationMode) {
-    case 1:
-      return "disconnected";
-    case 2:
-      return "connected";
-    case 3:
-      return "charging";
-    case 5:
-      return finalStopActive ? "paused" : "finished";
-    default:
-      return "unknown";
-  }
+  settings: SettingsStore;
 }
 
 // Zaptec's availableCurrentMode.
@@ -102,10 +86,10 @@ export function toLiveSnapshot(
 
 export function addLiveRoutes(
   app: Hono<SessionEnv>,
-  { live, clock, mainFuseA }: LiveRouteDependencies
+  { live, clock, settings }: LiveRouteDependencies
 ) {
   app.get(livePath, (c) =>
-    c.json(toLiveSnapshot(live, clock.now(), mainFuseA))
+    c.json(toLiveSnapshot(live, clock.now(), settings.current().mainFuseAmps))
   );
 
   app.get(liveStreamPath, (c) =>
@@ -116,7 +100,11 @@ export function addLiveRoutes(
 
       function sendIfChanged() {
         pending = undefined;
-        const snapshot = toLiveSnapshot(live, clock.now(), mainFuseA);
+        const snapshot = toLiveSnapshot(
+          live,
+          clock.now(),
+          settings.current().mainFuseAmps
+        );
         const state = JSON.stringify({ ...snapshot, at: undefined });
         if (state === lastSentState) return;
         lastSentState = state;

@@ -36,6 +36,13 @@
       "when": 1795375278480,
       "tag": "0004_shadow_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795375887020,
+      "tag": "0005_app_state",
+      "breakpoints": true
     }
   ]
 }

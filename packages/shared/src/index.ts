@@ -3,5 +3,6 @@
 export * from "./auth.ts";
 export * from "./health.ts";
 export * from "./live.ts";
+export * from "./settings.ts";
 export * from "./shadow.ts";
 export * from "./solar-mode.ts";

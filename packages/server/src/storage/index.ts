@@ -3,7 +3,11 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { shadowDecision, shadowSettings } from "@charge-on-solar/shared";
+import {
+  type Settings,
+  settings,
+  shadowDecision,
+} from "@charge-on-solar/shared";
 import Database from "better-sqlite3";
 import { and, asc, count, desc, eq, gt, gte, isNull, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -25,6 +29,7 @@ import type {
 } from "../domain/signed-in-device.ts";
 import type { Startup } from "../domain/startup.ts";
 import type { NewUser, User } from "../domain/user.ts";
+import { defaultTickIntervalSeconds } from "../settings.ts";
 import * as schema from "./schema.ts";
 
 export interface Storage {
@@ -41,6 +46,9 @@ export interface Storage {
   latestShadowDecision(): Promise<RecordedShadowDecision | undefined>;
   /** Shadow decisions made in `[from, to)`, oldest first, at most `limit`. */
   listShadowDecisions(window: ReadingWindow): Promise<RecordedShadowDecision[]>;
+  /** The Settings last saved, if they ever were. */
+  readSettings(): Promise<Settings | undefined>;
+  saveSettings(settings: Settings, at: Date): Promise<void>;
 
   /** Adds a User, or answers undefined when one already has this email. */
   addUser(user: NewUser & { at: Date }): Promise<User | undefined>;
@@ -199,6 +207,24 @@ function storageOn(
         .limit(limit)
         .all()
         .map(fromShadowDecisionRow);
+    },
+    async readSettings() {
+      const row = db
+        .select({ value: schema.appState.value })
+        .from(schema.appState)
+        .where(eq(schema.appState.key, settingsKey))
+        .get();
+      return row && settings.parse(JSON.parse(row.value));
+    },
+    async saveSettings(saved, at) {
+      const value = JSON.stringify(saved);
+      db.insert(schema.appState)
+        .values({ key: settingsKey, value, updatedAt: at })
+        .onConflictDoUpdate({
+          target: schema.appState.key,
+          set: { value, updatedAt: at },
+        })
+        .run();
     },
 
     async addUser({ name, email, at }) {
@@ -487,7 +513,19 @@ const storedSimulatedCharger = z.object({
   currentChangedAt: storedDate.nullable(),
   switchedAt: storedDate.nullable(),
   switchCount: z.number(),
+  // Rows recorded before the holds were kept with the simulated charger.
+  switchHoldMinutes: z.number().nullable().default(null),
+  currentHoldMinutes: z.number().nullable().default(null),
 }) satisfies z.ZodType<SimulatedCharger, unknown>;
+
+const settingsKey = "settings";
+
+// Decisions recorded before the tick interval was a setting ticked at the default.
+const stampedSettings = settings.extend({
+  tickIntervalSeconds: settings.shape.tickIntervalSeconds.default(
+    defaultTickIntervalSeconds
+  ),
+});
 
 function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
   return {
@@ -516,7 +554,7 @@ function fromShadowDecisionRow(row: ShadowDecisionRow): RecordedShadowDecision {
     },
     stamp: {
       rulesVersion: row.rulesVersion,
-      settings: shadowSettings.parse(JSON.parse(row.settings)),
+      settings: stampedSettings.parse(JSON.parse(row.settings)),
     },
   };
 }

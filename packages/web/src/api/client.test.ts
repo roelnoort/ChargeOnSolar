@@ -2,6 +2,8 @@ import {
   csrfHeader,
   type Health,
   loginCodePath,
+  type Settings,
+  settingsPath,
 } from "@charge-on-solar/shared";
 import { describe, expect, it } from "vitest";
 import { createApiClient, NotSignedInError } from "./client.ts";
@@ -103,6 +105,31 @@ describe("the API client's session calls", () => {
     });
 
     await expect(client.session()).rejects.toBeInstanceOf(NotSignedInError);
+  });
+
+  it("saves the Settings with a PUT and answers what the server kept", async () => {
+    const kept: Settings = {
+      solarMode: "all-solar",
+      startWindowMinutes: 5,
+      stopWindowMinutes: 10,
+      minimumOnTimeMinutes: 15,
+      minimumOffTimeMinutes: 15,
+      currentHoldMinutes: 15,
+      deadBandAmps: 1,
+      voltage: 230,
+      mainFuseAmps: 25,
+      minimumSolarWatts: 0,
+      tickIntervalSeconds: 60,
+    };
+    const { requests, client } = recording(200, kept);
+
+    expect(await client.saveSettings(kept)).toEqual(kept);
+    expect(requests[0]?.url).toBe(settingsPath);
+    expect(requests[0]?.init?.method).toBe("PUT");
+    expect(headersOf(requests[0]?.init).get(csrfHeader.name)).toBe(
+      csrfHeader.value
+    );
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual(kept);
   });
 
   it("revokes a Signed-in device by its id", async () => {

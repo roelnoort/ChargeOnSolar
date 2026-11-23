@@ -87,7 +87,8 @@ body {
   position: sticky;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -371,4 +372,84 @@ button.link {
   font-weight: 600;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.settings {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings fieldset {
+  margin: 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.settings legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.solar-modes {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.solar-modes legend {
+  font-size: 1.25rem;
+}
+
+.solar-mode {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.solar-mode:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.solar-mode input {
+  min-height: auto;
+  margin-top: 0.3rem;
+  accent-color: var(--accent);
+}
+
+.solar-mode > span {
+  display: grid;
+  font-weight: 400;
+}
+
+.thresholds {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.threshold {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 400;
+}
+
+.threshold-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.threshold-input input {
+  width: 6rem;
+  text-align: right;
+}
+
+.threshold-input .status {
+  width: 2rem;
 }

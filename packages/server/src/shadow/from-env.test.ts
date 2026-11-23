@@ -3,7 +3,7 @@ import { shadowTickFromEnv } from "./from-env.ts";
 
 describe("the Shadow runner's tick from .env", () => {
   it("is SHADOW_TICK_SECONDS when set", () => {
-    expect(shadowTickFromEnv({ SHADOW_TICK_SECONDS: "30" })).toBe(30_000);
+    expect(shadowTickFromEnv({ SHADOW_TICK_SECONDS: "30" })).toBe(30);
   });
 
   it("is left to the default when unset", () => {

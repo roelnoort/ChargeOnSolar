@@ -2,16 +2,22 @@
 // engine what Automatic control would do, records the decision and hands it
 // to the live state. Shadow decisions are never sent to the charger: the
 // runner has no Zaptec client to send them with.
-import type { AveragedInputs } from "@charge-on-solar/shared";
+import type {
+  AveragedInputs,
+  ChargerState,
+  Settings,
+} from "@charge-on-solar/shared";
 import type { Cancel, Clock } from "../clock.ts";
-import type { ChargerReading } from "../domain/charger-reading.ts";
+import {
+  type ChargerReading,
+  toChargerState,
+} from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
 import {
   type CarState,
   decideShadow,
   noCar,
-  type ShadowSettings,
   type ShadowSnapshot,
   type SimulatedCharger,
   stampShadowSettings,
@@ -26,15 +32,15 @@ export interface ShadowRunnerOptions {
   live: LiveState;
   storage: Storage;
   log: (line: string) => void;
-  tickMs: number;
-  settings: ShadowSettings;
+  /** Read afresh at every tick, so a change takes effect at the next one. */
+  settings: () => Settings;
 }
 
 export interface ShadowRunner {
   stop(): void;
 }
 
-export const defaultShadowTickMs = 60_000;
+const second = 1000;
 const minute = 60_000;
 
 /**
@@ -48,7 +54,6 @@ export async function startShadowRunner({
   live,
   storage,
   log,
-  tickMs,
   settings,
 }: ShadowRunnerOptions): Promise<ShadowRunner> {
   const latest = await storage.latestShadowDecision();
@@ -60,10 +65,6 @@ export async function startShadowRunner({
     chargerPowerW: new StepSeries(),
     fuseHeadroomA: new StepSeries(),
   };
-  const longestWindowMs =
-    Math.max(settings.startWindowMinutes, settings.stopWindowMinutes, 1) *
-      minute +
-    tickMs;
   let lastSkipReason: string | undefined;
 
   function sample() {
@@ -75,19 +76,18 @@ export async function startShadowRunner({
     series.chargerPowerW.add(now, charger?.chargerPowerW ?? null);
     series.fuseHeadroomA.add(
       now,
-      fuseHeadroomA(p1, charger, settings.mainFuseAmps)
+      fuseHeadroomA(p1, charger, settings().mainFuseAmps)
     );
   }
 
-  async function decide() {
-    const now = clock.now();
+  async function decide(now: Date, current: Settings) {
     const charger = live.charger();
-    const inputs = averagedInputs(now);
+    const inputs = averagedInputs(now, current);
     if (!charger) return skip("no Reading from Zaptec yet");
     const snapshot = toSnapshot(now, charger, inputs);
     if (typeof snapshot === "string") return skip(snapshot);
     lastSkipReason = undefined;
-    const { decision, next } = decideShadow(snapshot, simulated, settings);
+    const { decision, next } = decideShadow(snapshot, simulated, current);
     simulated = next;
     const recorded: RecordedShadowDecision = {
       at: now,
@@ -100,7 +100,7 @@ export async function startShadowRunner({
         surplusModeActive: charger.surplusModeActive,
         chargeCurrentSetA: charger.chargingCurrentSetA,
       },
-      stamp: stampShadowSettings(settings),
+      stamp: stampShadowSettings(current),
     };
     await storage.recordShadowDecision(recorded);
     live.recordShadowDecision(recorded);
@@ -111,10 +111,11 @@ export async function startShadowRunner({
     lastSkipReason = reason;
   }
 
-  function averagedInputs(now: Date): AveragedInputs {
+  function averagedInputs(now: Date, current: Settings): AveragedInputs {
     const ago = (milliseconds: number) =>
       new Date(now.getTime() - milliseconds);
-    const overTick = (values: StepSeries) => values.average(ago(tickMs), now);
+    const overTick = (values: StepSeries) =>
+      values.average(ago(current.tickIntervalSeconds * second), now);
     const ageOf = (reading: { receivedAt: Date } | undefined) =>
       reading ? now.getTime() - reading.receivedAt.getTime() : null;
     return {
@@ -125,11 +126,11 @@ export async function startShadowRunner({
       chargerPowerW: overTick(series.chargerPowerW),
       fuseHeadroomA: overTick(series.fuseHeadroomA),
       startWindowSurplusW: series.surplusW.average(
-        ago(settings.startWindowMinutes * minute),
+        ago(current.startWindowMinutes * minute),
         now
       ),
       stopWindowSurplusW: series.surplusW.average(
-        ago(settings.stopWindowMinutes * minute),
+        ago(current.stopWindowMinutes * minute),
         now
       ),
       dataAgeMs: {
@@ -140,15 +141,21 @@ export async function startShadowRunner({
     };
   }
 
-  let cancelNext: Cancel = clock.after(tickMs, tick);
+  const scheduleTick = () =>
+    clock.after(settings().tickIntervalSeconds * second, tick);
+  let cancelNext: Cancel = scheduleTick();
   function tick() {
-    cancelNext = clock.after(tickMs, tick);
-    decide().catch((error: unknown) =>
+    cancelNext = scheduleTick();
+    const now = clock.now();
+    const current = settings();
+    decide(now, current).catch((error: unknown) =>
       log(`Shadow decision not recorded: ${messageOf(error)}`)
     );
-    const now = clock.now();
+    const longestKeptMs =
+      Math.max(current.startWindowMinutes, current.stopWindowMinutes) * minute +
+      current.tickIntervalSeconds * second;
     for (const values of Object.values(series)) {
-      values.forgetBefore(new Date(now.getTime() - longestWindowMs));
+      values.forgetBefore(new Date(now.getTime() - longestKeptMs));
     }
   }
 
@@ -188,22 +195,18 @@ function toSnapshot(
   };
 }
 
-// Zaptec's ChargerOperationMode (state 710) and FinalStopActive (state 718).
-function carStateOf({
-  operationMode,
-  finalStopActive,
-}: ChargerReading): { car: CarState; finalStopPause: boolean } | undefined {
-  switch (operationMode) {
-    case 1:
-      return { car: "none", finalStopPause: false };
-    case 2:
-    case 3:
-      return { car: "accepting", finalStopPause: false };
-    case 5:
-      return finalStopActive
-        ? { car: "accepting", finalStopPause: true }
-        : { car: "not-accepting", finalStopPause: false };
-    default:
-      return undefined;
-  }
+const carStates: Record<
+  ChargerState,
+  { car: CarState; finalStopPause: boolean } | undefined
+> = {
+  disconnected: { car: "none", finalStopPause: false },
+  connected: { car: "accepting", finalStopPause: false },
+  charging: { car: "accepting", finalStopPause: false },
+  paused: { car: "accepting", finalStopPause: true },
+  finished: { car: "not-accepting", finalStopPause: false },
+  unknown: undefined,
+};
+
+function carStateOf(charger: ChargerReading) {
+  return carStates[toChargerState(charger)];
 }

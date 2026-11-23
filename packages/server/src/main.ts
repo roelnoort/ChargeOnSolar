@@ -26,7 +26,7 @@ const server = await assembleServer({
   p1Client: p1ClientFromEnv(process.env, systemClock),
   zaptecClient: zaptecClientFromEnv(process.env, systemClock),
   mainFuseA: mainFuseFromEnv(process.env),
-  shadowTickMs: shadowTickFromEnv(process.env),
+  shadowTickSeconds: shadowTickFromEnv(process.env),
   webRoot,
 });
 

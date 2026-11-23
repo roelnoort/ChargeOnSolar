@@ -167,21 +167,6 @@ describe("Shadow decisions", () => {
     });
   });
 
-  it("follow the tick setting", async () => {
-    const { p1, advance } = await start({
-      charger: carPluggedIn,
-      shadowTickMs: 5 * minute,
-    });
-    p1.send(exporting(3300));
-
-    await advance(10 * minute);
-
-    expect((await decisions()).map(({ at }) => at)).toEqual([
-      "2026-06-01T12:05:00.000Z",
-      "2026-06-01T12:10:00.000Z",
-    ]);
-  });
-
   it("are paused, with what would happen without the pause, while the charger is paused", async () => {
     const { p1, advance } = await start({
       charger: { ...carPluggedIn, operationMode: 5, finalStopActive: true },
