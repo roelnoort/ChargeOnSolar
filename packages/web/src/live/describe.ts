@@ -4,6 +4,7 @@ import type {
   PhaseSetting,
   ZaptecMode,
 } from "@charge-on-solar/shared";
+import { amsterdamClockTime } from "../amsterdam-clock.ts";
 
 export const netPowerDirections = [
   "importing",
@@ -138,17 +139,9 @@ export function describeDataAge(ageMs: number, staleAfterMs = p1StaleAfterMs) {
   return { text, stale: ageMs > staleAfterMs };
 }
 
-// The household's clock: Enphase intervals end on its 5-minute marks.
-const clockTime = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Amsterdam",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-
 /** When Solar production was last reported, as "as of hh:mm". */
 export function describeAsOf(asOf: string): string {
-  return `as of ${clockTime.format(new Date(asOf))}`;
+  return `as of ${amsterdamClockTime.format(new Date(asOf))}`;
 }
 
 const callCount = new Intl.NumberFormat("en-GB");

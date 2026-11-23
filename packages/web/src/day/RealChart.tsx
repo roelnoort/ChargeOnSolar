@@ -1,5 +1,6 @@
-import type { DayTimeline } from "@charge-on-solar/shared";
+import { type DayTimeline, dayTimelineBucketMs } from "@charge-on-solar/shared";
 import { useEffect, useRef, useState } from "react";
+import { amsterdamClockTime } from "../amsterdam-clock.ts";
 import {
   type RealChartBucket,
   realChartBucket,
@@ -96,13 +97,6 @@ function stackedTotalW(bucket: RealChartBucket): number {
   }
 }
 
-const hourFormat = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Amsterdam",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-
 const kwhFormat = new Intl.NumberFormat("en-GB", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -124,9 +118,8 @@ export function RealChart({
   const plotRight = width - pad.right;
   const x = (at: number) =>
     pad.left + ((at - dayStart) / (dayEnd - dayStart)) * (plotRight - pad.left);
-  const bucketMs = (dayEnd - dayStart) / Math.max(1, buckets.length);
   const middleOf = (bucket: RealChartBucket) =>
-    x(Date.parse(bucket.start) + bucketMs / 2);
+    x(Date.parse(bucket.start) + dayTimelineBucketMs / 2);
 
   const peakW = Math.max(0, ...buckets.map(stackedTotalW));
   const scaleW = Math.max(smallestScaleW, Math.ceil(peakW / 1000) * 1000);
@@ -139,7 +132,7 @@ export function RealChart({
 
   const hoursPerTick = width < 560 ? 6 : 3;
   const hourTicks = timeline.buckets.flatMap((bucket) => {
-    const label = hourFormat.format(Date.parse(bucket.start));
+    const label = amsterdamClockTime.format(Date.parse(bucket.start));
     const hour = Number(label.slice(0, 2));
     return label.endsWith(":00") && hour % hoursPerTick === 0
       ? [{ at: Date.parse(bucket.start), label }]

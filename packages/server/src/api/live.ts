@@ -153,10 +153,10 @@ export function addLiveRoutes(
 
       sendIfChanged();
       const stopListening = live.onChange(onChange);
-      const stopListeningForSolar = live.onSolarFetch((fetch) => {
+      const stopListeningForSolar = live.onSolarFetch((solarFetch) => {
         void stream.writeSSE({
           event: solarUpdatedEvent,
-          data: JSON.stringify(toSolarUpdated(fetch)),
+          data: JSON.stringify(toSolarUpdated(solarFetch)),
         });
       });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
