@@ -21,6 +21,11 @@ into Surplus.
   2 calls for every daily fetch left in the month, today's included. The
   daily fetch itself only needs 2 calls left. So a User can never press the
   button so often that the history stops being recorded.
+- **Retries spend only what later daily fetches do not need.** While Enphase
+  is unreachable the daily fetch retries with back-off, and every attempt
+  costs calls. A retry is skipped unless the calls left after it still cover
+  2 calls for every daily fetch still to come this month, so an outage cannot
+  spend the history of the days after it.
 - **The limit is a hard stop.** A fetch whose access token Enphase rejects
   early renews and asks again, so it can make up to 4 calls. Every call is
   therefore checked as it is counted, and once the month's 1,000 are used the

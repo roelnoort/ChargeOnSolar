@@ -40,6 +40,28 @@ export function refreshRefusal(
   );
 }
 
+/**
+ * Why a failed daily fetch may not be tried again now, or undefined when it
+ * may: it must leave enough calls for the month's daily fetches still to
+ * come, from `nextDailyFetch` on.
+ */
+export function retryRefusal(
+  budget: CallBudget,
+  nextDailyFetch: Date
+): string | undefined {
+  const dailyFetchesToCome =
+    amsterdamMonth(nextDailyFetch) === budget.month
+      ? amsterdamDaysLeftInMonth(nextDailyFetch)
+      : 0;
+  const keptBack = dailyFetchesToCome * callsPerFetch;
+  if (budget.remaining - callsPerFetch >= keptBack) return undefined;
+  return (
+    `only ${callCount.format(budget.remaining)} of this month's ` +
+    `${callCount.format(budget.limit)} Enphase calls are left, and ` +
+    `${callCount.format(keptBack)} are kept for the daily fetches still to come`
+  );
+}
+
 /** Why the daily fetch may not run now, or undefined when it may. */
 export function dailyFetchRefusal(budget: CallBudget): string | undefined {
   if (budget.remaining >= callsPerFetch) return undefined;

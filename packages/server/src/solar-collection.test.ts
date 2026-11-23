@@ -187,6 +187,24 @@ describe("the daily fetch from Enphase", () => {
     );
   });
 
+  it("stops retrying before the retries eat into the calls kept for the daily fetches to come", async () => {
+    const testServer = await start({ enphaseUnreachable: true });
+    // 60 calls left: after the first attempt's one call, 59, while June's
+    // 29 daily fetches still to come keep 58 back.
+    await testServer.useEnphaseCalls(940);
+
+    await testServer.advanceUntilSolarFetch(11 * hour + 30 * minute);
+    testServer.clock.advance(2 * hour);
+    await testServer.settle();
+
+    expect(testServer.enphase.fetches).toHaveLength(1);
+    expect(testServer.logs).toContainEqual(
+      expect.stringMatching(
+        /Daily Enphase fetch skipped: .*58 are kept for the daily fetches/
+      )
+    );
+  });
+
   it("skips the daily fetch, without retrying, once the month's calls are spent", async () => {
     const testServer = await start();
     await testServer.useEnphaseCalls(999);

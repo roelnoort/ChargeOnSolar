@@ -6,6 +6,7 @@ import {
   callBudget,
   dailyFetchRefusal,
   refreshRefusal,
+  retryRefusal,
   spentRefusal,
 } from "../domain/call-budget.ts";
 import type { LiveState } from "../domain/live-state.ts";
@@ -18,6 +19,11 @@ export interface SolarCollection {
   refresh(): Promise<SolarInterval | undefined>;
   /** Fetches the intervals of the day starting at `dayStart`, on schedule. */
   fetchDay(dayStart: Date): Promise<void>;
+  /**
+   * Tries a failed daily fetch again, leaving the calls the daily fetches
+   * from `nextDailyFetch` on will need.
+   */
+  retryDay(dayStart: Date, nextDailyFetch: Date): Promise<void>;
 }
 
 export interface SolarCollectionOptions {
@@ -97,6 +103,11 @@ export function createSolarCollection({
     },
     async fetchDay(dayStart) {
       await fetchOnce(dayStart, dailyFetchRefusal);
+    },
+    async retryDay(dayStart, nextDailyFetch) {
+      await fetchOnce(dayStart, (budget) =>
+        retryRefusal(budget, nextDailyFetch)
+      );
     },
   };
 }
