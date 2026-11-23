@@ -1,0 +1,6 @@
+# Laptop try-out only: publishes the app on http://localhost:3000. Never use
+# this on the NUC, where only the proxy publishes ports.
+services:
+  chargeonsolar:
+    ports:
+      - "127.0.0.1:3000:3000"

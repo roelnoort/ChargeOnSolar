@@ -17,6 +17,7 @@
     "typecheck:all": "pnpm -r --include-workspace-root --if-present run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:image": "bash scripts/test-image.sh",
     "format": "biome format --write .",
     "lint": "biome check .",
     "lint:shell": "bash scripts/lint-shell.sh",

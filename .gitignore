@@ -147,3 +147,5 @@ vite.config.ts.timestamp-*
 
 # Server data: the SQLite database and its backups
 packages/server/data/
+# The container's data folder (compose.yaml)
+/data/

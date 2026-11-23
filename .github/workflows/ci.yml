@@ -5,7 +5,7 @@ name: CI
 # check. All four are `pnpm check`, the same command you run locally. It also
 # runs shellcheck on every shell script (`pnpm lint:shell`), which is kept out
 # of `pnpm check` because it needs the shellcheck binary; CI installs a pinned
-# release below.
+# release below. A second job builds the container image and smoke-tests it.
 #
 # The pre-commit hook runs only lint and typecheck, and can be skipped. This
 # workflow is what makes a PR show a red or green check on GitHub, for agent
@@ -62,3 +62,23 @@ jobs:
 
       - name: Shellcheck every shell script
         run: pnpm lint:shell
+
+  # Builds the container image and checks it from outside: it serves the web
+  # app and the API, writes its database to the mounted data folder and keeps
+  # running. Catches a broken Dockerfile before anyone deploys.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # compose.yaml needs a .env and the external proxy network to resolve.
+      - name: Check compose.yaml
+        run: |
+          touch .env
+          docker network create proxy
+          docker compose config --quiet
+
+      - name: Build and smoke-test the image
+        run: bash scripts/test-image.sh

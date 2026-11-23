@@ -1,0 +1,17 @@
+# Keep secrets, local data and host-built files out of the image.
+.env
+.env.*
+**/node_modules
+**/dist
+data
+packages/server/data
+.git
+.github
+.husky
+.claude
+.agents
+.sandcastle
+coverage
+**/*.test.ts
+**/*.test.tsx
+packages/server/src/testing
