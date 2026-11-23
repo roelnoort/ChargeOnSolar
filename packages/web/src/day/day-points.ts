@@ -6,7 +6,7 @@ import {
   type ShadowDecisionRecord,
   type ShadowSwitch,
   shadowChargerPowerW,
-  shadowSwitchOf,
+  shadowSwitchesOf,
 } from "@charge-on-solar/shared";
 
 /**
@@ -75,13 +75,9 @@ export function dayShadowSwitches(
   loadedAt: number,
   decisions: ShadowDecisionRecord[]
 ): ShadowSwitch[] {
-  const since = new Set(decisionsSince(timeline, loadedAt, decisions));
-  const live = decisions.flatMap((record, index) => {
-    if (!since.has(record)) return [];
-    const previousCurrentA = decisions[index - 1]?.chargingCurrentA ?? null;
-    const shadowSwitch = shadowSwitchOf(record.decision, previousCurrentA);
-    return shadowSwitch ? [{ ...shadowSwitch, at: record.at }] : [];
-  });
+  const live = shadowSwitchesOf(decisions).filter(({ at }) =>
+    madeSince(timeline, loadedAt, at)
+  );
   return [...timeline.shadowSwitches, ...live];
 }
 
@@ -114,9 +110,11 @@ function decisionsSince(
   loadedAt: number,
   decisions: ShadowDecisionRecord[]
 ): ShadowDecisionRecord[] {
-  const end = Date.parse(timeline.end);
-  return decisions.filter((record) => {
-    const at = Date.parse(record.at);
-    return at > loadedAt && at <= end;
-  });
+  return decisions.filter(({ at }) => madeSince(timeline, loadedAt, at));
+}
+
+/** Whether a Shadow decision made `at` came after the load, within the day. */
+function madeSince(timeline: DayTimeline, loadedAt: number, at: string) {
+  const made = Date.parse(at);
+  return made > loadedAt && made <= Date.parse(timeline.end);
 }

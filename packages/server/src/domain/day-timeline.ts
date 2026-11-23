@@ -1,7 +1,7 @@
 import {
-  type ShadowSwitch,
+  type ShadowSwitchAt,
   shadowChargerPowerW,
-  shadowSwitchOf,
+  shadowSwitchesOf,
 } from "@charge-on-solar/shared";
 import type { BucketWindow, PowerBucket } from "./power-bucket.ts";
 import type { RecordedShadowDecision } from "./shadow/recorded-decision.ts";
@@ -121,19 +121,17 @@ function shadowChargerPowerPerBucket(
 }
 
 /** A Shadow start or stop of the day, as the domain keeps it. */
-export type DayShadowSwitch = Omit<ShadowSwitch, "at"> & { at: Date };
+export type DayShadowSwitch = ShadowSwitchAt<Date>;
 
-/**
- * The day's Shadow starts and stops. A stop at the day's first decision
- * does not know the Charging current it stopped from.
- */
+/** The day's Shadow starts and stops. */
 export function toShadowSwitches(
   decisions: RecordedShadowDecision[]
 ): DayShadowSwitch[] {
-  return decisions.flatMap((recorded, index) => {
-    const previousCurrentA =
-      decisions[index - 1]?.simulated.currentAmps ?? null;
-    const shadowSwitch = shadowSwitchOf(recorded.decision, previousCurrentA);
-    return shadowSwitch ? [{ ...shadowSwitch, at: recorded.at }] : [];
-  });
+  return shadowSwitchesOf(
+    decisions.map(({ at, decision, simulated }) => ({
+      at,
+      decision,
+      chargingCurrentA: simulated.currentAmps,
+    }))
+  );
 }

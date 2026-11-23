@@ -44,21 +44,34 @@ export const shadowSwitch = z.object({
 });
 export type ShadowSwitch = z.infer<typeof shadowSwitch>;
 
+/** A Shadow start or stop, with its moment in whichever form the caller keeps it. */
+export type ShadowSwitchAt<At> = Omit<ShadowSwitch, "at"> & { at: At };
+
+/** A Shadow decision, as far as its start or stop goes. */
+export interface ShadowSwitchStep<At> {
+  at: At;
+  decision: ShadowDecision;
+  /** The simulated charger's Charging current after the decision. */
+  chargingCurrentA: number | null;
+}
+
 /**
- * The start or stop a Shadow decision makes, if it makes one.
- * `previousCurrentA` is the simulated charger's Charging current before it.
+ * The starts and stops of consecutive Shadow decisions, oldest first. A stop
+ * at the first decision does not know the Charging current it stopped from.
  */
-export function shadowSwitchOf(
-  decision: ShadowDecision,
-  previousCurrentA: number | null
-): Omit<ShadowSwitch, "at"> | undefined {
-  if (decision.kind === "start") {
-    return { kind: "start", currentA: decision.currentAmps };
-  }
-  if (decision.kind === "stop") {
-    return { kind: "stop", currentA: previousCurrentA };
-  }
-  return undefined;
+export function shadowSwitchesOf<At>(
+  steps: ShadowSwitchStep<At>[]
+): ShadowSwitchAt<At>[] {
+  return steps.flatMap(({ at, decision }, index): ShadowSwitchAt<At>[] => {
+    if (decision.kind === "start") {
+      return [{ at, kind: "start", currentA: decision.currentAmps }];
+    }
+    if (decision.kind === "stop") {
+      const currentA = steps[index - 1]?.chargingCurrentA ?? null;
+      return [{ at, kind: "stop", currentA }];
+    }
+    return [];
+  });
 }
 
 /** A Manual override as the Day tab flags it: what was sent, by which User. */
