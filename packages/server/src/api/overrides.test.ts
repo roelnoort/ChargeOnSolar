@@ -540,6 +540,29 @@ describe("open pauses after a restart", () => {
     ]);
   });
 
+  it("are closed when the car has gone, also for a pause ChargeOnSolar sent itself", async () => {
+    dataDir = await mkdtemp(join(tmpdir(), "overrides-"));
+    server = await startTestServer({ dataDir, charger: charging });
+    await sendOk("pause");
+    server.zaptec.set(pausedByUs);
+    await server.pollZaptec();
+    await server.close();
+
+    server = await startTestServer({
+      dataDir,
+      charger: unplugged,
+      now: new Date("2026-06-01T13:00:00.000Z"),
+    });
+
+    expect(await pauses()).toEqual([
+      expect.objectContaining({
+        source: "chargeonsolar",
+        endedAt: new Date("2026-06-01T13:00:00.000Z"),
+        ending: "unplugged",
+      }),
+    ]);
+  });
+
   it("stay open, and are the pause a Resume answers, when the charger is still paused", async () => {
     await restartWith(pausedByUs);
     const [pause] = await pauses();
