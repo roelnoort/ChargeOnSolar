@@ -1,0 +1,31 @@
+# ChargeOnSolar on the NUC. The shared proxy stack serves it over HTTPS on the
+# external `proxy` network, so this stack publishes no ports.
+#
+# Before the first start:
+#   - `.env` sits next to this file (chmod 600).
+#   - `./data` exists and is owned by uid 1000, the image's `node` user;
+#     otherwise Docker creates it as root and the app cannot write its database.
+#   - The `proxy` network exists: `docker network create proxy`.
+#
+# To try it on a laptop without the proxy, add compose.local.yaml:
+#   docker compose -f compose.yaml -f compose.local.yaml up --build
+
+name: chargeonsolar
+
+services:
+  chargeonsolar:
+    build: .
+    image: chargeonsolar
+    restart: unless-stopped
+    init: true
+    env_file:
+      - path: .env
+        required: true
+    volumes:
+      - ./data:/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

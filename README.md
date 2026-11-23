@@ -13,4 +13,5 @@ Charge my EV only when there is a solar surplus
 ## Checks
 
 - `pnpm check` runs Biome, the typechecks, the tests and the migration drift check, as CI does.
+- `pnpm test:image` builds the container image, starts it and checks it from outside, as CI does. Needs Docker.
 - `pnpm lint:shell` runs shellcheck on every shell script in the repo, as CI does. Install shellcheck first (`brew install shellcheck`).
