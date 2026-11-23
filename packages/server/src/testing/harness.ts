@@ -18,6 +18,10 @@ import { amsterdamMonth } from "../domain/amsterdam-time.ts";
 import type { NewUser, User } from "../domain/user.ts";
 import type { RefreshTokenStore } from "../enphase/client.ts";
 import { createRefreshTokenStore } from "../enphase/refresh-token-store.ts";
+import {
+  type EnphaseCommandResult,
+  runEnphaseCommand,
+} from "../enphase-command.ts";
 import { assembleServer, dataFiles } from "../server.ts";
 import type { Storage } from "../storage/index.ts";
 import { runUsersCommand, type UsersCommandResult } from "../users-command.ts";
@@ -92,6 +96,14 @@ export interface TestServer {
   advanceUntilSolarFetch(milliseconds: number): Promise<void>;
   /** Counts this many Enphase calls against the current month's budget. */
   useEnphaseCalls(calls: number): Promise<void>;
+  /**
+   * Runs `pnpm enphase` with these arguments against this server's database,
+   * with `fetch` standing in for Enphase.
+   */
+  enphaseCommand(
+    args: string[],
+    fetch: typeof globalThis.fetch
+  ): Promise<EnphaseCommandResult>;
   /** The server's encrypted store of the Enphase refresh token. */
   enphaseRefreshTokens: RefreshTokenStore;
   /** Lets the promise callbacks already queued run, e.g. a collector's. */
@@ -206,6 +218,17 @@ export async function startTestServer(
         calls
       );
     },
+    enphaseCommand: (args, fetch) =>
+      runEnphaseCommand(args, {
+        storage: server.storage,
+        clock,
+        login: {
+          clientId: "test-client-id",
+          clientSecret: "test-client-secret",
+          refreshTokenKey,
+        },
+        fetch,
+      }),
     enphaseRefreshTokens: createRefreshTokenStore({
       storage: server.storage,
       key: refreshTokenKey,
