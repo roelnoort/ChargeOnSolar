@@ -3,6 +3,7 @@ import {
   type LiveSnapshot,
   livePath,
   liveStreamPath,
+  overrideEvent,
   snapshotEvent,
   type ZaptecMode,
 } from "@charge-on-solar/shared";
@@ -15,12 +16,16 @@ import {
 } from "../domain/charger-reading.ts";
 import { fuseHeadroomA, surplusW } from "../domain/energy.ts";
 import type { LiveState } from "../domain/live-state.ts";
+import { switchesPerChargeSession } from "../domain/switch-budget.ts";
+import type { Overrides } from "../overrides.ts";
 import type { SettingsStore } from "../settings.ts";
+import { toManualOverride } from "./overrides.ts";
 import type { SessionEnv } from "./session.ts";
 import { toShadowDecisionRecord } from "./shadow.ts";
 
 export interface LiveRouteDependencies {
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
   settings: SettingsStore;
 }
@@ -38,13 +43,17 @@ function toZaptecMode({ availableCurrentMode }: ChargerReading): ZaptecMode {
     : (zaptecModes[availableCurrentMode] ?? "unknown");
 }
 
-export function toLiveSnapshot(
-  live: LiveState,
-  now: Date,
-  mainFuseA: number
-): LiveSnapshot {
+export function toLiveSnapshot({
+  live,
+  overrides,
+  clock,
+  settings,
+}: LiveRouteDependencies): LiveSnapshot {
+  const now = clock.now();
+  const mainFuseA = settings.current().mainFuseAmps;
   const p1 = live.p1();
   const charger = live.charger();
+  const interruptions = live.interruptions();
   const shadowDecision = live.shadowDecision();
   return {
     at: now.toISOString(),
@@ -78,6 +87,14 @@ export function toLiveSnapshot(
     surplusW: surplusW(p1, charger),
     mainFuseA,
     fuseHeadroomA: fuseHeadroomA(p1, charger, mainFuseA),
+    override: overrides.availability(),
+    switchBudget:
+      interruptions === null
+        ? null
+        : {
+            switchesLeft: Math.max(0, switchesPerChargeSession - interruptions),
+            switchesPerSession: switchesPerChargeSession,
+          },
     shadowDecision: shadowDecision
       ? toShadowDecisionRecord(shadowDecision)
       : null,
@@ -86,11 +103,10 @@ export function toLiveSnapshot(
 
 export function addLiveRoutes(
   app: Hono<SessionEnv>,
-  { live, clock, settings }: LiveRouteDependencies
+  dependencies: LiveRouteDependencies
 ) {
-  app.get(livePath, (c) =>
-    c.json(toLiveSnapshot(live, clock.now(), settings.current().mainFuseAmps))
-  );
+  const { live, overrides, clock } = dependencies;
+  app.get(livePath, (c) => c.json(toLiveSnapshot(dependencies)));
 
   app.get(liveStreamPath, (c) =>
     streamSSE(c, async (stream) => {
@@ -100,11 +116,7 @@ export function addLiveRoutes(
 
       function sendIfChanged() {
         pending = undefined;
-        const snapshot = toLiveSnapshot(
-          live,
-          clock.now(),
-          settings.current().mainFuseAmps
-        );
+        const snapshot = toLiveSnapshot(dependencies);
         const state = JSON.stringify({ ...snapshot, at: undefined });
         if (state === lastSentState) return;
         lastSentState = state;
@@ -130,9 +142,17 @@ export function addLiveRoutes(
           data: JSON.stringify(toShadowDecisionRecord(decision)),
         });
       });
+      const stopFollowingOverrides = overrides.onChange((progress) => {
+        void stream.writeSSE({
+          event: overrideEvent,
+          data: JSON.stringify(toManualOverride(progress)),
+        });
+        onChange();
+      });
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       stopListening();
       stopDecisions();
+      stopFollowingOverrides();
       pending?.();
     })
   );

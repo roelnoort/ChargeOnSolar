@@ -43,6 +43,13 @@
       "when": 1795375887020,
       "tag": "0005_app_state",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795431193347,
+      "tag": "0006_manual_overrides",
+      "breakpoints": true
     }
   ]
 }

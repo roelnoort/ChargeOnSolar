@@ -1,6 +1,7 @@
+import type { OverrideCommand } from "@charge-on-solar/shared";
 import type { Clock } from "../clock.ts";
 import type { ChargerReading } from "../domain/charger-reading.ts";
-import type { ZaptecClient } from "../zaptec/client.ts";
+import type { CommandResult, ZaptecClient } from "../zaptec/client.ts";
 
 /** What the fake charger reports; anything left out is idle and unknown. */
 export type FakeChargerState = Partial<
@@ -16,12 +17,23 @@ export interface FakeZaptecClient extends ZaptecClient {
   readonly readAttempts: number;
   /** Resolves after the next read has answered. */
   whenRead(): Promise<void>;
+  /**
+   * What every command answers from now on: accepted until set. The charger
+   * state does not change by itself; the test sets what it reports next.
+   */
+  commandResult: CommandResult;
+  /** Every command sent, in order. */
+  readonly commandsSent: readonly OverrideCommand[];
+  /** Holds back every command's answer until the returned function is called. */
+  holdCommands(): () => void;
 }
 
 export function createFakeZaptecClient(clock: Clock): FakeZaptecClient {
   let state: FakeChargerState | undefined;
   let readAttempts = 0;
+  const commandsSent: OverrideCommand[] = [];
   const readListeners: (() => void)[] = [];
+  let held: Promise<void> = Promise.resolve();
 
   function answered() {
     for (const listener of readListeners.splice(0)) listener();
@@ -29,6 +41,20 @@ export function createFakeZaptecClient(clock: Clock): FakeZaptecClient {
 
   return {
     unreachable: false,
+    commandResult: { accepted: true },
+    commandsSent,
+    async sendCommand(command) {
+      commandsSent.push(command);
+      await held;
+      return this.commandResult;
+    },
+    holdCommands() {
+      let release = () => {};
+      held = new Promise((resolve) => {
+        release = resolve;
+      });
+      return release;
+    },
     get readAttempts() {
       return readAttempts;
     },

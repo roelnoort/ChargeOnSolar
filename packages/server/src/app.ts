@@ -6,6 +6,7 @@ import { HTTPException } from "hono/http-exception";
 import { authRoutes } from "./api/auth.ts";
 import { toHealth } from "./api/health.ts";
 import { addLiveRoutes } from "./api/live.ts";
+import { addOverrideRoutes } from "./api/overrides.ts";
 import {
   requireCsrfHeader,
   requireSession,
@@ -16,6 +17,7 @@ import { addShadowRoutes } from "./api/shadow.ts";
 import type { Auth } from "./auth.ts";
 import type { Clock } from "./clock.ts";
 import type { LiveState } from "./domain/live-state.ts";
+import type { Overrides } from "./overrides.ts";
 import type { SettingsStore } from "./settings.ts";
 import type { Storage } from "./storage/index.ts";
 
@@ -23,6 +25,7 @@ export interface AppDependencies {
   storage: Storage;
   auth: Auth;
   live: LiveState;
+  overrides: Overrides;
   clock: Clock;
   settings: SettingsStore;
   /** The built web app's directory. Without it, only `/api/` is served. */
@@ -33,6 +36,7 @@ export function createApp({
   storage,
   auth,
   live,
+  overrides,
   clock,
   settings,
   webRoot,
@@ -58,7 +62,8 @@ export function createApp({
     return c.json(toHealth(startup));
   });
 
-  addLiveRoutes(app, { live, clock, settings });
+  addLiveRoutes(app, { live, overrides, clock, settings });
+  addOverrideRoutes(app, { overrides });
   addShadowRoutes(app, { storage });
   addSettingsRoutes(app, { store: settings });
 

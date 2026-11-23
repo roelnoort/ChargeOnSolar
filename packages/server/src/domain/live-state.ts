@@ -1,6 +1,7 @@
 import type { ChargerReading } from "./charger-reading.ts";
 import type { P1Reading } from "./p1-reading.ts";
 import type { RecordedShadowDecision } from "./shadow/recorded-decision.ts";
+import { countInterruptions } from "./switch-budget.ts";
 
 /** The latest Reading from each device, and the latest Shadow decision, kept in memory. */
 export interface LiveState {
@@ -10,6 +11,8 @@ export interface LiveState {
   /** Zaptec's latest Reading; its `receivedAt` is when Zaptec was last read. */
   charger(): ChargerReading | undefined;
   recordCharger(reading: ChargerReading): void;
+  /** Interruptions seen in this charge session; null while no car is connected. */
+  interruptions(): number | null;
   shadowDecision(): RecordedShadowDecision | undefined;
   recordShadowDecision(decision: RecordedShadowDecision): void;
   /** Calls `listener` after every change. Returns a function that stops it. */
@@ -23,6 +26,7 @@ export interface LiveState {
 export function createLiveState(): LiveState {
   let latestP1: P1Reading | undefined;
   let latestCharger: ChargerReading | undefined;
+  let interruptions: number | null = null;
   let latestShadowDecision: RecordedShadowDecision | undefined;
   const listeners = new Set<() => void>();
   const decisionListeners = new Set<
@@ -40,7 +44,9 @@ export function createLiveState(): LiveState {
       changed();
     },
     charger: () => latestCharger,
+    interruptions: () => interruptions,
     recordCharger(reading) {
+      interruptions = countInterruptions(interruptions, latestCharger, reading);
       latestCharger = reading;
       changed();
     },

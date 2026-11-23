@@ -65,6 +65,8 @@ describe("GET /api/live/stream", () => {
       surplusW: null,
       mainFuseA: 25,
       fuseHeadroomA: null,
+      override: { command: "pause", unavailableReason: "charger-offline" },
+      switchBudget: null,
       shadowDecision: null,
     });
   });

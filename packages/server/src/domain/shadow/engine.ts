@@ -12,6 +12,7 @@ import {
   type ShadowSettings,
   type StopReason,
 } from "@charge-on-solar/shared";
+import { switchesPerChargeSession } from "../switch-budget.ts";
 
 /** Bumped whenever a rule changes; stamped together with the settings. */
 export const shadowRulesVersion = 1;
@@ -100,7 +101,6 @@ interface ChargeOutcome {
 
 const minute = 60_000;
 
-const switchBudget = 20;
 // Starting needs a switch left over for the stop that follows it.
 const switchesNeededToStart = 2;
 
@@ -232,7 +232,7 @@ function decideWhileStopped(
   ) {
     return hold("minimum-off-time", state);
   }
-  if (switchBudget - state.switchCount < switchesNeededToStart) {
+  if (switchesPerChargeSession - state.switchCount < switchesNeededToStart) {
     return hold("switch-budget", state);
   }
   const { currentAmps, limitedBy } = chargingCurrent(snapshot, settings);

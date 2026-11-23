@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type OverrideCommand,
   type Settings,
   settings,
   shadowDecision,
@@ -19,6 +20,14 @@ import {
   toPhaseSetting,
 } from "../domain/charger-reading.ts";
 import type { NewLoginCode } from "../domain/login-code.ts";
+import type {
+  CommandResult,
+  ManualOverrideRecord,
+  OpenPause,
+  OverrideSender,
+  PauseEnding,
+  PauseRecord,
+} from "../domain/override.ts";
 import type { P1Reading } from "../domain/p1-reading.ts";
 import type { SimulatedCharger } from "../domain/shadow/engine.ts";
 import type { RecordedShadowDecision } from "../domain/shadow/recorded-decision.ts";
@@ -95,7 +104,35 @@ export interface Storage {
   /** Signs out one of the User's devices; false when they have no such device. */
   removeSignedInDevice(userId: number, id: number): Promise<boolean>;
   removeAllSignedInDevices(userId: number): Promise<void>;
+
+  /** Records a Manual override as it is sent, and answers its id. */
+  recordManualOverride(override: NewManualOverride): Promise<number>;
+  recordCommandResult(overrideId: number, result: CommandResult): Promise<void>;
+  /** Marks a Pause confirmed and opens the pause it made, in one step. */
+  confirmPause(overrideId: number, at: Date): Promise<OpenPause>;
+  /** Marks a Resume confirmed and ends the pause it answers, in one step. */
+  confirmResume(
+    overrideId: number,
+    pauseId: number | null,
+    at: Date
+  ): Promise<void>;
+  recordUnconfirmed(overrideId: number): Promise<void>;
+  /** The most recent Manual overrides, newest first. */
+  listManualOverrides(limit: number): Promise<ManualOverrideRecord[]>;
+
+  openExternalPause(at: Date): Promise<OpenPause>;
+  closePause(pauseId: number, at: Date, ending: PauseEnding): Promise<void>;
+  findOpenPause(): Promise<OpenPause | undefined>;
+  /** The most recent pauses, open or ended, newest first. */
+  listPauses(limit: number): Promise<PauseRecord[]>;
   close(): Promise<void>;
+}
+
+export interface NewManualOverride {
+  sentAt: Date;
+  user: OverrideSender;
+  command: OverrideCommand;
+  answersPauseId: number | null;
 }
 
 export interface ReadingWindow {
@@ -384,9 +421,143 @@ function storageOn(
         .run();
     },
 
+    async recordManualOverride({ sentAt, user, command, answersPauseId }) {
+      const row = db
+        .insert(schema.manualOverrides)
+        .values({
+          sentAt,
+          userId: user.id,
+          userName: user.name,
+          command,
+          answersPauseId,
+        })
+        .returning({ id: schema.manualOverrides.id })
+        .get();
+      return row.id;
+    },
+    async recordCommandResult(overrideId, result) {
+      db.update(schema.manualOverrides)
+        .set(
+          result.accepted
+            ? { commandResult: "accepted" }
+            : {
+                commandResult: "rejected",
+                rejectionCode: result.code,
+                rejectionReason: result.reason,
+              }
+        )
+        .where(eq(schema.manualOverrides.id, overrideId))
+        .run();
+    },
+    async confirmPause(overrideId, at) {
+      return db.transaction((tx) => {
+        tx.update(schema.manualOverrides)
+          .set({ confirmation: "confirmed" })
+          .where(eq(schema.manualOverrides.id, overrideId))
+          .run();
+        return tx
+          .insert(schema.pauses)
+          .values({ source: "chargeonsolar", overrideId, startedAt: at })
+          .returning(openPauseColumns)
+          .get();
+      });
+    },
+    async confirmResume(overrideId, pauseId, at) {
+      db.transaction((tx) => {
+        tx.update(schema.manualOverrides)
+          .set({ confirmation: "confirmed" })
+          .where(eq(schema.manualOverrides.id, overrideId))
+          .run();
+        if (pauseId === null) return;
+        tx.update(schema.pauses)
+          .set({ endedAt: at, ending: "resumed-by-chargeonsolar" })
+          .where(
+            and(eq(schema.pauses.id, pauseId), isNull(schema.pauses.endedAt))
+          )
+          .run();
+      });
+    },
+    async recordUnconfirmed(overrideId) {
+      db.update(schema.manualOverrides)
+        .set({ confirmation: "unconfirmed" })
+        .where(eq(schema.manualOverrides.id, overrideId))
+        .run();
+    },
+    async listManualOverrides(limit) {
+      return db
+        .select()
+        .from(schema.manualOverrides)
+        .orderBy(desc(schema.manualOverrides.id))
+        .limit(limit)
+        .all()
+        .map(fromManualOverrideRow);
+    },
+
+    async openExternalPause(at) {
+      return db
+        .insert(schema.pauses)
+        .values({ source: "external", startedAt: at })
+        .returning(openPauseColumns)
+        .get();
+    },
+    async closePause(pauseId, at, ending) {
+      db.update(schema.pauses)
+        .set({ endedAt: at, ending })
+        .where(eq(schema.pauses.id, pauseId))
+        .run();
+    },
+    async findOpenPause() {
+      return db
+        .select(openPauseColumns)
+        .from(schema.pauses)
+        .where(isNull(schema.pauses.endedAt))
+        .orderBy(desc(schema.pauses.id))
+        .get();
+    },
+    async listPauses(limit) {
+      return db
+        .select({
+          ...openPauseColumns,
+          overrideId: schema.pauses.overrideId,
+          endedAt: schema.pauses.endedAt,
+          ending: schema.pauses.ending,
+        })
+        .from(schema.pauses)
+        .orderBy(desc(schema.pauses.id))
+        .limit(limit)
+        .all();
+    },
+
     async close() {
       sqlite.close();
     },
+  };
+}
+
+const openPauseColumns = {
+  id: schema.pauses.id,
+  source: schema.pauses.source,
+  startedAt: schema.pauses.startedAt,
+};
+
+function fromManualOverrideRow({
+  commandResult,
+  rejectionCode,
+  rejectionReason,
+  ...row
+}: typeof schema.manualOverrides.$inferSelect): ManualOverrideRecord {
+  return {
+    ...row,
+    commandResult:
+      commandResult === null
+        ? null
+        : commandResult === "accepted"
+          ? { accepted: true }
+          : {
+              accepted: false,
+              code: rejectionCode,
+              reason: rejectionReason ?? "",
+            },
   };
 }
 
