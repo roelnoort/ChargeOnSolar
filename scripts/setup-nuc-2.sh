@@ -603,8 +603,8 @@ valid_public_key() {
 add_deploy_key() {
   local ENV_FILE=/dev/null home file
   say "Paste the deploy public key: the line starting with ssh-ed25519 that the"
-  say "GitHub wizard (#74) shows. Not made yet? Press Enter to skip, and re-run"
-  say "this wizard once you have it."
+  say "deploy wizard on the Mac (scripts/setup-deploy.sh) shows. Not made yet?"
+  say "Press Enter to skip, and re-run this wizard once you have it."
   while :; do
     ask DEPLOY_PUBLIC_KEY "Deploy public key:" || return 1
     [[ -n "$DEPLOY_PUBLIC_KEY" ]] || return 1
@@ -636,7 +636,7 @@ setup_deploys() {
   fi
   if ((!key_ok)) && ! add_deploy_key; then
     ((script_ok)) || DONE+=("$DEPLOY_SCRIPT, from main")
-    skip_stage "the deploy key: re-run this wizard once the GitHub wizard (#74) has made it"
+    skip_stage "the deploy key: re-run this wizard once the deploy wizard (scripts/setup-deploy.sh) has made it"
     return
   fi
   did "the deploy script $DEPLOY_SCRIPT, and a key that can only run it"
@@ -807,7 +807,7 @@ summary() {
   fi
   domain=$(proxy_env DOMAIN 2>/dev/null || true)
   [[ -n "$domain" ]] && NEXT+=("Open https://charge.$domain on a phone or laptop at home.")
-  NEXT+=("The service wizards (#74) set up Tailscale and the GitHub Environment for the Deploy button.")
+  NEXT+=("Chapter 3: the deploy wizard on the Mac (scripts/setup-deploy.sh) sets up Tailscale and GitHub for the Deploy button.")
   say "${BOLD}Next:${RESET}"
   for line in "${NEXT[@]}"; do note "  - $line"; done
   printf '\n'

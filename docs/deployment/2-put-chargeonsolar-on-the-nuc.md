@@ -94,11 +94,11 @@ These are the stages, and what they ask:
 5. **Deploys from GitHub.** Installs the deploy script as
    `/usr/local/bin/chargeonsolar-deploy`, outside the git checkout, so a
    deploy can't change the script it is running. Then it asks for the
-   **deploy public key**. That key doesn't exist yet: the GitHub wizard
-   ([#74](https://github.com/roelnoort/ChargeOnSolar/issues/74)) makes it in
-   the next chapter. **Press Enter to skip it for now**, and run this wizard
-   again once you have it. The key it saves can only run the deploy script:
-   it gets no shell and can't forward ports.
+   **deploy public key**. That key doesn't exist yet: the deploy wizard on
+   the Mac makes it in [chapter 3](./3-deploy-from-github.md). **Press Enter
+   to skip it for now**, and run this wizard again once you have it. The key
+   it saves can only run the deploy script: it gets no shell and can't
+   forward ports.
 6. **Nightly backup.** Installs the backup script as
    `/usr/local/bin/chargeonsolar-backup`, and a cron job that runs it every
    night at 03:00. It backs up the database and `.env` to
@@ -142,11 +142,14 @@ If the browser can't find the site, but the wizard said the address answers:
   network ("DNS rebind protection"). In the router's settings, allow your
   domain as an exception.
 
+Continue with [chapter 3](./3-deploy-from-github.md): the deploy wizard on the
+Mac sets up the Deploy button.
+
 ## Later: add the deploy key
 
-After the GitHub wizard in the next chapter has made the deploy key, run
-`sudo bash setup-nuc-2.sh` again and paste the public key at stage 5. Every
-other stage reports that it's already done.
+The deploy wizard in [chapter 3](./3-deploy-from-github.md) makes the deploy
+key, and then has you run `sudo bash setup-nuc-2.sh` again and paste the
+public key at stage 5. Every other stage reports that it's already done.
 
 To replace the key later, delete the old one first, then run the wizard again:
 
