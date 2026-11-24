@@ -328,9 +328,17 @@ user_key_count() {
   ssh-keygen -l -f "$USER_HOME/.ssh/authorized_keys" 2>/dev/null | wc -l | tr -d ' '
 }
 
-# key_login_seen: an SSH login with a key since the NUC booted.
+# key_login_seen: an SSH login with a key since the NUC booted. Not a pipe:
+# grep -q stops at the first match, journalctl then dies of SIGPIPE, and
+# pipefail would turn the found login into a failure.
 key_login_seen() {
-  journalctl -b -q --no-pager -o cat 2>/dev/null | grep -q "^Accepted publickey for $USER_NAME from "
+  grep -q "^Accepted publickey for $USER_NAME from " < <(journalctl -b -q --no-pager -o cat 2>/dev/null)
+}
+
+# recent_logins: the last few SSH logins and failures for USER_NAME since boot.
+recent_logins() {
+  journalctl -b -q --no-pager -o cat 2>/dev/null |
+    grep -E "^(Accepted|Failed) [a-z-]+ for $USER_NAME from " | tail -n 3 || true
 }
 
 nuc_address() {
@@ -346,14 +354,9 @@ harden_ssh() {
   say "and never a login as root. First a check that your key works, so you"
   say "can't lock yourself out."
   printf '\n'
-  local keys
-  while :; do
-    keys=$(user_key_count)
-    if (( keys > 0 )) && key_login_seen; then
-      printf '  %s✓%s %s key(s) may log in as %s, and a key login worked since boot.\n' \
-        "$GREEN" "$RESET" "$keys" "$USER_NAME"
-      break
-    fi
+  local keys logins
+  keys=$(user_key_count)
+  while ! { (( keys > 0 )) && key_login_seen; }; do
     if (( keys == 0 )); then
       warn "No SSH key may log in as $USER_NAME yet ($USER_HOME/.ssh/authorized_keys)."
       step "On your Mac, run: ssh-copy-id $USER_NAME@$(nuc_address)"
@@ -365,11 +368,23 @@ harden_ssh() {
     say "    ssh -o PasswordAuthentication=no $USER_NAME@$(nuc_address)"
     note "  It must log you in without asking for the NUC password."
     note "  (Your Mac may ask for the passphrase of its own key; that is fine.)"
-    if ! confirm "Done that? Check again?"; then
+    pause "Logged in from that new terminal? Press Enter to check"
+
+    keys=$(user_key_count)
+    (( keys > 0 )) && key_login_seen && break
+    warn "Still no key login as $USER_NAME in the NUC's log."
+    logins=$(recent_logins)
+    if [[ -n "$logins" ]]; then
+      note "  The NUC's last SSH logins for $USER_NAME:"
+      while IFS= read -r line; do note "    $line"; done <<<"$logins"
+    fi
+    if ! confirm "Try again? (No skips this stage)"; then
       skip_stage "SSH hardening: no working key login yet. Re-run this wizard once it works."
       return
     fi
   done
+  printf '  %s✓%s %s key(s) may log in as %s, and a key login worked since boot.\n' \
+    "$GREEN" "$RESET" "$keys" "$USER_NAME"
 
   write_file "$SSH_DROPIN" 0644 "$SSH_SETTINGS"
   if ! sshd -t; then
@@ -469,7 +484,7 @@ install_docker() {
 # ── Stage 3: docker group ─────────────────────────────────────────────────
 
 add_docker_group() {
-  if id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx docker; then
+  if grep -qx docker < <(id -nG "$USER_NAME" | tr ' ' '\n'); then
     already_done "$USER_NAME in the docker group"
     return
   fi
