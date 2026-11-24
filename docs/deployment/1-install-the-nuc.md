@@ -273,5 +273,5 @@ second run that finds everything in place changes nothing.
 - In the Tailscale admin console, approve the NUC's subnet route and turn off
   its key expiry. The Tailscale wizard ([#74](https://github.com/roelnoort/ChargeOnSolar/issues/74))
   walks you through it.
-- Continue with part 2 of the NUC wizard ([#73](https://github.com/roelnoort/ChargeOnSolar/issues/73)),
-  which puts ChargeOnSolar, the proxy, deploys and backups on the NUC.
+- Continue with [chapter 2](./2-put-chargeonsolar-on-the-nuc.md): part 2 of
+  the NUC wizard puts ChargeOnSolar, the proxy, deploys and backups on the NUC.
