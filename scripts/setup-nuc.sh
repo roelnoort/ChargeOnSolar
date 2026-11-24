@@ -965,7 +965,7 @@ summary() {
     for line in "${ALREADY[@]}"; do note "  - $line"; done
     printf '\n'
   fi
-  NEXT+=("Part 2 of the NUC wizard (#73) puts ChargeOnSolar, the proxy, deploys and backups on top.")
+  NEXT+=("Part 2, setup-nuc-2.sh, puts ChargeOnSolar, the proxy, deploys and backups on top (docs/deployment/2-put-chargeonsolar-on-the-nuc.md).")
   say "${BOLD}Next:${RESET}"
   for line in "${NEXT[@]}"; do note "  - $line"; done
   printf '\n'
