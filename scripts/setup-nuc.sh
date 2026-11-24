@@ -693,7 +693,7 @@ setup_tailscale() {
   fi
   printf '  %s✓%s on your tailnet as %s\n' "$GREEN" "$RESET" "$(tailscale ip -4 2>/dev/null | head -n1)"
   did "Tailscale, advertising $LAN_SUBNET"
-  NEXT+=("Approve the route $LAN_SUBNET and turn off key expiry for this NUC in the Tailscale admin console: the Tailscale wizard (#74) walks you through it.")
+  NEXT+=("Approve the route $LAN_SUBNET and turn off key expiry for this NUC in the Tailscale admin console: the deploy wizard on the Mac (scripts/setup-deploy.sh) walks you through it.")
   pause
 }
 
