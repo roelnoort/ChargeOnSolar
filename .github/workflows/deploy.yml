@@ -1,0 +1,148 @@
+name: Deploy
+
+# The "Deploy" button: puts one commit of main live on the NUC. Spec: #64, #71.
+#
+# HOW TO USE IT
+#   Actions → Deploy → Run workflow. Leave `sha` empty for the current head of
+#   main, or give a commit of main (7 to 40 hex digits) to deploy that one, for
+#   example to go back to an older version. Nothing deploys automatically
+#   after a merge.
+#
+# WHAT IT DOES
+#   1. Resolves the request to a full commit SHA through the GitHub API and
+#      prints it. A `sha` that isn't hex, or isn't a commit, stops the run
+#      here, before anything connects to the NUC.
+#   2. Joins the tailnet as a temporary node tagged `tag:ci`. The node is
+#      ephemeral and logs out when the job ends.
+#   3. SSHes to the `deploy` user on the NUC and sends `deploy <sha>`. That
+#      user's key runs only deploy/deploy.sh (a forced command), which refuses
+#      commits that aren't on main, builds and starts the commit, and rolls
+#      back if it doesn't stay up. Its output is this job's log, and its exit
+#      code is the job's result: a failed or rolled-back deploy turns the run
+#      red, and GitHub emails you.
+#
+# THE GITHUB ENVIRONMENT `production`
+#   The job runs in it, and every secret below lives only there, not in the
+#   repository's secrets. Settings it relies on:
+#     - Deployment branches and tags: "Selected branches and tags", with only
+#       `main`. A run started from any other branch is refused before it gets
+#       a secret, so workflows on agent or PR branches can never read them.
+#     - No repository or organisation secret may share a name below: when the
+#       Environment lacks one, `secrets.X` silently falls back to those.
+#   Secrets:
+#     TS_OAUTH_CLIENT_ID     Tailscale OAuth client ID. The client needs the
+#                            `auth_keys` write scope and the tag `tag:ci`.
+#     TS_OAUTH_SECRET        that OAuth client's secret
+#     DEPLOY_SSH_KEY         the private key (OpenSSH format, no passphrase)
+#                            whose public key is in the `deploy` user's
+#                            authorized_keys on the NUC
+#     NUC_SSH_HOST_KEY       the NUC's SSH host public key, "<type> <base64>",
+#                            for example the first two fields of
+#                            /etc/ssh/ssh_host_ed25519_key.pub
+#     NUC_TAILSCALE_ADDRESS  the NUC's Tailscale address, such as 100.x.y.z
+#
+# ONE DEPLOY AT A TIME
+#   All runs share one concurrency group and a running deploy is never
+#   cancelled. A press while one runs waits for it; GitHub keeps only the
+#   newest waiting run, so pressing three times deploys the first and the
+#   last. The NUC's lock (deploy.sh) refuses a second deploy as well.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit of main to deploy (empty: the head of main)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# Naming the shell adds pipefail to the runner's default `bash -e`.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      # The input reaches the shell only as an environment variable, never
+      # pasted into the script, so it can't inject commands.
+      - name: Resolve the commit to deploy
+        id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA_INPUT: ${{ inputs.sha }}
+        run: |
+          requested=$(printf '%s' "$SHA_INPUT" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+          if [[ -z "$requested" ]]; then
+            requested=main
+          elif [[ ! "$requested" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::The sha input is not a commit SHA (7 to 40 hex digits). Nothing was deployed."
+            exit 1
+          fi
+          if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$requested" --jq .sha); then
+            echo "::error::No commit $requested in $GITHUB_REPOSITORY. Nothing was deployed."
+            exit 1
+          fi
+          echo "Deploying $sha (asked for: $requested)."
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+
+      # A secret that isn't set reads as empty, which would otherwise surface
+      # later as a vague Tailscale or SSH error.
+      - name: Check the production secrets
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          NUC_SSH_HOST_KEY: ${{ secrets.NUC_SSH_HOST_KEY }}
+          NUC_TAILSCALE_ADDRESS: ${{ secrets.NUC_TAILSCALE_ADDRESS }}
+        run: |
+          missing=()
+          for name in TS_OAUTH_CLIENT_ID TS_OAUTH_SECRET DEPLOY_SSH_KEY NUC_SSH_HOST_KEY NUC_TAILSCALE_ADDRESS; do
+            [[ -n "${!name}" ]] || missing+=("$name")
+          done
+          if ((${#missing[@]} > 0)); then
+            echo "::error::The GitHub Environment production lacks the secrets ${missing[*]}. Nothing was deployed."
+            exit 1
+          fi
+
+      - name: Join the tailnet as tag:ci
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      # Strict host key checking against the stored key only: an impostor at
+      # the NUC's address gets no connection, and no key is ever trusted on
+      # first use.
+      - name: Deploy on the NUC
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST_KEY: ${{ secrets.NUC_SSH_HOST_KEY }}
+          NUC_ADDRESS: ${{ secrets.NUC_TAILSCALE_ADDRESS }}
+        run: |
+          ssh_dir=$RUNNER_TEMP/ssh
+          mkdir -m 700 "$ssh_dir"
+          printf '%s\n' "$SSH_KEY" >"$ssh_dir/id"
+          chmod 600 "$ssh_dir/id"
+          printf '%s %s\n' "$NUC_ADDRESS" "$HOST_KEY" >"$ssh_dir/known_hosts"
+          ssh -i "$ssh_dir/id" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o GlobalKnownHostsFile=/dev/null \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=30 \
+            "deploy@$NUC_ADDRESS" "deploy $SHA"
