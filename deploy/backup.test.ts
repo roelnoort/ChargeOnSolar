@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { gunzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runScript, until } from "./run-script.ts";
 
 const script = path.join(import.meta.dirname, "backup.sh");
 
@@ -35,40 +36,36 @@ function createDatabase(rows: string[]) {
   return db;
 }
 
-function labelsIn(file: string): string[] {
+function query<T>(file: string, read: (db: DatabaseSync) => T): T {
   const db = new DatabaseSync(file, { readOnly: true });
   try {
-    return db
+    return read(db);
+  } finally {
+    db.close();
+  }
+}
+
+const labelsIn = (file: string) =>
+  query(file, (db) =>
+    db
       .prepare("SELECT label FROM readings ORDER BY id")
       .all()
-      .map((row) => String(row.label));
-  } finally {
-    db.close();
-  }
-}
+      .map((row) => String(row.label))
+  );
 
-function rowCount(file: string): number {
-  const db = new DatabaseSync(file, { readOnly: true });
-  try {
-    const row = db.prepare("SELECT count(*) AS n FROM readings").get();
-    return Number(row?.n);
-  } finally {
-    db.close();
-  }
-}
+const rowCount = (file: string) =>
+  query(file, (db) =>
+    Number(db.prepare("SELECT count(*) AS n FROM readings").get()?.n)
+  );
 
-function totalIn(file: string): number {
-  const db = new DatabaseSync(file, { readOnly: true });
-  try {
-    return Number(db.prepare("SELECT rows FROM totals").get()?.rows);
-  } finally {
-    db.close();
-  }
-}
+const totalIn = (file: string) =>
+  query(file, (db) =>
+    Number(db.prepare("SELECT rows FROM totals").get()?.rows)
+  );
 
 /**
- * Another process that commits until it is killed. Each commit adds a Reading
- * and updates the total, so in a consistent copy the two always agree.
+ * Another process that commits until it is killed. Each commit adds a row and
+ * updates the total, so in a consistent copy the two always agree.
  */
 function startWriter() {
   const program = `
@@ -89,14 +86,6 @@ function startWriter() {
   });
 }
 
-async function until(condition: () => boolean) {
-  const deadline = Date.now() + 5000;
-  while (!condition()) {
-    if (Date.now() > deadline) throw new Error("Timed out waiting");
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-}
-
 /** Every date from `first` to `last`, both included, as YYYY-MM-DD. */
 function datesFrom(first: string, last: string): string[] {
   const dates: string[] = [];
@@ -110,42 +99,26 @@ function datesFrom(first: string, last: string): string[] {
   return dates;
 }
 
-/** Decompresses a backup into the temporary folder and returns its path. */
 function restore(backup: string): string {
   const restored = path.join(dir, `restored-${path.basename(backup, ".gz")}`);
   fs.writeFileSync(restored, gunzipSync(fs.readFileSync(backup)));
   return restored;
 }
 
-/** The files in the backup folder, sorted. */
 function backups(): string[] {
   if (!fs.existsSync(backupDir)) return [];
   return fs.readdirSync(backupDir).sort();
 }
 
-type Result = { code: number | null; output: string };
-
 function backUp(today: string, env: Record<string, string> = {}) {
-  return new Promise<Result>((resolve, reject) => {
-    const child = spawn("bash", [script], {
-      env: {
-        PATH: process.env.PATH,
-        BACKUP_DATABASE: database,
-        BACKUP_ENV_FILE: envFile,
-        BACKUP_DIR: backupDir,
-        BACKUP_TODAY: today,
-        ...env,
-      },
-    });
-    let output = "";
-    child.stdout.on("data", (chunk) => {
-      output += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      output += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ code, output }));
+  return runScript(script, {
+    PATH: process.env.PATH,
+    BACKUP_DATABASE: database,
+    BACKUP_ENV_FILE: envFile,
+    BACKUP_DIR: backupDir,
+    BACKUP_TODAY: today,
+    BACKUP_MOUNT: "",
+    ...env,
   });
 }
 
@@ -259,6 +232,17 @@ describe("backup", () => {
         "notes.txt",
       ].sort()
     );
+  });
+
+  it("refuses to write to the backup folder when the backup disk isn't mounted", async () => {
+    createDatabase(["first"]).close();
+    const notMounted = path.join(dir, "backup");
+
+    const result = await backUp("2026-11-24", { BACKUP_MOUNT: notMounted });
+
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain(`${notMounted} is not mounted`);
+    expect(backups()).toEqual([]);
   });
 
   it("fails without creating a database when the database is missing", async () => {

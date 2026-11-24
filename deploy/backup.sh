@@ -18,10 +18,14 @@
 #   BACKUP_DATABASE  the live database  (/srv/chargeonsolar/data/chargeonsolar.db)
 #   BACKUP_ENV_FILE  the app's .env     (/srv/chargeonsolar/.env)
 #   BACKUP_DIR       where backups go   (/backup/chargeonsolar)
+#   BACKUP_MOUNT     the backup disk's mount point, which must be mounted, or
+#                    empty to skip that check  (/backup)
 #   BACKUP_TODAY     the date to file this backup under, YYYY-MM-DD (today)
 #
 # Needs the sqlite3 command-line tool. Run it as the database's owner (uid 1000,
-# the container's `node` user) or as root. Any failure exits non-zero, and then
+# the container's `node` user) or as root. As root, a sqlite3 that crashes
+# while the app is stopped can leave root-owned -wal/-shm files the app can't
+# open, so the owner is the safer choice. Any failure exits non-zero, and then
 # no backups are deleted.
 
 set -euo pipefail
@@ -29,6 +33,7 @@ set -euo pipefail
 database=${BACKUP_DATABASE:-/srv/chargeonsolar/data/chargeonsolar.db}
 env_file=${BACKUP_ENV_FILE:-/srv/chargeonsolar/.env}
 backup_dir=${BACKUP_DIR:-/backup/chargeonsolar}
+backup_mount=${BACKUP_MOUNT-/backup}
 today=${BACKUP_TODAY:-$(date +%F)}
 keep_latest=14
 keep_months=12
@@ -43,16 +48,22 @@ fail() {
 [[ -f "$database" ]] || fail "No database at $database."
 [[ -f "$env_file" ]] || fail "No .env at $env_file."
 
+# Without the HDD, /backup is an empty folder on the SSD, the disk being backed up.
+if [[ -n "$backup_mount" ]]; then
+  mounted_on=$(df -P "$backup_mount" 2>/dev/null | awk 'NR == 2 { print $NF }') || true
+  [[ "$mounted_on" == "$backup_mount" ]] || fail "$backup_mount is not mounted, so the backup disk is missing."
+fi
+
 umask 077
 mkdir -p "$backup_dir"
 work=$(mktemp -d "$backup_dir/.backup-XXXXXX")
 trap 'rm -rf "$work"' EXIT
 
-sql_string() {
-  printf "'%s'" "${1//\'/\'\'}"
+sql_quote() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
 }
 
-sqlite3 "$database" "VACUUM INTO $(sql_string "$work/backup.db")" ||
+sqlite3 "$database" "VACUUM INTO $(sql_quote "$work/backup.db")" ||
   fail "sqlite3 couldn't back up $database."
 gzip "$work/backup.db"
 cp "$env_file" "$work/backup.env"

@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type Result, runScript, until } from "./run-script.ts";
 
 const script = path.join(import.meta.dirname, "deploy.sh");
 const fakes = path.join(import.meta.dirname, "test-fakes");
@@ -41,42 +42,19 @@ const checkedOut = () => read("head")[0];
 const builds = () => read("builds");
 const calls = () => read("calls");
 
-type Result = { code: number | null; output: string };
-
 function deploy(
   request: string | undefined,
   env: Record<string, string> = {}
 ): Promise<Result> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("bash", [script], {
-      env: {
-        PATH: `${fakes}:${process.env.PATH}`,
-        FAKE_DIR: path.join(dir, "fake"),
-        DEPLOY_PROJECT_DIR: path.join(dir, "project"),
-        DEPLOY_LOCK: path.join(dir, "deploy.lock"),
-        DEPLOY_WAIT_SECONDS: "0",
-        ...(request === undefined ? {} : { SSH_ORIGINAL_COMMAND: request }),
-        ...env,
-      },
-    });
-    let output = "";
-    child.stdout.on("data", (chunk) => {
-      output += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      output += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ code, output }));
+  return runScript(script, {
+    PATH: `${fakes}:${process.env.PATH}`,
+    FAKE_DIR: path.join(dir, "fake"),
+    DEPLOY_PROJECT_DIR: path.join(dir, "project"),
+    DEPLOY_LOCK: path.join(dir, "deploy.lock"),
+    DEPLOY_WAIT_SECONDS: "0",
+    ...(request === undefined ? {} : { SSH_ORIGINAL_COMMAND: request }),
+    ...env,
   });
-}
-
-async function until(condition: () => boolean) {
-  const deadline = Date.now() + 5000;
-  while (!condition()) {
-    if (Date.now() > deadline) throw new Error("Timed out waiting");
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
 }
 
 function deadPid(): Promise<number> {
