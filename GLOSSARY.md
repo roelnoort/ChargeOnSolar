@@ -45,7 +45,7 @@ Whether the charger charges on 1 phase or on 3 phases, as chosen by the user. Ch
 _Avoid_: Phase mode, phase count
 
 **Fuse headroom**:
-How much current the charger can still draw before the main fuse is overloaded: the main fuse rating minus the House consumption current on the busiest phase.
+How much current the charger can still draw before the main fuse is overloaded: the main fuse rating minus the current the house draws from the grid without the charger, on the busiest phase the charger uses. Solar production the house uses itself is not known per phase, so it counts as room: when it suddenly drops, the fuse can briefly carry more than its rating.
 _Avoid_: Available current, capacity
 
 **Solar mode**:
