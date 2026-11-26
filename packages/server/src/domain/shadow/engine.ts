@@ -20,7 +20,7 @@ export const shadowRulesVersion = 1;
 export const phaseSettings = [1, 3] as const;
 export type PhaseSetting = (typeof phaseSettings)[number];
 
-export const carStates = ["none", "not-accepting", "accepting"] as const;
+const carStates = ["none", "not-accepting", "accepting"] as const;
 export type CarState = (typeof carStates)[number];
 
 export const defaultShadowSettings: ShadowSettings = {
