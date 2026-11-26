@@ -170,8 +170,8 @@ describe("Shadow decisions", () => {
 
     expect(summarize(await decisions())).toEqual([
       "12:01 hold (surplus-too-low)",
-      "12:09 start 6 A (surplus)",
       // The 10-minute average still holds the Surplus-less minutes before 12:06.
+      "12:09 start 6 A (surplus)",
       "12:10 hold (minimum-on-time)",
       "12:12 hold (current-hold)",
       "12:24 change-current 10 A (surplus)",
