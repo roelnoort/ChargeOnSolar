@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   livePath,
   liveSnapshot,
+  type ShadowDecision,
   type ShadowDecisionRecord,
   shadowDecisionList,
   shadowDecisionsPath,
@@ -75,23 +76,31 @@ async function decisions(
 
 /** One line per run of the same Shadow decision, at its first minute. */
 function summarize(records: ShadowDecisionRecord[]): string[] {
-  const lines = records.map(({ at, decision }) => {
-    const minute = at.slice(11, 16);
-    switch (decision.kind) {
-      case "hold":
-        return `${minute} hold (${decision.reason})`;
-      case "stop":
-        return `${minute} stop (${decision.reason})`;
-      case "start":
-      case "change-current":
-        return `${minute} ${decision.kind} ${decision.currentAmps} A (${decision.limitedBy})`;
-      default:
-        return `${minute} ${decision.kind}`;
-    }
-  });
-  return lines.filter(
-    (line, index) => line.slice(6) !== lines[index - 1]?.slice(6)
-  );
+  const lines: string[] = [];
+  let previous = "";
+  for (const { at, decision } of records) {
+    const described = describeDecision(decision);
+    if (described === previous) continue;
+    previous = described;
+    lines.push(`${at.slice(11, 16)} ${described}`);
+  }
+  return lines;
+}
+
+function describeDecision(decision: ShadowDecision): string {
+  switch (decision.kind) {
+    case "start":
+    case "change-current":
+      return `${decision.kind} ${decision.currentAmps} A (${decision.limitedBy})`;
+    case "stop":
+    case "hold":
+      return `${decision.kind} (${decision.reason})`;
+    case "paused":
+      return `paused, would ${describeDecision(decision.underlying)}`;
+    case "no-car":
+    case "car-not-accepting":
+      return decision.kind;
+  }
 }
 
 describe("Shadow decisions", () => {
