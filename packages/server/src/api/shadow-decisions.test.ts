@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   livePath,
   liveSnapshot,
+  type ShadowDecision,
   type ShadowDecisionRecord,
   shadowDecisionList,
   shadowDecisionsPath,
@@ -73,6 +74,35 @@ async function decisions(
   return shadowDecisionList.parse(await response?.json()).decisions;
 }
 
+/** One line per run of the same Shadow decision, at its first minute. */
+function summarize(records: ShadowDecisionRecord[]): string[] {
+  const lines: string[] = [];
+  let previous = "";
+  for (const { at, decision } of records) {
+    const described = describeDecision(decision);
+    if (described === previous) continue;
+    previous = described;
+    lines.push(`${at.slice(11, 16)} ${described}`);
+  }
+  return lines;
+}
+
+function describeDecision(decision: ShadowDecision): string {
+  switch (decision.kind) {
+    case "start":
+    case "change-current":
+      return `${decision.kind} ${decision.currentAmps} A (${decision.limitedBy})`;
+    case "stop":
+    case "hold":
+      return `${decision.kind} (${decision.reason})`;
+    case "paused":
+      return `paused, would ${describeDecision(decision.underlying)}`;
+    case "no-car":
+    case "car-not-accepting":
+      return decision.kind;
+  }
+}
+
 describe("Shadow decisions", () => {
   it("are 'No car' while the car is unplugged", async () => {
     const { p1, advance } = await start({
@@ -123,6 +153,63 @@ describe("Shadow decisions", () => {
     expect(all[1]?.decision).toEqual({ kind: "hold", reason: "current-hold" });
     expect(all[1]?.chargingCurrentA).toBe(14);
     expect(all.at(-1)?.chargingCurrentA).toBeNull();
+  });
+
+  it("follow one charge session through a sunny hour with the default Settings", async () => {
+    // No Surplus until 12:06, 2400 W of Surplus until 12:46, then 500 W;
+    // unplugged at 12:53.
+    const { p1, zaptec, advance } = await start({ charger: carPluggedIn });
+    p1.send(exporting(0));
+    await advance(6 * minute);
+    p1.send(exporting(2400));
+    await advance(40 * minute);
+    p1.send(exporting(500));
+    await advance(7 * minute);
+    zaptec.set({ ...carPluggedIn, operationMode: 1 });
+    await advance(minute);
+
+    expect(summarize(await decisions())).toEqual([
+      "12:01 hold (surplus-too-low)",
+      // The 10-minute average still holds the Surplus-less minutes before 12:06.
+      "12:09 start 6 A (surplus)",
+      "12:10 hold (minimum-on-time)",
+      "12:12 hold (current-hold)",
+      "12:24 change-current 10 A (surplus)",
+      "12:25 hold (within-dead-band)",
+      "12:47 change-current 8 A (surplus)",
+      "12:48 hold (current-hold)",
+      "12:52 stop (surplus-too-low)",
+      "12:53 hold (surplus-too-low)",
+      "12:54 no-car",
+    ]);
+  });
+
+  it("are made once per tick, however often the P1 meter reports", async () => {
+    const { p1, advance } = await start({ charger: carPluggedIn });
+    for (let second = 0; second < 3 * 60; second++) {
+      p1.send(exporting(3300));
+      await advance(1000);
+    }
+
+    expect((await decisions()).map(({ at }) => at)).toEqual([
+      "2026-06-01T12:01:00.000Z",
+      "2026-06-01T12:02:00.000Z",
+      "2026-06-01T12:03:00.000Z",
+    ]);
+  });
+
+  it("wait while the Surplus is unknown", async () => {
+    const { p1, advance, logs } = await start({
+      charger: { ...carPluggedIn, chargerPowerW: null },
+    });
+    p1.send(exporting(3300));
+
+    await advance(2 * minute);
+
+    expect(await decisions()).toEqual([]);
+    expect(
+      logs.filter((line) => line.startsWith("No Shadow decision"))
+    ).toEqual(["No Shadow decision: the Surplus is unknown"]);
   });
 
   it("record the minute's averaged inputs, Zaptec's own state and the stamped settings", async () => {
