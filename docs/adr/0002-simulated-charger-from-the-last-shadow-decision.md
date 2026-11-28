@@ -1,5 +1,7 @@
 # The simulated charger carries on from the last Shadow decision after a restart
 
+Replaced by [0004](./0004-shadow-decisions-are-recalculated-not-stored.md).
+
 The Shadow engine decides from the simulated charger: whether it would be
 charging, at which Charging current, since when, and how much of the Switch
 budget it has used. That state lives in the Shadow runner's memory, so a
